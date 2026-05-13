@@ -4,9 +4,12 @@ const engine = {
         4: "#de1f1f", 5: "#1fdbde", 6: "#ff2b75", 7: "#2bffa3"
     },
 
+    // Liste des effets considérés comme supports globaux
+    supportEffects: ["Boost", "Critical", "reloadFactor", "petalHealthBuff"],
+
     // Parcourt les pétales équipées pour extraire les bonus globaux
     getGlobalStats: (equippedPetals, baseLuck) => {
-        const stats = { luck: baseLuck, multipliers: { Damage: 1, Reload: 0 }, activeSupports: [] };
+        const stats = { luck: baseLuck, multipliers: { Damage: 1, Reload: 0, Health: 1 }, activeSupports: [] };
         
         equippedPetals.forEach(p => {
             const effects = p.specials || (p.special ? [p.special] : []);
@@ -35,6 +38,10 @@ const engine = {
                         stats.multipliers.Reload += (val / 100);
                         stats.activeSupports.push({ name: p.name, type: "Reload", stat: "Speed", value: `${val > 0 ? '+' : ''}${val}%`, tier: p.tier });
                     }
+                    else if (e.type === "petalHealthBuff") {
+                        stats.multipliers.Health += (val / 100);
+                        stats.activeSupports.push({ name: p.name, type: "Health", stat: "Buff", value: `+${val}%`, tier: p.tier });
+                    }
                 }
             });
         });
@@ -43,7 +50,7 @@ const engine = {
 
     effectHandlers: {
         Critical: (perf, effect, stats, context, petal) => {
-            if (effect.global) return; // Si c'est global, c'est déjà appliqué sur les stats.multipliers.Damage
+            if (effect.global) return; // Déjà traité globalement
             let val = effect.value;
             if (typeof val === 'object' && val[0] !== undefined) {
                 const maxT = Math.max(...Object.keys(val).map(Number));
@@ -94,11 +101,11 @@ const engine = {
             stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0
         };
         
-        // Les pétales sans dégâts ni santé (comme Dizzy ou Opal) sont des supports purs
         if (petal.damage == null || petal.health == null) return perf;
         if (!mob) return perf;
 
         const boostedDamage = petal.damage * (globalStats.multipliers.Damage || 1);
+        const boostedHealth = petal.health * (globalStats.multipliers.Health || 1);
         
         const mDmg = Math.max(0, mob.damage - (petal.armor || 0));
         const pDmg = Math.max(0, boostedDamage - mob.armor);
@@ -106,10 +113,9 @@ const engine = {
         let lifeDuration = 0, totalCycleDuration = 0, isInfinite = true, survivalTicks = 0;
 
         if (mDmg > 0) {
-            survivalTicks = Math.ceil(petal.health / mDmg);
+            survivalTicks = Math.ceil(boostedHealth / mDmg);
             lifeDuration = survivalTicks * 0.1;
             
-            // Calcul du vrai temps de rechargement : base * (1 - TotalReloadFactor)
             const actualReload = Math.max(0.01, (petal.reload || 0) * (1 - (globalStats.multipliers.Reload || 0)));
             
             totalCycleDuration = lifeDuration + actualReload;

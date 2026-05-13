@@ -26,6 +26,10 @@ const ui = {
             const bonusPercent = (stats.multipliers.Damage - 1) * 100;
             html += `<div style="color: #27ae60; font-weight: bold; margin-top: 5px;">Total DMG Multiplier: x${stats.multipliers.Damage.toFixed(2)} (+${bonusPercent.toFixed(1)}%)</div>`;
         }
+        if (stats.multipliers.Health > 1) {
+            const healthPercent = (stats.multipliers.Health - 1) * 100;
+            html += `<div style="color: #e67e22; font-weight: bold; margin-top: 5px;">Total HP Multiplier: x${stats.multipliers.Health.toFixed(2)} (+${healthPercent.toFixed(1)}%)</div>`;
+        }
         if (stats.multipliers.Reload !== 0) {
             const reloadPercent = (stats.multipliers.Reload * 100).toFixed(1);
             html += `<div style="color: #8e44ad; font-weight: bold; margin-top: 5px;">Total Reload Speed: ${reloadPercent > 0 ? '+' : ''}${reloadPercent}%</div>`;
@@ -59,6 +63,9 @@ const ui = {
                 if (e.type === "reloadFactor") {
                     return `Reload Speed (${val > 0 ? '+' : ''}${val}%)`;
                 }
+                if (e.type === "petalHealthBuff") {
+                    return `Health Buff (+${val}%)`;
+                }
                 return `${e.type} ${e.stats} (+${val}%)`;
             }
             
@@ -78,14 +85,15 @@ const ui = {
             
             const isPureSupport = (p.damage == null || p.health == null);
             
-            // Calculer et afficher le Reload actualisé par le reloadFactor
             const actualReloadStr = p.reload != null ? (Math.max(0.01, p.reload * (1 - (stats.multipliers.Reload || 0)))).toFixed(2) + "s" : "-";
+            const actualHealth = p.health != null ? Math.round(p.health * (stats.multipliers.Health || 1)).toLocaleString() : "-";
+            const actualDamage = p.damage != null ? Math.round(p.damage * (stats.multipliers.Damage || 1)).toLocaleString() : "-";
 
             row.innerHTML = `
                 <td>${p.name}</td><td>${p.tier}</td><td>${p.currentEntities || 1}</td>
-                <td>${p.health != null ? Math.round(p.health).toLocaleString() : "-"}</td>
+                <td>${actualHealth}</td>
                 <td>${p.armor != null ? Math.round(p.armor).toLocaleString() : "-"}</td>
-                <td>${p.damage != null ? Math.round(p.damage).toLocaleString() : "-"}</td>
+                <td>${actualDamage}</td>
                 <td><strong>${actualReloadStr}</strong></td>
                 <td>${ui.getSpecDesc(p)}</td>
                 <td>${perf.ticks}</td>
@@ -118,6 +126,8 @@ const ui = {
             const dps = perf.physicalDps + perf.stackingPoisonDps + nsp + perf.stackingFireDps + nsf + perf.lightningDps;
             total += dps;
 
+            const actualHealth = p.health != null ? Math.round(p.health * (stats.multipliers.Health || 1)).toLocaleString() : "-";
+
             const div = document.createElement('div');
             div.className = "equipped-item";
             div.style.backgroundColor = engine.tierColors[p.tier];
@@ -127,7 +137,7 @@ const ui = {
                     <span>${isPureSupport ? 'SUPPORT' : dps.toFixed(2) + ' DPS'}</span>
                     <button class="btn-delete" onclick="ui.unequip(${i})">X</button>
                 </div>
-                ${isPureSupport ? '' : `<div class="dps-details">Phys: ${perf.physicalDps.toFixed(2)} | Poison: ${(perf.stackingPoisonDps + nsp).toFixed(2)} | Fire: ${(perf.stackingFireDps + nsf).toFixed(2)} | Light: ${perf.lightningDps.toFixed(2)}</div>`}
+                ${isPureSupport ? '' : `<div class="dps-details">Phys: ${perf.physicalDps.toFixed(2)} | Poison: ${(perf.stackingPoisonDps + nsp).toFixed(2)} | Fire: ${(perf.stackingFireDps + nsf).toFixed(2)} | Light: ${perf.lightningDps.toFixed(2)} | HP: ${actualHealth}</div>`}
             `;
             list.appendChild(div);
         });

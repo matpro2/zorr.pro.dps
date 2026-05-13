@@ -34,6 +34,26 @@ const petals = [
         entity: 1, reload: 1.0, health: 69420, damage: 120, armor: 69420,
         special: { type: "damageSeconds" }
     },
+    { 
+        name: "Golden Cactus", stack: false, entity: 1, reload: 2.5, health: 5, damage: 50, armor: 0,
+        specials: [
+            { type: "petalHealthBuff", 
+              global: true,
+              value: {
+                    0: 1,
+                    1: 2,
+                    2: 3,
+                    3: 5,
+                    4: 8,
+                    5: 13,
+                    6: 21,
+                    7: 34,
+                    8: 55,
+                    9: 89, 
+                } 
+            },
+        ]
+    },
     { name: "Heavy", entity: 1, reload: 7.0, health: 1000, damage: 35, armor: 1 },
     { 
         name: "Iris", 
