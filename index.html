@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>zorr.pro.dps</title>
+</head>
+<body>
+
+    <h1>zorr.pro.dps</h1>
+    
+    <!-- On met juste un border="1" natif en HTML pour que tu puisses distinguer les colonnes, mais aucun CSS n'est utilisé -->
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Health</th>
+                <th>Damage</th>
+                <!-- Un simple bouton pour déclencher le tri -->
+                <th><button onclick="trierParDPS()">Damage Per Second</button></th>
+            </tr>
+        </thead>
+        <tbody id="corps-tableau">
+            <!-- Injecté par Javascript -->
+        </tbody>
+    </table>
+
+    <script>
+        // Nos 5 éléments avec leurs statistiques
+        const unites = [
+            { name: "Guerrier", health: 1500, damage: 50, dps: 25 },
+            { name: "Mage", health: 800, damage: 120, dps: 60 },
+            { name: "Archer", health: 1000, damage: 80, dps: 80 },
+            { name: "Voleur", health: 900, damage: 40, dps: 100 },
+            { name: "Paladin", health: 2000, damage: 60, dps: 20 }
+        ];
+
+        let triCroissant = false;
+
+        // Fonction pour générer les lignes du tableau
+        function afficherTableau(donnees) {
+            const tbody = document.getElementById('corps-tableau');
+            tbody.innerHTML = ""; 
+
+            donnees.forEach(unite => {
+                const ligne = `<tr>
+                    <td>${unite.name}</td>
+                    <td>${unite.health}</td>
+                    <td>${unite.damage}</td>
+                    <td>${unite.dps}</td>
+                </tr>`;
+                tbody.innerHTML += ligne;
+            });
+        }
+
+        // Fonction de tri
+        function trierParDPS() {
+            unites.sort((a, b) => {
+                if (triCroissant) {
+                    return a.dps - b.dps;
+                } else {
+                    return b.dps - a.dps;
+                }
+            });
+            
+            triCroissant = !triCroissant; 
+            afficherTableau(unites); 
+        }
+
+        // Initialisation au lancement
+        afficherTableau(unites);
+    </script>
+
+</body>
+</html>
