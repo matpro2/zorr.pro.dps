@@ -45,22 +45,25 @@ const ui = {
         const effs = p.specials || (p.special ? [p.special] : []);
         if (!effs.length) return "-";
         return effs.map(e => {
-            if (e.type === "luckMultiplier") return `Dice (+${(e.chance * 100).toFixed(1)}%)`;
-            if (engine.supportEffects.includes(e.type)) {
-                let val = e.value;
-                if (typeof val === 'object' && val[0] !== undefined) {
-                    const maxT = Math.max(...Object.keys(val).map(Number));
-                    val = val[p.tier > maxT ? maxT : p.tier];
-                }
-                if (e.type === "Critical") {
-                    return `Crit (x${val.boost} @ ${val.chance}%)`;
-                }
+            let val = e.value;
+            if (typeof val === 'object' && val[0] !== undefined) {
+                const maxT = Math.max(...Object.keys(val).map(Number));
+                val = val[p.tier > maxT ? maxT : p.tier];
+            }
+            
+            if (e.type === "Critical") {
+                return `Crit (x${val.multiplier} @ ${val.chance}%)`;
+            }
+            
+            if (e.global) {
                 if (e.type === "reloadFactor") {
                     return `Reload Speed (${val > 0 ? '+' : ''}${val}%)`;
                 }
                 return `${e.type} ${e.stats} (+${val}%)`;
             }
+            
             if (e.type === "Poison" || e.type === "Fire") return `${e.type} (${e.damage}/s)`;
+            if (e.type === "Lightning") return `Lightning`;
             return e.type;
         }).join(", ");
     },
@@ -186,9 +189,8 @@ window.openSupportLightbox = () => {
     const list = document.getElementById('support-selection-list');
     list.innerHTML = "";
     petals.forEach((p, i) => {
-        // Pour les supports : on affiche TOUTE pétale qui possède un effet de support 
-        // (Cela inclut les DPS hybrides comme Zodiac et Golden Leaf)
-        const hasSupport = (p.specials || (p.special ? [p.special] : [])).some(e => engine.supportEffects.includes(e.type));
+        // Un support est maintenant n'importe quelle pétale possédant un effet avec `global: true`
+        const hasSupport = (p.specials || (p.special ? [p.special] : [])).some(e => e.global === true);
         if (!hasSupport) return;
         
         const li = document.createElement('li');

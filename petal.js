@@ -14,7 +14,7 @@ const petals = [
     { 
         name: "Dice", 
         entity: 1, reload: 1.0, health: 10, damage: 40, armor: 0, 
-        special: { type: "luckMultiplier", chance: 0.08, multiplier: 69 }
+        special: { type: "Critical", value: { chance: 8, multiplier: 69 } }
     },
     { 
         name: "Dizzy", 
@@ -22,6 +22,7 @@ const petals = [
         specials: [
             { 
                 type: "Boost", 
+                global: true,
                 stats: "Damage", 
                 value: { 0: 4, 1: 5, 2: 6, 3: 7, 4: 10, 5: 16, 6: 23, 7: 35, 8: 60, 9: 100 }
             }
@@ -46,18 +47,19 @@ const petals = [
         specials: [
             { 
                 type: "Critical", 
+                global: true,
                 stats: "Damage", 
                 value: {
-                    0: {boost: 1.5, chance: 8.33},
-                    1: {boost: 1.69, chance: 9.09},
-                    2: {boost: 1.88, chance: 10},
-                    3: {boost: 2.06, chance: 11.11},
-                    4: {boost: 2.25, chance: 12.5},
-                    5: {boost: 2.44, chance: 14.29},
-                    6: {boost: 2.63, chance: 16.67},
-                    7: {boost: 2.81, chance: 20},
-                    8: {boost: 3, chance: 25},
-                    9: {boost: 3.19, chance: 33.33} 
+                    0: {multiplier: 1.5, chance: 8.33},
+                    1: {multiplier: 1.69, chance: 9.09},
+                    2: {multiplier: 1.88, chance: 10},
+                    3: {multiplier: 2.06, chance: 11.11},
+                    4: {multiplier: 2.25, chance: 12.5},
+                    5: {multiplier: 2.44, chance: 14.29},
+                    6: {multiplier: 2.63, chance: 16.67},
+                    7: {multiplier: 2.81, chance: 20},
+                    8: {multiplier: 3, chance: 25},
+                    9: {multiplier: 3.19, chance: 33.33} 
                 }
             }
         ] 
@@ -88,6 +90,7 @@ const petals = [
     { name: "Zodiac", entity: 1, reload: 2.0, health: 100, damage: 200, armor: 5,
         specials: [
             { type: "reloadFactor", 
+              global: true,
               value: {
                     0: -5,
                     1: -6.8,
@@ -107,6 +110,7 @@ const petals = [
     { name: "Golden Leaf", entity: 1, reload: 1.0, health: 24, damage: 24, armor: 0,
         specials: [
             { type: "reloadFactor", 
+              global: true,
               value: {
                     0: 4,
                     1: 6.5,

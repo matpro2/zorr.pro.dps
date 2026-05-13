@@ -3,8 +3,6 @@ const engine = {
         0: "#7eef6d", 1: "#ffe65d", 2: "#4d52e3", 3: "#861fde",
         4: "#de1f1f", 5: "#1fdbde", 6: "#ff2b75", 7: "#2bffa3"
     },
-    // Liste des effets considérés comme supports globaux
-    supportEffects: ["Boost", "Critical", "reloadFactor"],
 
     // Parcourt les pétales équipées pour extraire les bonus globaux
     getGlobalStats: (equippedPetals, baseLuck) => {
@@ -13,7 +11,8 @@ const engine = {
         equippedPetals.forEach(p => {
             const effects = p.specials || (p.special ? [p.special] : []);
             effects.forEach(e => {
-                if (engine.supportEffects.includes(e.type)) {
+                // Tout effet marqué "global: true" est traité ici
+                if (e.global) {
                     let val = e.value;
                     if (typeof val === 'object' && val[0] !== undefined) {
                         const maxT = Math.max(...Object.keys(val).map(Number));
@@ -26,7 +25,7 @@ const engine = {
                     }
                     else if (e.type === "Critical" && e.stats === "Damage") {
                         const actualChance = Math.min((val.chance / 100) + (stats.luck / 100), 1.0);
-                        const expectedBonus = actualChance * (val.boost - 1);
+                        const expectedBonus = actualChance * (val.multiplier - 1);
                         stats.multipliers.Damage += expectedBonus;
                         
                         const displayPercent = (expectedBonus * 100).toFixed(2);
@@ -43,10 +42,16 @@ const engine = {
     },
 
     effectHandlers: {
-        luckMultiplier: (perf, effect, stats, context, petal) => {
-            const triggerChance = Math.min(effect.chance + (stats.luck / 100), 1.0);
-            const expectedMultiplier = ((1 - triggerChance) * 1) + (triggerChance * effect.multiplier);
-            perf.physicalDps *= expectedMultiplier;
+        Critical: (perf, effect, stats, context, petal) => {
+            if (effect.global) return; // Si c'est global, c'est déjà appliqué sur les stats.multipliers.Damage
+            let val = effect.value;
+            if (typeof val === 'object' && val[0] !== undefined) {
+                const maxT = Math.max(...Object.keys(val).map(Number));
+                val = val[petal.tier > maxT ? maxT : petal.tier];
+            }
+            const actualChance = Math.min((val.chance / 100) + (stats.luck / 100), 1.0);
+            const expectedBonus = actualChance * (val.multiplier - 1);
+            perf.physicalDps *= (1 + expectedBonus);
         },
         damageSeconds: (perf) => {
             perf.physicalDps /= 10;
