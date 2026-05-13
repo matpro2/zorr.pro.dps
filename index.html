@@ -17,14 +17,34 @@
             width: 300px;
             border: 1px solid black;
         }
-        .stats-container, .mob-container {
+        .stats-container, .mob-container, .slots-container {
             margin-bottom: 20px;
-            padding: 10px;
+            padding: 15px;
             border: 1px solid #ccc;
             display: inline-block;
+            vertical-align: top;
+            margin-right: 10px;
+        }
+        #active-mob-display, .equipped-item {
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+            border: 1px solid #999;
+        }
+        .equipped-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            gap: 10px;
         }
         .tier-container {
             margin-bottom: 15px;
+        }
+        #total-dps-display {
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -32,21 +52,27 @@
 
     <h1>zorr.pro.dps</h1>
 
+    <div class="slots-container">
+        <h2>Equipped Slots</h2>
+        <div id="slots-list">No petals equipped</div>
+        <div id="total-dps-display">Total DPS: <strong>0.00</strong></div>
+    </div>
+
     <div class="mob-container">
         <h2>Target Mob</h2>
         <div id="active-mob-display">No mob selected</div>
         <br>
         <button onclick="openMobLightbox()">Select Mob</button>
     </div>
-    <br>
     
     <div class="stats-container">
+        <h2>Player Stats</h2>
         <label for="player-luck">Player Luck Multiplier:</label>
         <input type="number" id="player-luck" value="1.0" step="0.1" oninput="updatePlayerStats()">
     </div>
     <br>
 
-    <button onclick="openPetalLightbox()">+ Add Petal</button>
+    <button onclick="openPetalLightbox()">+ Add Petal to Comparison</button>
     <br><br>
 
     <table border="1">
@@ -60,6 +86,7 @@
                 <th>Reload (s)</th>
                 <th>Ticks</th>
                 <th><button onclick="sortByDPS()">Effective DPS ↕️</button></th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody id="table-body">
