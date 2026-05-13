@@ -4,7 +4,7 @@ const engine = {
         4: "#de1f1f", 5: "#1fdbde", 6: "#ff2b75", 7: "#2bffa3"
     },
     // Liste des effets considérés comme supports
-    supportEffects: ["Boost"],
+    supportEffects: ["Boost", "Critical"],
 
     // Parcourt les pétales équipées pour extraire les bonus globaux
     getGlobalStats: (equippedPetals, baseLuck) => {
@@ -14,20 +14,25 @@ const engine = {
             const effects = p.specials || (p.special ? [p.special] : []);
             effects.forEach(e => {
                 if (engine.supportEffects.includes(e.type)) {
-                    let val = 0;
-                    if (typeof e.value === 'object') {
-                        const maxT = Math.max(...Object.keys(e.value).map(Number));
-                        val = e.value[p.tier > maxT ? maxT : p.tier] || 0;
-                    } else {
-                        val = e.value || 0;
+                    let val = e.value;
+                    if (typeof val === 'object' && val[0] !== undefined) {
+                        const maxT = Math.max(...Object.keys(val).map(Number));
+                        val = val[p.tier > maxT ? maxT : p.tier];
                     }
 
-                    // Application spécifique du Boost de Dégâts (valeur lue comme des %)
                     if (e.type === "Boost" && e.stats === "Damage") {
                         stats.multipliers.Damage += (val / 100);
+                        stats.activeSupports.push({ name: p.name, type: e.type, stat: e.stats, value: val, tier: p.tier });
                     }
-                    
-                    stats.activeSupports.push({ name: p.name, type: e.type, stat: e.stats, value: val, tier: p.tier });
+                    else if (e.type === "Critical" && e.stats === "Damage") {
+                        // Le bonus final (espérance) = (chance + luck) * (boost - 1)
+                        const actualChance = Math.min((val.chance / 100) + (stats.luck / 100), 1.0);
+                        const expectedBonus = actualChance * (val.boost - 1);
+                        stats.multipliers.Damage += expectedBonus;
+                        
+                        const displayPercent = (expectedBonus * 100).toFixed(2);
+                        stats.activeSupports.push({ name: p.name, type: "Crit Exp.", stat: e.stats, value: displayPercent, tier: p.tier });
+                    }
                 }
             });
         });
@@ -82,7 +87,7 @@ const engine = {
             stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0
         };
         
-        // Les pétales sans dégâts ni santé (comme Dizzy) sont des supports purs
+        // Les pétales sans dégâts ni santé (comme Dizzy ou Opal) sont des supports purs
         if (petal.damage == null || petal.health == null) return perf;
         if (!mob) return perf;
 

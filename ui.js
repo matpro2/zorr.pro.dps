@@ -43,12 +43,13 @@ const ui = {
         return effs.map(e => {
             if (e.type === "luckMultiplier") return `Dice (+${(e.chance * 100).toFixed(1)}%)`;
             if (engine.supportEffects.includes(e.type)) {
-                let val = 0;
-                if (typeof e.value === 'object') {
-                    const maxT = Math.max(...Object.keys(e.value).map(Number));
-                    val = e.value[p.tier > maxT ? maxT : p.tier] || 0;
-                } else {
-                    val = e.value || 0;
+                let val = e.value;
+                if (typeof val === 'object' && val[0] !== undefined) {
+                    const maxT = Math.max(...Object.keys(val).map(Number));
+                    val = val[p.tier > maxT ? maxT : p.tier];
+                }
+                if (e.type === "Critical") {
+                    return `Crit (x${val.boost} @ ${val.chance}%)`;
                 }
                 return `${e.type} ${e.stats} (+${val}%)`;
             }
@@ -64,6 +65,8 @@ const ui = {
             const row = document.createElement('tr');
             row.style.backgroundColor = engine.tierColors[p.tier] || 'transparent';
             
+            const isSupport = (p.damage == null || p.health == null);
+
             row.innerHTML = `
                 <td>${p.name}</td><td>${p.tier}</td><td>${p.currentEntities || 1}</td>
                 <td>${p.health != null ? Math.round(p.health).toLocaleString() : "-"}</td>
