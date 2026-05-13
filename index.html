@@ -1,19 +1,18 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>zorr.pro.dps</title>
     <style>
-        /* MINIMUM CSS POUR LA LIGHTBOX */
-        #ma-lightbox {
-            display: none; /* Caché par défaut */
-            position: fixed; /* Reste en place même si on scrolle */
+        #lightbox {
+            display: none;
+            position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5); /* Fond noir semi-transparent */
+            background-color: rgba(0,0,0,0.5);
         }
-        .lightbox-contenu {
+        .lightbox-content {
             background-color: white;
-            margin: 10% auto; /* Centré avec une marge en haut */
+            margin: 10% auto;
             padding: 20px;
             width: 300px;
             border: 1px solid black;
@@ -24,8 +23,7 @@
 
     <h1>zorr.pro.dps</h1>
     
-    <!-- Bouton pour ouvrir la lightbox -->
-    <button onclick="ouvrirLightbox()">+ Ajouter une unité</button>
+    <button onclick="openLightbox()">+ Add Petal</button>
     <br><br>
 
     <table border="1">
@@ -33,108 +31,90 @@
             <tr>
                 <th>Name</th>
                 <th>Health</th>
+                <th>Armor</th>
                 <th>Damage</th>
-                <th><button onclick="trierParDPS()">Damage Per Second ↕️</button></th>
+                <th>Reload (s)</th>
+                <th><button onclick="sortByDPS()">DPS ↕️</button></th>
             </tr>
         </thead>
-        <tbody id="corps-tableau">
-            <!-- Le tableau est vide par défaut -->
+        <tbody id="table-body">
         </tbody>
     </table>
 
-    <!-- STRUCTURE DE LA LIGHTBOX -->
-    <div id="ma-lightbox">
-        <div class="lightbox-contenu">
-            <h3>Choisissez une unité :</h3>
-            <ul id="liste-choix">
-                <!-- Les choix seront injectés ici par Javascript -->
+    <div id="lightbox">
+        <div class="lightbox-content">
+            <h3>Select a petal:</h3>
+            <ul id="selection-list">
             </ul>
-            <button onclick="fermerLightbox()">Fermer/Annuler</button>
+            <button onclick="closeLightbox()">Close</button>
         </div>
     </div>
 
+    <script src="petal.js"></script>
     <script>
-        // 1. La base de données de toutes les unités existantes (import)
-        const baseDeDonnees = [
-            { name: "Guerrier", health: 1500, damage: 50, dps: 25 },
-            { name: "Mage", health: 800, damage: 120, dps: 60 },
-            { name: "Archer", health: 1000, damage: 80, dps: 80 },
-            { name: "Voleur", health: 900, damage: 40, dps: 100 },
-            { name: "Paladin", health: 2000, damage: 60, dps: 20 }
-        ];
+        let activePetals = [];
+        let isAscending = false;
 
-        // 2. Le tableau des unités ACTUELLEMENT dans notre table (vide au départ)
-        let unitesActuelles = [];
-        let triCroissant = false;
-
-        // Fonction pour afficher les unités présentes dans "unitesActuelles"
-        function afficherTableau() {
-            const tbody = document.getElementById('corps-tableau');
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
             tbody.innerHTML = ""; 
 
-            unitesActuelles.forEach(unite => {
-                const ligne = `<tr>
-                    <td>${unite.name}</td>
-                    <td>${unite.health}</td>
-                    <td>${unite.damage}</td>
-                    <td>${unite.dps}</td>
+            activePetals.forEach(petal => {
+                const calculatedDPS = (petal.damage / petal.reload).toFixed(2);
+                
+                const row = `<tr>
+                    <td>${petal.name}</td>
+                    <td>${petal.health}</td>
+                    <td>${petal.armor}</td>
+                    <td>${petal.damage}</td>
+                    <td>${petal.reload}</td>
+                    <td>${calculatedDPS}</td>
                 </tr>`;
-                tbody.innerHTML += ligne;
+                tbody.innerHTML += row;
             });
         }
 
-        // Fonction pour trier
-        function trierParDPS() {
-            unitesActuelles.sort((a, b) => {
-                if (triCroissant) return a.dps - b.dps;
-                else return b.dps - a.dps;
+        function sortByDPS() {
+            activePetals.sort((a, b) => {
+                const dpsA = a.damage / a.reload;
+                const dpsB = b.damage / b.reload;
+                
+                if (isAscending) {
+                    return dpsA - dpsB;
+                } else {
+                    return dpsB - dpsA;
+                }
             });
-            triCroissant = !triCroissant; 
-            afficherTableau(); 
+            isAscending = !isAscending; 
+            renderTable(); 
         }
 
-        /* --- LOGIQUE DE LA LIGHTBOX --- */
-
-        // Afficher la lightbox et la remplir avec la base de données
-        function ouvrirLightbox() {
-            document.getElementById('ma-lightbox').style.display = 'block'; // Affiche la div
+        function openLightbox() {
+            document.getElementById('lightbox').style.display = 'block'; 
             
-            const listeChoix = document.getElementById('liste-choix');
-            listeChoix.innerHTML = ""; // On vide la liste avant de la générer
+            const selectionList = document.getElementById('selection-list');
+            selectionList.innerHTML = ""; 
 
-            // On crée un élément de liste pour chaque unité dans la base de données
-            baseDeDonnees.forEach((unite, index) => {
+            petals.forEach((petal, index) => {
                 const li = document.createElement('li');
-                // On passe l'index (0, 1, 2...) pour savoir exactement quelle unité on ajoute
-                li.innerHTML = `<button onclick="ajouterUnite(${index})">Ajouter ${unite.name}</button>`;
-                li.style.marginBottom = "5px"; // Petit espacement pour que ce soit lisible
-                listeChoix.appendChild(li);
+                li.innerHTML = `<button onclick="addPetal(${index})">Add ${petal.name}</button>`;
+                li.style.marginBottom = "5px"; 
+                selectionList.appendChild(li);
             });
         }
 
-        // Cacher la lightbox
-        function fermerLightbox() {
-            document.getElementById('ma-lightbox').style.display = 'none';
+        function closeLightbox() {
+            document.getElementById('lightbox').style.display = 'none';
         }
 
-        // Ajouter l'unité au tableau principal
-        function ajouterUnite(indexDeLUnite) {
-            // On récupère l'unité dans la base de données grâce à son index
-            const uniteChoisie = baseDeDonnees[indexDeLUnite];
-            
-            // On l'ajoute à notre tableau actif
-            unitesActuelles.push(uniteChoisie);
-            
-            // On met à jour l'affichage de notre table HTML
-            afficherTableau();
-            
-            // On ferme la lightbox automatiquement
-            fermerLightbox();
+        function addPetal(index) {
+            const selectedPetal = petals[index];
+            activePetals.push(selectedPetal);
+            renderTable();
+            closeLightbox();
         }
 
-        // Affichage initial (qui donnera un tableau HTML vide)
-        afficherTableau();
+        renderTable();
     </script>
-
 </body>
 </html>
