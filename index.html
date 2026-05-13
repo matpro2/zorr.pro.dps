@@ -81,6 +81,10 @@
     <div id="mob-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
             <h3>Select a mob:</h3>
+            <div class="tier-container">
+                <label for="mob-tier-selection">Mob Tier:</label>
+                <input type="number" id="mob-tier-selection" value="0" min="0">
+            </div>
             <ul id="mob-selection-list">
             </ul>
             <button onclick="closeMobLightbox()">Close</button>
@@ -133,9 +137,9 @@
                 const row = `<tr>
                     <td>${petal.name}</td>
                     <td>${petal.tier}</td>
-                    <td>${petal.health}</td>
-                    <td>${petal.armor}</td>
-                    <td>${petal.damage}</td>
+                    <td>${petal.health.toLocaleString()}</td>
+                    <td>${petal.armor.toLocaleString()}</td>
+                    <td>${petal.damage.toLocaleString()}</td>
                     <td>${petal.reload}</td>
                     <td>${effectiveDPS}</td>
                 </tr>`;
@@ -160,10 +164,8 @@
 
         function openPetalLightbox() {
             document.getElementById('petal-lightbox').style.display = 'block'; 
-            
             const selectionList = document.getElementById('petal-selection-list');
             selectionList.innerHTML = ""; 
-
             petals.forEach((petal, index) => {
                 const li = document.createElement('li');
                 li.innerHTML = `<button onclick="addPetal(${index})">Add ${petal.name}</button>`;
@@ -182,7 +184,6 @@
             const statMultiplier = Math.pow(3, selectedTier);
             
             const clonedPetal = structuredClone(petals[index]);
-            
             clonedPetal.tier = selectedTier;
             clonedPetal.health *= statMultiplier;
             clonedPetal.damage *= statMultiplier;
@@ -199,15 +200,16 @@
                 display.innerHTML = "No mob selected";
                 return;
             }
-            display.innerHTML = `<strong>${activeMob.name}</strong> - Health: ${activeMob.health} | Damage: ${activeMob.damage} | Armor: ${activeMob.armor}`;
+            display.innerHTML = `<strong>${activeMob.name} (Tier ${activeMob.tier})</strong><br>
+                                 Health: ${activeMob.health.toLocaleString()} | 
+                                 Damage: ${activeMob.damage.toLocaleString()} | 
+                                 Armor: ${activeMob.armor.toLocaleString()}`;
         }
 
         function openMobLightbox() {
             document.getElementById('mob-lightbox').style.display = 'block'; 
-            
             const selectionList = document.getElementById('mob-selection-list');
             selectionList.innerHTML = ""; 
-
             mobs.forEach((mob, index) => {
                 const li = document.createElement('li');
                 li.innerHTML = `<button onclick="selectMob(${index})">Select ${mob.name}</button>`;
@@ -221,7 +223,25 @@
         }
 
         function selectMob(index) {
+            const tierInput = document.getElementById('mob-tier-selection').value;
+            const selectedTier = parseInt(tierInput) || 0;
+            
+            const healthFactors = [3.75, 3.6, 4, 7.5, 6, 15, 12];
+            let healthMultiplier = 1;
+            for (let i = 0; i < selectedTier; i++) {
+                if (i < healthFactors.length) {
+                    healthMultiplier *= healthFactors[i];
+                }
+            }
+
+            const otherStatMultiplier = Math.pow(3, selectedTier);
+            
             activeMob = structuredClone(mobs[index]);
+            activeMob.tier = selectedTier;
+            activeMob.health *= healthMultiplier;
+            activeMob.damage *= otherStatMultiplier;
+            activeMob.armor *= otherStatMultiplier;
+
             renderActiveMob();
             closeMobLightbox();
         }
