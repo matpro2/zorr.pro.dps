@@ -14,17 +14,17 @@ const engine = {
             const effects = p.specials || (p.special ? [p.special] : []);
             effects.forEach(e => {
                 if (engine.supportEffects.includes(e.type)) {
-                    let val = 1;
+                    let val = 0;
                     if (typeof e.value === 'object') {
                         const maxT = Math.max(...Object.keys(e.value).map(Number));
-                        val = e.value[p.tier > maxT ? maxT : p.tier] || 1;
+                        val = e.value[p.tier > maxT ? maxT : p.tier] || 0;
                     } else {
-                        val = e.value;
+                        val = e.value || 0;
                     }
 
-                    // Application spécifique du Boost de Dégâts
+                    // Application spécifique du Boost de Dégâts (valeur lue comme des %)
                     if (e.type === "Boost" && e.stats === "Damage") {
-                        stats.multipliers.Damage += (val - 1);
+                        stats.multipliers.Damage += (val / 100);
                     }
                     
                     stats.activeSupports.push({ name: p.name, type: e.type, stat: e.stats, value: val, tier: p.tier });
@@ -36,7 +36,8 @@ const engine = {
 
     effectHandlers: {
         luckMultiplier: (perf, effect, stats, context, petal) => {
-            const triggerChance = Math.min(effect.chance + stats.luck, 1.0);
+            // Chance de base (ex: 0.08) + Bonus de luck en % (ex: 0.8% -> 0.008)
+            const triggerChance = Math.min(effect.chance + (stats.luck / 100), 1.0);
             const expectedMultiplier = ((1 - triggerChance) * 1) + (triggerChance * effect.multiplier);
             perf.physicalDps *= expectedMultiplier;
         },
@@ -85,7 +86,7 @@ const engine = {
         if (petal.damage == null || petal.health == null) return perf;
         if (!mob) return perf;
 
-        // On applique le multiplicateur de dégâts global apporté par les supports
+        // On applique le multiplicateur de dégâts global (1 + sommes des %) apporté par les supports
         const boostedDamage = petal.damage * (globalStats.multipliers.Damage || 1);
         
         const mDmg = Math.max(0, mob.damage - (petal.armor || 0));

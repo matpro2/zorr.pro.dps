@@ -11,10 +11,7 @@ const ui = {
     },
 
     refresh: () => {
-        // 1. Calculer les statistiques globales (inclut les boosts de supports)
         const stats = engine.getGlobalStats(ui.equippedPetals, ui.baseLuck);
-        
-        // 2. Mettre à jour l'interface avec ces stats
         ui.renderTable(stats);
         ui.renderEquipped(stats);
         ui.renderMob();
@@ -23,16 +20,17 @@ const ui = {
 
     renderStatPanel: (stats) => {
         const panel = document.getElementById('player-stats-display');
-        let html = `<div>Base Luck Bonus: <strong>+${(stats.luck * 100).toFixed(1)}%</strong></div>`;
+        let html = `<div>Extra Luck Bonus: <strong>+${stats.luck.toFixed(1)}%</strong></div>`;
         
         if (stats.multipliers.Damage > 1) {
-            html += `<div style="color: #27ae60; font-weight: bold; margin-top: 5px;">Total DMG Multiplier: x${stats.multipliers.Damage.toFixed(2)}</div>`;
+            const bonusPercent = (stats.multipliers.Damage - 1) * 100;
+            html += `<div style="color: #27ae60; font-weight: bold; margin-top: 5px;">Total DMG Multiplier: x${stats.multipliers.Damage.toFixed(2)} (+${bonusPercent.toFixed(1)}%)</div>`;
         }
         
         if (stats.activeSupports.length > 0) {
             html += `<div style="margin-top: 5px; font-size: 0.9em;"><strong>Active Supports:</strong></div>`;
             stats.activeSupports.forEach(b => {
-                html += `<div style="color: #7f8c8d; margin-left: 10px;">└ ${b.name} (T${b.tier}): ${b.type} ${b.stat} <strong>x${b.value}</strong></div>`;
+                html += `<div style="color: #7f8c8d; margin-left: 10px;">└ ${b.name} (T${b.tier}): ${b.type} ${b.stat} <strong>+${b.value}%</strong></div>`;
             });
         }
         
@@ -44,7 +42,16 @@ const ui = {
         if (!effs.length) return "-";
         return effs.map(e => {
             if (e.type === "luckMultiplier") return `Dice (+${(e.chance * 100).toFixed(1)}%)`;
-            if (engine.supportEffects.includes(e.type)) return `${e.type} ${e.stats}`;
+            if (engine.supportEffects.includes(e.type)) {
+                let val = 0;
+                if (typeof e.value === 'object') {
+                    const maxT = Math.max(...Object.keys(e.value).map(Number));
+                    val = e.value[p.tier > maxT ? maxT : p.tier] || 0;
+                } else {
+                    val = e.value || 0;
+                }
+                return `${e.type} ${e.stats} (+${val}%)`;
+            }
             return e.type;
         }).join(", ");
     },
