@@ -1,5 +1,5 @@
 let activePetals = [];
-let equippedPetals = []; // Nouveau: liste des pétales équipées
+let equippedPetals = [];
 let activeMob = null;
 let isAscending = false;
 
@@ -26,7 +26,7 @@ function updatePlayerStats() {
     const luckInput = document.getElementById('player-luck').value;
     playerStats.luck = parseFloat(luckInput) || 1.0;
     renderTable();
-    renderEquippedSlots(); // On recalcule les slots si la luck change
+    renderEquippedSlots();
 }
 
 function calculatePetalPerformance(petal) {
@@ -53,13 +53,12 @@ function calculatePetalPerformance(petal) {
         finalDps = effectHandlers[petal.special.type](finalDps, petal.special, playerStats);
     }
 
-    return { ticks: survivalTicks, dps: finalDps };
+    const eCount = petal.currentEntities || 1;
+
+    return { ticks: survivalTicks, dps: finalDps * eCount };
 }
 
-// --- GESTION DES SLOTS ---
-
 function equipPetal(index) {
-    // On ajoute une copie de la pétale de la liste de comparaison vers les slots
     equippedPetals.push(structuredClone(activePetals[index]));
     renderEquippedSlots();
 }
@@ -86,12 +85,13 @@ function renderEquippedSlots() {
         const perf = calculatePetalPerformance(petal);
         totalDps += perf.dps;
         const bgColor = tierColors[petal.tier] || "transparent";
+        const eCount = petal.currentEntities || 1;
 
         const item = document.createElement('div');
         item.className = "equipped-item";
         item.style.backgroundColor = bgColor;
         item.innerHTML = `
-            <span><strong>${petal.name}</strong> (T${petal.tier}) - ${perf.dps.toFixed(2)} DPS</span>
+            <span><strong>${petal.name}</strong> x${eCount} (T${petal.tier}) - ${perf.dps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} DPS</span>
             <button onclick="unequipPetal(${index})">X</button>
         `;
         listContainer.appendChild(item);
@@ -100,8 +100,6 @@ function renderEquippedSlots() {
     totalDpsDisplay.innerHTML = totalDps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
-// --- RENDU TABLEAU ET LIGHTBOX ---
-
 function renderTable() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = ""; 
@@ -109,10 +107,12 @@ function renderTable() {
     activePetals.forEach((petal, index) => {
         const perf = calculatePetalPerformance(petal);
         const bgColor = tierColors[petal.tier] || "transparent";
+        const eCount = petal.currentEntities || 1;
         
         const row = `<tr style="background-color: ${bgColor}">
             <td>${petal.name}</td>
             <td>${petal.tier}</td>
+            <td>${eCount}</td>
             <td>${Math.round(petal.health).toLocaleString()}</td>
             <td>${Math.round(petal.damage).toLocaleString()}</td>
             <td>${Math.round(petal.armor).toLocaleString()}</td>
@@ -152,10 +152,24 @@ function addPetal(index) {
     const tier = parseInt(document.getElementById('tier-selection').value) || 0;
     const multiplier = Math.pow(3, tier);
     const clone = structuredClone(petals[index]);
+    
     clone.tier = tier;
     clone.health *= multiplier;
     clone.damage *= multiplier;
     clone.armor *= multiplier;
+
+    let eCount = 1;
+    if (clone.entity !== undefined) {
+        if (typeof clone.entity === 'number') {
+            eCount = clone.entity;
+        } else {
+            const maxTier = Math.max(...Object.keys(clone.entity).map(Number));
+            const targetTier = tier > maxTier ? maxTier : tier;
+            eCount = clone.entity[targetTier];
+        }
+    }
+    clone.currentEntities = eCount;
+
     activePetals.push(clone);
     renderTable();
     closePetalLightbox();
@@ -203,7 +217,7 @@ function selectMob(index) {
 
     renderActiveMob();
     renderTable();
-    renderEquippedSlots(); // Important: mettre à jour le DPS des slots quand le mob change
+    renderEquippedSlots();
     closeMobLightbox();
 }
 
