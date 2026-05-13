@@ -64,8 +64,6 @@ const ui = {
             const row = document.createElement('tr');
             row.style.backgroundColor = engine.tierColors[p.tier] || 'transparent';
             
-            const isSupport = (p.damage == null || p.health == null);
-
             row.innerHTML = `
                 <td>${p.name}</td><td>${p.tier}</td><td>${p.currentEntities || 1}</td>
                 <td>${p.health != null ? Math.round(p.health).toLocaleString() : "-"}</td>
@@ -74,7 +72,7 @@ const ui = {
                 <td>${p.reload != null ? p.reload + "s" : "-"}</td>
                 <td>${ui.getSpecDesc(p)}</td>
                 <td>${perf.ticks}</td>
-                <td><strong>${isSupport ? "SUPPORT" : (perf.baseDps || 0).toFixed(2)}</strong></td>
+                <td><strong>${(perf.baseDps || 0).toFixed(2)}</strong></td>
                 <td><button onclick="ui.equip(${i})">Equip</button></td>
             `;
             tbody.appendChild(row);
@@ -108,7 +106,7 @@ const ui = {
             div.style.backgroundColor = engine.tierColors[p.tier];
             div.innerHTML = `
                 <div class="item-main-row">
-                    <span>${p.name} ${p.currentEntities ? 'x'+p.currentEntities : ''} (T${p.tier})</span>
+                    <span>${p.name} ${p.currentEntities && p.currentEntities > 1 ? 'x'+p.currentEntities : ''} (T${p.tier})</span>
                     <span>${isSupport ? 'SUPPORT' : dps.toFixed(2) + ' DPS'}</span>
                     <button class="btn-delete" onclick="ui.unequip(${i})">X</button>
                 </div>
@@ -160,6 +158,7 @@ window.openPetalLightbox = () => {
     const list = document.getElementById('petal-selection-list');
     list.innerHTML = "";
     petals.forEach((p, i) => {
+        if (p.health == null || p.damage == null) return; // Ignore supports
         const li = document.createElement('li');
         li.innerHTML = `<span>${p.name}</span><button onclick="addPetalToTable(${i})">Add</button>`;
         list.appendChild(li);
@@ -167,6 +166,35 @@ window.openPetalLightbox = () => {
 };
 
 window.closePetalLightbox = () => document.getElementById('petal-lightbox').style.display = 'none';
+
+window.openSupportLightbox = () => {
+    document.getElementById('support-lightbox').style.display = 'block';
+    const list = document.getElementById('support-selection-list');
+    list.innerHTML = "";
+    petals.forEach((p, i) => {
+        if (p.health != null && p.damage != null) return; // Ignore non-supports
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${p.name}</span><button onclick="addSupportToSlots(${i})" class="btn-add-support" style="margin:0;">Equip</button>`;
+        list.appendChild(li);
+    });
+};
+
+window.closeSupportLightbox = () => document.getElementById('support-lightbox').style.display = 'none';
+
+window.addSupportToSlots = (idx) => {
+    const t = parseInt(document.getElementById('support-tier-selection').value) || 0;
+    const c = structuredClone(petals[idx]);
+    c.tier = t; 
+    
+    if (c.stack === false && ui.equippedPetals.some(p => p.name === c.name)) {
+        alert(`You cannot stack multiple ${c.name} !`);
+        return;
+    }
+    
+    ui.equippedPetals.push(c);
+    ui.refresh();
+    window.closeSupportLightbox();
+};
 
 window.addPetalToTable = (idx) => {
     const t = parseInt(document.getElementById('tier-selection').value) || 0;

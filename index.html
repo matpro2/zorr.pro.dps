@@ -23,6 +23,8 @@
         th { background-color: #f8f9fa; cursor: pointer; }
         button { cursor: pointer; padding: 8px 12px; border-radius: 4px; border: none; background: #3498db; color: white; }
         .btn-add { background: #27ae60; width: 100%; margin: 10px 0; font-size: 1.05em; font-weight: bold; }
+        .btn-add-support { background: #8e44ad; padding: 6px 12px; font-size: 0.9em; font-weight: bold; border-radius: 4px; }
+        .btn-add-support:hover { background: #732d91; }
         .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.8em; }
         ul { list-style: none; padding: 0; }
         li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
@@ -34,7 +36,10 @@
 
     <div class="layout">
         <div class="panel slots-container">
-            <h2>Equipped Slots</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">Equipped Slots</h2>
+                <button class="btn-add-support" onclick="openSupportLightbox()">+ Add Support</button>
+            </div>
             <div id="slots-list">No petals equipped</div>
             <div id="total-dps-display">Total DPS: <strong>0.00</strong></div>
         </div>
@@ -53,7 +58,7 @@
         </div>
     </div>
 
-    <button class="btn-add" onclick="openPetalLightbox()">+ Add Petal to Comparison</button>
+    <button class="btn-add" onclick="openPetalLightbox()">+ Add DPS Petal to Comparison</button>
 
     <div class="panel">
         <table>
@@ -76,15 +81,28 @@
         </table>
     </div>
 
+    <!-- Lightboxes -->
     <div id="petal-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
             <div class="sticky-header">
-                <h3>Add a Petal</h3>
+                <h3>Add a DPS Petal</h3>
                 <label>Tier:</label>
                 <input type="number" id="tier-selection" value="0" min="0">
             </div>
             <ul id="petal-selection-list"></ul>
             <button onclick="closePetalLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
+        </div>
+    </div>
+
+    <div id="support-lightbox" class="lightbox-modal">
+        <div class="lightbox-content">
+            <div class="sticky-header">
+                <h3>Equip a Support Petal</h3>
+                <label>Tier:</label>
+                <input type="number" id="support-tier-selection" value="0" min="0">
+            </div>
+            <ul id="support-selection-list"></ul>
+            <button onclick="closeSupportLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
         </div>
     </div>
 
