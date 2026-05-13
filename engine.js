@@ -6,7 +6,9 @@ const engine = {
 
     effectHandlers: {
         luckMultiplier: (perf, effect, luck, context, petal) => {
-            const triggerChance = Math.min(effect.chance * luck, 1.0);
+            // Système ADDITIF : chance de base + luck du joueur
+            // Exemple : 0.08 (8%) + 0.8 (luck) = 0.88 (88%)
+            const triggerChance = Math.min(effect.chance + luck, 1.0);
             const expectedMultiplier = ((1 - triggerChance) * 1) + (triggerChance * effect.multiplier);
             perf.physicalDps *= expectedMultiplier;
         },

@@ -2,11 +2,11 @@ const ui = {
     activePetals: [],
     equippedPetals: [],
     activeMob: null,
-    luck: 1.0,
+    luck: 0.0, // Initialisé à 0 car c'est un bonus additif maintenant
     isAscending: false,
 
     updatePlayerStats: () => {
-        ui.luck = parseFloat(document.getElementById('player-luck').value) || 1.0;
+        ui.luck = parseFloat(document.getElementById('player-luck').value) || 0.0;
         ui.refresh();
     },
 
@@ -14,6 +14,15 @@ const ui = {
         ui.renderTable();
         ui.renderEquipped();
         ui.renderMob();
+    },
+
+    getSpecDesc: (p) => {
+        const effs = p.specials || (p.special ? [p.special] : []);
+        if (!effs.length) return "-";
+        return effs.map(e => {
+            if (e.type === "luckMultiplier") return `Dice (+${(e.chance * 100).toFixed(1)}%)`;
+            return e.type;
+        }).join(", ");
     },
 
     renderTable: () => {
@@ -80,18 +89,13 @@ const ui = {
         d.innerHTML = `<strong>${ui.activeMob.name} (T${ui.activeMob.tier})</strong><br>H: ${Math.round(ui.activeMob.health).toLocaleString()} | D: ${Math.round(ui.activeMob.damage).toLocaleString()} | A: ${Math.round(ui.activeMob.armor).toLocaleString()}`;
     },
 
-    getSpecDesc: (p) => {
-        const effs = p.specials || (p.special ? [p.special] : []);
-        return effs.length ? effs.map(e => e.type).join(", ") : "-";
-    },
-
     equip: (i) => { ui.equippedPetals.push(structuredClone(ui.activePetals[i])); ui.refresh(); },
     unequip: (i) => { ui.equippedPetals.splice(i, 1); ui.refresh(); },
     sortByDPS: () => { ui.activePetals.sort((a,b) => engine.calculatePerformance(b, ui.activeMob, ui.luck).baseDps - engine.calculatePerformance(a, ui.activeMob, ui.luck).baseDps); ui.renderTable(); },
     sortTable: (key) => { ui.activePetals.sort((a,b) => a[key] > b[key] ? 1 : -1); ui.renderTable(); }
 };
 
-// Global handlers pour les boutons HTML
+// Global handlers
 window.openPetalLightbox = () => {
     document.getElementById('petal-lightbox').style.display = 'block';
     const list = document.getElementById('petal-selection-list');
@@ -102,9 +106,7 @@ window.openPetalLightbox = () => {
         list.appendChild(li);
     });
 };
-
 window.closePetalLightbox = () => document.getElementById('petal-lightbox').style.display = 'none';
-
 window.addPetalToTable = (idx) => {
     const t = parseInt(document.getElementById('tier-selection').value) || 0;
     const m = Math.pow(3, t);
@@ -112,7 +114,6 @@ window.addPetalToTable = (idx) => {
     c.tier = t; c.health *= m; c.damage *= m; c.armor *= m;
     const effs = c.specials || (c.special ? [c.special] : []);
     effs.forEach(e => { if (e.damage) e.damage *= m; });
-    
     let qty = 1;
     if (c.entity) {
         if (typeof c.entity === 'number') qty = c.entity;
@@ -126,7 +127,6 @@ window.addPetalToTable = (idx) => {
     ui.refresh();
     closePetalLightbox();
 };
-
 window.openMobLightbox = () => {
     document.getElementById('mob-lightbox').style.display = 'block';
     const list = document.getElementById('mob-selection-list');
@@ -137,9 +137,7 @@ window.openMobLightbox = () => {
         list.appendChild(li);
     });
 };
-
 window.closeMobLightbox = () => document.getElementById('mob-lightbox').style.display = 'none';
-
 window.selectMob = (idx) => {
     const t = parseInt(document.getElementById('mob-tier-selection').value) || 0;
     const f = [3.75, 3.6, 4, 7.5, 6, 15, 12];
@@ -153,3 +151,6 @@ window.selectMob = (idx) => {
     ui.refresh();
     closeMobLightbox();
 };
+
+// Init
+ui.refresh();

@@ -5,50 +5,24 @@
     <title>zorr.pro.dps</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; margin: 20px; }
-        h1 { color: #333; }
-        
         .layout { display: flex; gap: 20px; flex-wrap: wrap; }
-        
-        .panel { 
-            background: white; padding: 15px; border-radius: 8px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd;
-        }
-
-        .stats-container, .mob-container { flex: 1; min-width: 250px; }
+        .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        .stats-container { flex: 1; min-width: 250px; }
+        .mob-container { flex: 1; min-width: 250px; }
         .slots-container { flex: 2; min-width: 400px; }
-
-        .lightbox-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.6); z-index: 1000;
-        }
-        .lightbox-content {
-            background-color: white; margin: 5vh auto; padding: 20px;
-            width: 400px; max-height: 85vh; overflow-y: auto;
-            border-radius: 12px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        
+        .lightbox-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; }
+        .lightbox-content { background-color: white; margin: 5vh auto; padding: 20px; width: 400px; max-height: 85vh; overflow-y: auto; border-radius: 12px; position: relative; }
         .sticky-header { position: sticky; top: -20px; background: white; padding: 10px 0; z-index: 10; border-bottom: 1px solid #eee; margin-bottom: 10px; }
-
-        .equipped-item {
-            padding: 12px; border-radius: 6px; margin-bottom: 10px;
-            border: 1px solid rgba(0,0,0,0.1);
-        }
+        .equipped-item { padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.1); }
         .item-main-row { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .dps-details { font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1); }
-
         #total-dps-display { font-size: 1.4em; font-weight: bold; margin-top: 15px; color: #2c3e50; text-align: right; }
-
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #f8f9fa; cursor: pointer; }
-        tr:hover { background-color: rgba(0,0,0,0.02); }
-
-        input[type="number"] { width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
-        button { cursor: pointer; padding: 8px 12px; border-radius: 4px; border: none; background: #3498db; color: white; transition: 0.2s; }
-        button:hover { background: #2980b9; }
-        .btn-add { background: #27ae60; width: 100%; margin: 10px 0; font-size: 1em; }
+        button { cursor: pointer; padding: 8px 12px; border-radius: 4px; border: none; background: #3498db; color: white; }
+        .btn-add { background: #27ae60; width: 100%; margin: 10px 0; }
         .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.8em; }
-        
         ul { list-style: none; padding: 0; }
         li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
     </style>
@@ -72,8 +46,8 @@
         
         <div class="panel stats-container">
             <h2>Player Stats</h2>
-            <label>Luck Multiplier:</label>
-            <input type="number" id="player-luck" value="1.0" step="0.1" oninput="ui.updatePlayerStats()">
+            <label>Extra Luck Bonus (ex: 0.8 = +80%):</label>
+            <input type="number" id="player-luck" value="0.0" step="0.1" oninput="ui.updatePlayerStats()">
         </div>
     </div>
 
@@ -99,7 +73,6 @@
         </table>
     </div>
 
-    <!-- Lightbox Petals -->
     <div id="petal-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
             <div class="sticky-header">
@@ -112,7 +85,6 @@
         </div>
     </div>
 
-    <!-- Lightbox Mobs -->
     <div id="mob-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
             <div class="sticky-header">
@@ -125,7 +97,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="petal.js"></script>
     <script src="mob.js"></script>
     <script src="engine.js"></script>
