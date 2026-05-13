@@ -9,13 +9,18 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
         }
         .lightbox-content {
             background-color: white;
-            margin: 10% auto;
+            margin: 5% auto;
             padding: 20px;
-            width: 300px;
+            width: 350px;
             border: 1px solid black;
+            /* Scroll feature */
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 8px;
         }
         .stats-container, .mob-container, .slots-container {
             margin-bottom: 20px;
@@ -24,28 +29,47 @@
             display: inline-block;
             vertical-align: top;
             margin-right: 10px;
+            border-radius: 8px;
         }
         #active-mob-display, .equipped-item {
-            padding: 8px;
+            padding: 10px;
             border-radius: 4px;
             margin-top: 5px;
             border: 1px solid #999;
         }
         .equipped-item {
+            display: block; /* Change to block to allow details below */
+            margin-bottom: 8px;
+        }
+        .item-main-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 5px;
-            gap: 10px;
+            font-weight: bold;
+        }
+        .dps-details {
+            font-size: 0.8em;
+            color: #444;
+            margin-top: 4px;
+            border-top: 1px border rgba(0,0,0,0.1);
+            padding-top: 2px;
         }
         .tier-container {
             margin-bottom: 15px;
+            position: sticky;
+            top: 0;
+            background: white;
+            padding-bottom: 10px;
         }
         #total-dps-display {
-            font-size: 1.2em;
+            font-size: 1.3em;
             color: #2c3e50;
             margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #2c3e50;
         }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { padding: 8px; text-align: left; }
     </style>
 </head>
 <body>
@@ -85,6 +109,7 @@
                 <th>Damage</th>
                 <th>Armor</th>
                 <th>Reload (s)</th>
+                <th>Special</th>
                 <th>Ticks</th>
                 <th><button onclick="sortByDPS()">Effective DPS ↕️</button></th>
                 <th>Action</th>
@@ -96,25 +121,25 @@
 
     <div id="petal-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
-            <h3>Select a petal:</h3>
             <div class="tier-container">
+                <h3>Select a petal:</h3>
                 <label for="tier-selection">Petal Tier:</label>
                 <input type="number" id="tier-selection" value="0" min="0">
             </div>
             <ul id="petal-selection-list"></ul>
-            <button onclick="closePetalLightbox()">Close</button>
+            <button onclick="closePetalLightbox()" style="width:100%; margin-top:10px;">Close</button>
         </div>
     </div>
 
     <div id="mob-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
-            <h3>Select a mob:</h3>
             <div class="tier-container">
+                <h3>Select a mob:</h3>
                 <label for="mob-tier-selection">Mob Tier:</label>
                 <input type="number" id="mob-tier-selection" value="0" min="0">
             </div>
             <ul id="mob-selection-list"></ul>
-            <button onclick="closeMobLightbox()">Close</button>
+            <button onclick="closeMobLightbox()" style="width:100%; margin-top:10px;">Close</button>
         </div>
     </div>
 

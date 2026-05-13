@@ -26,14 +26,9 @@ const effectHandlers = {
             const poisonActiveTime = context.lifeDuration + effect.duration;
             poisonUptimeRatio = Math.min(poisonActiveTime / context.totalCycleDuration, 1.0);
         }
-        
         const poisonDps = effect.damage * poisonUptimeRatio;
-
-        if (effect.stack) {
-            perf.stackingPoisonDps += poisonDps;
-        } else {
-            perf.nonStackingPoisonDps += poisonDps;
-        }
+        if (effect.stack) perf.stackingPoisonDps += poisonDps;
+        else perf.nonStackingPoisonDps += poisonDps;
     },
     Fire: (perf, effect, stats, context, petal) => {
         let fireUptimeRatio = 1;
@@ -41,34 +36,21 @@ const effectHandlers = {
             const fireActiveTime = context.lifeDuration + effect.duration;
             fireUptimeRatio = Math.min(fireActiveTime / context.totalCycleDuration, 1.0);
         }
-        
         const fireDps = effect.damage * fireUptimeRatio;
-
-        if (effect.stack) {
-            perf.stackingFireDps += fireDps;
-        } else {
-            perf.nonStackingFireDps += fireDps;
-        }
+        if (effect.stack) perf.stackingFireDps += fireDps;
+        else perf.nonStackingFireDps += fireDps;
     },
     Lightning: (perf, effect, stats, context, petal) => {
-        if (effect.multiHit) {
-            let bounces = 0;
-            if (typeof effect.bounce === 'number') {
-                bounces = effect.bounce;
-            } else if (effect.bounce) {
-                const maxTier = Math.max(...Object.keys(effect.bounce).map(Number));
-                const targetTier = petal.tier > maxTier ? maxTier : petal.tier;
-                bounces = effect.bounce[targetTier];
-            }
-
-            const lightningDamagePerHit = effect.damage * bounces;
-            
-            if (context.isInfinite) {
-                perf.physicalDps += lightningDamagePerHit * 10;
-            } else {
-                perf.physicalDps += (lightningDamagePerHit * context.survivalTicks) / context.totalCycleDuration;
-            }
+        let bounces = 0;
+        if (typeof effect.bounce === 'number') bounces = effect.bounce;
+        else if (effect.bounce) {
+            const maxTier = Math.max(...Object.keys(effect.bounce).map(Number));
+            const targetTier = petal.tier > maxTier ? maxTier : petal.tier;
+            bounces = effect.bounce[targetTier];
         }
+        const lightningDmgPerHit = effect.damage * bounces;
+        const lDps = context.isInfinite ? (lightningDmgPerHit * 10) : ((lightningDmgPerHit * context.survivalTicks) / context.totalCycleDuration);
+        perf.lightningDps += lDps;
     }
 };
 
@@ -80,7 +62,7 @@ function updatePlayerStats() {
 }
 
 function calculatePetalPerformance(petal) {
-    if (!activeMob) return { ticks: 0, dps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0, stackingFireDps: 0, nonStackingFireDps: 0 };
+    if (!activeMob) return { ticks: 0, dps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0, stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0 };
 
     const effectiveMobDmg = Math.max(0, activeMob.damage - petal.armor);
     const effectivePetalDmg = Math.max(0, petal.damage - activeMob.armor);
@@ -97,12 +79,7 @@ function calculatePetalPerformance(petal) {
         survivalTicks = "∞";
     }
 
-    let initialPhysicalDps = 0;
-    if (survivalTicks === "∞") {
-        initialPhysicalDps = effectivePetalDmg * 10;
-    } else {
-        initialPhysicalDps = (survivalTicks * effectivePetalDmg) / totalCycleDuration;
-    }
+    let initialPhysicalDps = (survivalTicks === "∞") ? (effectivePetalDmg * 10) : ((survivalTicks * effectivePetalDmg) / totalCycleDuration);
 
     let perf = {
         ticks: survivalTicks,
@@ -110,114 +87,109 @@ function calculatePetalPerformance(petal) {
         stackingPoisonDps: 0,
         nonStackingPoisonDps: 0,
         stackingFireDps: 0,
-        nonStackingFireDps: 0
+        nonStackingFireDps: 0,
+        lightningDps: 0
     };
 
-    const context = {
-        lifeDuration: lifeDuration,
-        totalCycleDuration: totalCycleDuration,
-        isInfinite: survivalTicks === "∞",
-        survivalTicks: survivalTicks
-    };
-
+    const context = { lifeDuration, totalCycleDuration, isInfinite: survivalTicks === "∞", survivalTicks };
     const effects = petal.specials || (petal.special ? [petal.special] : []);
 
     effects.forEach(effect => {
-        if (effectHandlers[effect.type]) {
-            effectHandlers[effect.type](perf, effect, playerStats, context, petal);
-        }
+        if (effectHandlers[effect.type]) effectHandlers[effect.type](perf, effect, playerStats, context, petal);
     });
 
     const eCount = petal.currentEntities || 1;
-    
     perf.physicalDps *= eCount;
     perf.stackingPoisonDps *= eCount;
     perf.stackingFireDps *= eCount;
+    perf.lightningDps *= eCount;
 
-    perf.dps = perf.physicalDps + perf.stackingPoisonDps + perf.nonStackingPoisonDps + perf.stackingFireDps + perf.nonStackingFireDps;
+    // dps sum will be handled in renderEquippedSlots for non-stacking
+    perf.baseDps = perf.physicalDps + perf.stackingPoisonDps + perf.nonStackingPoisonDps + perf.stackingFireDps + perf.nonStackingFireDps + perf.lightningDps;
 
     return perf;
 }
 
-function equipPetal(index) {
-    equippedPetals.push(structuredClone(activePetals[index]));
-    renderEquippedSlots();
-}
-
-function unequipPetal(index) {
-    equippedPetals.splice(index, 1);
-    renderEquippedSlots();
+function getSpecialDescription(petal) {
+    const effects = petal.specials || (petal.special ? [petal.special] : []);
+    if (effects.length === 0) return "-";
+    return effects.map(e => {
+        if (e.type === "Poison" || e.type === "Fire") return `${e.type}: ${e.damage} (${e.duration}s)`;
+        if (e.type === "Lightning") return "Lightning";
+        if (e.type === "luckMultiplier") return "Luck";
+        return e.type;
+    }).join(", ");
 }
 
 function renderEquippedSlots() {
     const listContainer = document.getElementById('slots-list');
     const totalDpsDisplay = document.querySelector('#total-dps-display strong');
-    
     if (equippedPetals.length === 0) {
         listContainer.innerHTML = "No petals equipped";
         totalDpsDisplay.innerHTML = "0.00";
         return;
     }
 
+    let maxNsPoison = 0, poisonProviderIdx = -1;
+    let maxNsFire = 0, fireProviderIdx = -1;
+
+    equippedPetals.forEach((p, idx) => {
+        const perf = calculatePetalPerformance(p);
+        if (perf.nonStackingPoisonDps > maxNsPoison) { maxNsPoison = perf.nonStackingPoisonDps; poisonProviderIdx = idx; }
+        if (perf.nonStackingFireDps > maxNsFire) { maxNsFire = perf.nonStackingFireDps; fireProviderIdx = idx; }
+    });
+
     listContainer.innerHTML = "";
-    
-    let totalPhysical = 0;
-    let totalStackingPoison = 0;
-    let maxNonStackingPoison = 0;
-    let totalStackingFire = 0;
-    let maxNonStackingFire = 0;
+    let totalDps = 0;
 
     equippedPetals.forEach((petal, index) => {
         const perf = calculatePetalPerformance(petal);
+        const nsPoisonActual = (index === poisonProviderIdx) ? perf.nonStackingPoisonDps : 0;
+        const nsFireActual = (index === fireProviderIdx) ? perf.nonStackingFireDps : 0;
         
-        totalPhysical += perf.physicalDps;
-        
-        totalStackingPoison += perf.stackingPoisonDps;
-        if (perf.nonStackingPoisonDps > maxNonStackingPoison) {
-            maxNonStackingPoison = perf.nonStackingPoisonDps;
-        }
-
-        totalStackingFire += perf.stackingFireDps;
-        if (perf.nonStackingFireDps > maxNonStackingFire) {
-            maxNonStackingFire = perf.nonStackingFireDps;
-        }
+        const itemDps = perf.physicalDps + perf.stackingPoisonDps + nsPoisonActual + perf.stackingFireDps + nsFireActual + perf.lightningDps;
+        totalDps += itemDps;
 
         const bgColor = tierColors[petal.tier] || "transparent";
-        const eCount = petal.currentEntities || 1;
-
         const item = document.createElement('div');
         item.className = "equipped-item";
         item.style.backgroundColor = bgColor;
+        
         item.innerHTML = `
-            <span><strong>${petal.name}</strong> x${eCount} (T${petal.tier}) - ${perf.dps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} DPS</span>
-            <button onclick="unequipPetal(${index})">X</button>
+            <div class="item-main-row">
+                <span>${petal.name} x${petal.currentEntities} (T${petal.tier})</span>
+                <span>${itemDps.toFixed(2)} DPS</span>
+                <button onclick="unequipPetal(${index})">X</button>
+            </div>
+            <div class="dps-details">
+                Phys: ${perf.physicalDps.toFixed(2)} | 
+                Poison: ${(perf.stackingPoisonDps + nsPoisonActual).toFixed(2)} | 
+                Fire: ${(perf.stackingFireDps + nsFireActual).toFixed(2)} | 
+                Light: ${perf.lightningDps.toFixed(2)}
+            </div>
         `;
         listContainer.appendChild(item);
     });
-
-    const finalTotalDps = totalPhysical + totalStackingPoison + maxNonStackingPoison + totalStackingFire + maxNonStackingFire;
-    totalDpsDisplay.innerHTML = finalTotalDps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    totalDpsDisplay.innerHTML = totalDps.toLocaleString(undefined, {minimumFractionDigits: 2});
 }
 
 function renderTable() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = ""; 
-
     activePetals.forEach((petal, index) => {
         const perf = calculatePetalPerformance(petal);
         const bgColor = tierColors[petal.tier] || "transparent";
-        const eCount = petal.currentEntities || 1;
-        
         const row = `<tr style="background-color: ${bgColor}">
             <td>${petal.name}</td>
             <td>${petal.tier}</td>
-            <td>${eCount}</td>
+            <td>${petal.currentEntities}</td>
             <td>${Math.round(petal.health).toLocaleString()}</td>
             <td>${Math.round(petal.damage).toLocaleString()}</td>
             <td>${Math.round(petal.armor).toLocaleString()}</td>
             <td>${petal.reload}</td>
+            <td>${getSpecialDescription(petal)}</td>
             <td>${perf.ticks}</td>
-            <td><strong>${perf.dps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
+            <td><strong>${perf.baseDps.toFixed(2)}</strong></td>
             <td><button onclick="equipPetal(${index})">Equip</button></td>
         </tr>`;
         tbody.innerHTML += row;
@@ -226,8 +198,8 @@ function renderTable() {
 
 function sortByDPS() {
     activePetals.sort((a, b) => {
-        const dpsA = calculatePetalPerformance(a).dps;
-        const dpsB = calculatePetalPerformance(b).dps;
+        const dpsA = calculatePetalPerformance(a).baseDps;
+        const dpsB = calculatePetalPerformance(b).baseDps;
         return isAscending ? dpsA - dpsB : dpsB - dpsA;
     });
     isAscending = !isAscending; 
@@ -241,6 +213,7 @@ function openPetalLightbox() {
     petals.forEach((p, i) => {
         const li = document.createElement('li');
         li.innerHTML = `<button onclick="addPetal(${i})">Add ${p.name}</button>`;
+        li.style.margin = "5px 0";
         list.appendChild(li);
     });
 }
@@ -251,29 +224,22 @@ function addPetal(index) {
     const tier = parseInt(document.getElementById('tier-selection').value) || 0;
     const multiplier = Math.pow(3, tier);
     const clone = structuredClone(petals[index]);
-    
     clone.tier = tier;
     clone.health *= multiplier;
     clone.damage *= multiplier;
     clone.armor *= multiplier;
-
     const effects = clone.specials || (clone.special ? [clone.special] : []);
-    effects.forEach(effect => {
-        if (effect.damage) effect.damage *= multiplier;
-    });
-
+    effects.forEach(e => { if (e.damage) e.damage *= multiplier; });
+    
     let eCount = 1;
-    if (clone.entity !== undefined) {
-        if (typeof clone.entity === 'number') {
-            eCount = clone.entity;
-        } else {
-            const maxTier = Math.max(...Object.keys(clone.entity).map(Number));
-            const targetTier = tier > maxTier ? maxTier : tier;
-            eCount = clone.entity[targetTier];
+    if (clone.entity) {
+        if (typeof clone.entity === 'number') eCount = clone.entity;
+        else {
+            const maxT = Math.max(...Object.keys(clone.entity).map(Number));
+            eCount = clone.entity[tier > maxT ? maxT : tier];
         }
     }
     clone.currentEntities = eCount;
-
     activePetals.push(clone);
     renderTable();
     closePetalLightbox();
@@ -281,16 +247,9 @@ function addPetal(index) {
 
 function renderActiveMob() {
     const display = document.getElementById('active-mob-display');
-    if (!activeMob) {
-        display.innerHTML = "No mob selected";
-        display.style.backgroundColor = "transparent";
-        return;
-    }
-    display.style.backgroundColor = tierColors[activeMob.tier] || "transparent";
-    display.innerHTML = `<strong>${activeMob.name} (Tier ${activeMob.tier})</strong><br>
-                         Health: ${Math.round(activeMob.health).toLocaleString()} | 
-                         Damage: ${Math.round(activeMob.damage).toLocaleString()} | 
-                         Armor: ${Math.round(activeMob.armor).toLocaleString()}`;
+    if (!activeMob) { display.innerHTML = "No mob selected"; display.style.backgroundColor = "transparent"; return; }
+    display.style.backgroundColor = tierColors[activeMob.tier];
+    display.innerHTML = `<strong>${activeMob.name} (T${activeMob.tier})</strong><br>H: ${Math.round(activeMob.health).toLocaleString()} | D: ${Math.round(activeMob.damage).toLocaleString()} | A: ${Math.round(activeMob.armor).toLocaleString()}`;
 }
 
 function openMobLightbox() {
@@ -300,6 +259,7 @@ function openMobLightbox() {
     mobs.forEach((m, i) => {
         const li = document.createElement('li');
         li.innerHTML = `<button onclick="selectMob(${i})">Select ${m.name}</button>`;
+        li.style.margin = "5px 0";
         list.appendChild(li);
     });
 }
@@ -312,18 +272,16 @@ function selectMob(index) {
     let hMult = 1;
     for (let i = 0; i < tier; i++) hMult *= (factors[i] || 1);
     const sMult = Math.pow(3, tier);
-    
     activeMob = structuredClone(mobs[index]);
     activeMob.tier = tier;
     activeMob.health *= hMult;
     activeMob.damage *= sMult;
     activeMob.armor *= sMult;
-
-    renderActiveMob();
-    renderTable();
-    renderEquippedSlots();
-    closeMobLightbox();
+    renderActiveMob(); renderTable(); renderEquippedSlots(); closeMobLightbox();
 }
+
+function equipPetal(index) { equippedPetals.push(structuredClone(activePetals[index])); renderEquippedSlots(); }
+function unequipPetal(index) { equippedPetals.splice(index, 1); renderEquippedSlots(); }
 
 renderTable();
 renderActiveMob();
