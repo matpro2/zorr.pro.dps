@@ -18,4 +18,12 @@ const petals = [
     { name: "Dollar", reload: 1.0,  health: 10, damage: 30, armor: 0, },
     { name: "Bitcoin", reload: 1.0,  health: 15, damage: 40, armor: 2, },
     { name: "Yuan", reload: 1.0,  health: 10, damage: 20, armor: 0, },
+    { name: "Bone", reload: 1.0,  health: 1, damage: 50, armor: 13, },
+    { name: "Clover", reload: 2.5,  health: 10, damage: 10, armor: 0, },
+    { name: "Wing", reload: 1.0,  health: 10, damage: 45, armor: 3, },
+    { name: "Glass", reload: 1.0,  health: 69420, damage: 120, armor: 69420,
+        special: {
+            type: "damageSeconds",
+        }
+     },
 ];
