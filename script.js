@@ -2,6 +2,17 @@ let activePetals = [];
 let activeMob = null;
 let isAscending = false;
 
+const tierColors = {
+    0: "#7eef6d",
+    1: "#ffe65d",
+    2: "#4d52e3",
+    3: "#861fde",
+    4: "#de1f1f",
+    5: "#1fdbde",
+    6: "#ff2b75",
+    7: "#2bffa3"
+};
+
 const playerStats = {
     luck: 1.0
 };
@@ -62,8 +73,9 @@ function renderTable() {
 
     activePetals.forEach(petal => {
         const perf = calculatePetalPerformance(petal);
+        const bgColor = tierColors[petal.tier] || "transparent";
         
-        const row = `<tr>
+        const row = `<tr style="background-color: ${bgColor}">
             <td>${petal.name}</td>
             <td>${petal.tier}</td>
             <td>${Math.round(petal.health).toLocaleString()}</td>
@@ -119,8 +131,11 @@ function renderActiveMob() {
     const display = document.getElementById('active-mob-display');
     if (!activeMob) {
         display.innerHTML = "No mob selected";
+        display.style.backgroundColor = "transparent";
         return;
     }
+    
+    display.style.backgroundColor = tierColors[activeMob.tier] || "transparent";
     display.innerHTML = `<strong>${activeMob.name} (Tier ${activeMob.tier})</strong><br>
                          Health: ${Math.round(activeMob.health).toLocaleString()} | 
                          Damage: ${Math.round(activeMob.damage).toLocaleString()} | 
