@@ -122,22 +122,26 @@
                 return { ticks: 0, dps: 0 };
             }
 
+            // 1. Calcul des ticks de survie (Cycle de vie basé sur la mort)
             const survivalTicks = Math.ceil(petal.health / activeMob.damage);
-            const maxTicks = petal.reload * 10;
-            const actualTicks = Math.min(survivalTicks, maxTicks);
             
-            const lifeDuration = Math.max(0, (actualTicks - 1) * 0.1);
+            // 2. Durée du cycle = (Ticks de vie * 0.1s) + Temps de recharge
+            const lifeDuration = survivalTicks * 0.1;
             const totalCycleDuration = lifeDuration + petal.reload;
 
-            const totalDamageDealt = actualTicks * petal.damage;
+            // 3. Dégâts totaux infligés pendant la vie de la pétale
+            const totalDamageDealt = survivalTicks * petal.damage;
+            
+            // 4. DPS Moyen = Dégâts Totaux / Durée Totale du Cycle
             let finalDps = totalDamageDealt / totalCycleDuration;
 
+            // Application des bonus (Luck, etc.) sur le DPS final
             if (petal.special && effectHandlers[petal.special.type]) {
                 finalDps = effectHandlers[petal.special.type](finalDps, petal.special, playerStats);
             }
 
             return {
-                ticks: actualTicks,
+                ticks: survivalTicks,
                 dps: finalDps
             };
         }
@@ -147,16 +151,16 @@
             tbody.innerHTML = ""; 
 
             activePetals.forEach(petal => {
-                const performance = calculatePetalPerformance(petal);
+                const perf = calculatePetalPerformance(petal);
                 
                 const row = `<tr>
                     <td>${petal.name}</td>
                     <td>${petal.tier}</td>
                     <td>${Math.round(petal.health).toLocaleString()}</td>
                     <td>${Math.round(petal.damage).toLocaleString()}</td>
-                    <td>${petal.reload}</td>
-                    <td>${performance.ticks}</td>
-                    <td>${performance.dps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td>${petal.reload}s</td>
+                    <td>${perf.ticks}</td>
+                    <td><strong>${perf.dps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
