@@ -55,9 +55,9 @@
                 <th>Name</th>
                 <th>Tier</th>
                 <th>Health</th>
-                <th>Armor</th>
                 <th>Damage</th>
                 <th>Reload (s)</th>
+                <th>Ticks</th>
                 <th><button onclick="sortByDPS()">Effective DPS ↕️</button></th>
             </tr>
         </thead>
@@ -103,11 +103,11 @@
         };
 
         const effectHandlers = {
-            luckMultiplier: (baseDPS, effect, stats) => {
+            luckMultiplier: (baseValue, effect, stats) => {
                 const triggerChance = Math.min(effect.chance * stats.luck, 1.0);
                 const standardChance = 1 - triggerChance;
                 const expectedMultiplier = (standardChance * 1) + (triggerChance * effect.multiplier);
-                return baseDPS * expectedMultiplier;
+                return baseValue * expectedMultiplier;
             }
         };
 
@@ -117,14 +117,23 @@
             renderTable();
         }
 
-        function calculateEffectiveDPS(petal) {
-            const baseDPS = petal.damage / petal.reload;
-            
-            if (petal.special && effectHandlers[petal.special.type]) {
-                return effectHandlers[petal.special.type](baseDPS, petal.special, playerStats);
+        function calculatePetalPerformance(petal) {
+            if (!activeMob || activeMob.damage <= 0) {
+                return { ticks: 0, dps: 0 };
             }
-            
-            return baseDPS;
+
+            const ticks = Math.ceil(petal.health / activeMob.damage);
+            const totalDamageDealt = ticks * petal.damage;
+            let finalDps = totalDamageDealt / petal.reload;
+
+            if (petal.special && effectHandlers[petal.special.type]) {
+                finalDps = effectHandlers[petal.special.type](finalDps, petal.special, playerStats);
+            }
+
+            return {
+                ticks: ticks,
+                dps: finalDps
+            };
         }
 
         function renderTable() {
@@ -132,16 +141,16 @@
             tbody.innerHTML = ""; 
 
             activePetals.forEach(petal => {
-                const effectiveDPS = calculateEffectiveDPS(petal).toFixed(2);
+                const performance = calculatePetalPerformance(petal);
                 
                 const row = `<tr>
                     <td>${petal.name}</td>
                     <td>${petal.tier}</td>
-                    <td>${petal.health.toLocaleString()}</td>
-                    <td>${petal.armor.toLocaleString()}</td>
-                    <td>${petal.damage.toLocaleString()}</td>
+                    <td>${Math.round(petal.health).toLocaleString()}</td>
+                    <td>${Math.round(petal.damage).toLocaleString()}</td>
                     <td>${petal.reload}</td>
-                    <td>${effectiveDPS}</td>
+                    <td>${performance.ticks}</td>
+                    <td>${performance.dps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
@@ -149,14 +158,9 @@
 
         function sortByDPS() {
             activePetals.sort((a, b) => {
-                const dpsA = calculateEffectiveDPS(a);
-                const dpsB = calculateEffectiveDPS(b);
-                
-                if (isAscending) {
-                    return dpsA - dpsB;
-                } else {
-                    return dpsB - dpsA;
-                }
+                const dpsA = calculatePetalPerformance(a).dps;
+                const dpsB = calculatePetalPerformance(b).dps;
+                return isAscending ? dpsA - dpsB : dpsB - dpsA;
             });
             isAscending = !isAscending; 
             renderTable(); 
@@ -164,13 +168,12 @@
 
         function openPetalLightbox() {
             document.getElementById('petal-lightbox').style.display = 'block'; 
-            const selectionList = document.getElementById('petal-selection-list');
-            selectionList.innerHTML = ""; 
-            petals.forEach((petal, index) => {
+            const list = document.getElementById('petal-selection-list');
+            list.innerHTML = ""; 
+            petals.forEach((p, i) => {
                 const li = document.createElement('li');
-                li.innerHTML = `<button onclick="addPetal(${index})">Add ${petal.name}</button>`;
-                li.style.marginBottom = "5px"; 
-                selectionList.appendChild(li);
+                li.innerHTML = `<button onclick="addPetal(${i})">Add ${p.name}</button>`;
+                list.appendChild(li);
             });
         }
 
@@ -179,17 +182,14 @@
         }
 
         function addPetal(index) {
-            const tierInput = document.getElementById('tier-selection').value;
-            const selectedTier = parseInt(tierInput) || 0;
-            const statMultiplier = Math.pow(3, selectedTier);
-            
-            const clonedPetal = structuredClone(petals[index]);
-            clonedPetal.tier = selectedTier;
-            clonedPetal.health *= statMultiplier;
-            clonedPetal.damage *= statMultiplier;
-            clonedPetal.armor *= statMultiplier;
-            
-            activePetals.push(clonedPetal);
+            const tier = parseInt(document.getElementById('tier-selection').value) || 0;
+            const multiplier = Math.pow(3, tier);
+            const clone = structuredClone(petals[index]);
+            clone.tier = tier;
+            clone.health *= multiplier;
+            clone.damage *= multiplier;
+            clone.armor *= multiplier;
+            activePetals.push(clone);
             renderTable();
             closePetalLightbox();
         }
@@ -201,20 +201,19 @@
                 return;
             }
             display.innerHTML = `<strong>${activeMob.name} (Tier ${activeMob.tier})</strong><br>
-                                 Health: ${activeMob.health.toLocaleString()} | 
-                                 Damage: ${activeMob.damage.toLocaleString()} | 
-                                 Armor: ${activeMob.armor.toLocaleString()}`;
+                                 Health: ${Math.round(activeMob.health).toLocaleString()} | 
+                                 Damage: ${Math.round(activeMob.damage).toLocaleString()} | 
+                                 Armor: ${Math.round(activeMob.armor).toLocaleString()}`;
         }
 
         function openMobLightbox() {
             document.getElementById('mob-lightbox').style.display = 'block'; 
-            const selectionList = document.getElementById('mob-selection-list');
-            selectionList.innerHTML = ""; 
-            mobs.forEach((mob, index) => {
+            const list = document.getElementById('mob-selection-list');
+            list.innerHTML = ""; 
+            mobs.forEach((m, i) => {
                 const li = document.createElement('li');
-                li.innerHTML = `<button onclick="selectMob(${index})">Select ${mob.name}</button>`;
-                li.style.marginBottom = "5px"; 
-                selectionList.appendChild(li);
+                li.innerHTML = `<button onclick="selectMob(${i})">Select ${m.name}</button>`;
+                list.appendChild(li);
             });
         }
 
@@ -223,26 +222,20 @@
         }
 
         function selectMob(index) {
-            const tierInput = document.getElementById('mob-tier-selection').value;
-            const selectedTier = parseInt(tierInput) || 0;
-            
-            const healthFactors = [3.75, 3.6, 4, 7.5, 6, 15, 12];
-            let healthMultiplier = 1;
-            for (let i = 0; i < selectedTier; i++) {
-                if (i < healthFactors.length) {
-                    healthMultiplier *= healthFactors[i];
-                }
-            }
-
-            const otherStatMultiplier = Math.pow(3, selectedTier);
+            const tier = parseInt(document.getElementById('mob-tier-selection').value) || 0;
+            const factors = [3.75, 3.6, 4, 7.5, 6, 15, 12];
+            let hMult = 1;
+            for (let i = 0; i < tier; i++) hMult *= (factors[i] || 1);
+            const sMult = Math.pow(3, tier);
             
             activeMob = structuredClone(mobs[index]);
-            activeMob.tier = selectedTier;
-            activeMob.health *= healthMultiplier;
-            activeMob.damage *= otherStatMultiplier;
-            activeMob.armor *= otherStatMultiplier;
+            activeMob.tier = tier;
+            activeMob.health *= hMult;
+            activeMob.damage *= sMult;
+            activeMob.armor *= sMult;
 
             renderActiveMob();
+            renderTable();
             closeMobLightbox();
         }
 
