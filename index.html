@@ -17,12 +17,24 @@
             width: 300px;
             border: 1px solid black;
         }
+        .stats-container {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
 
     <h1>zorr.pro.dps</h1>
     
+    <div class="stats-container">
+        <label for="player-luck">Player Luck Multiplier:</label>
+        <input type="number" id="player-luck" value="1.0" step="0.1" oninput="updatePlayerStats()">
+    </div>
+    <br>
+
     <button onclick="openLightbox()">+ Add Petal</button>
     <br><br>
 
@@ -34,7 +46,7 @@
                 <th>Armor</th>
                 <th>Damage</th>
                 <th>Reload (s)</th>
-                <th><button onclick="sortByDPS()">DPS ↕️</button></th>
+                <th><button onclick="sortByDPS()">Effective DPS ↕️</button></th>
             </tr>
         </thead>
         <tbody id="table-body">
@@ -54,13 +66,42 @@
     <script>
         let activePetals = [];
         let isAscending = false;
+        
+        const playerStats = {
+            luck: 1.0
+        };
+
+        const effectHandlers = {
+            luckMultiplier: (baseDPS, effect, stats) => {
+                const triggerChance = Math.min(effect.chance * stats.luck, 1.0);
+                const standardChance = 1 - triggerChance;
+                const expectedMultiplier = (standardChance * 1) + (triggerChance * effect.multiplier);
+                return baseDPS * expectedMultiplier;
+            }
+        };
+
+        function updatePlayerStats() {
+            const luckInput = document.getElementById('player-luck').value;
+            playerStats.luck = parseFloat(luckInput) || 1.0;
+            renderTable();
+        }
+
+        function calculateEffectiveDPS(petal) {
+            const baseDPS = petal.damage / petal.reload;
+            
+            if (petal.special && effectHandlers[petal.special.type]) {
+                return effectHandlers[petal.special.type](baseDPS, petal.special, playerStats);
+            }
+            
+            return baseDPS;
+        }
 
         function renderTable() {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = ""; 
 
             activePetals.forEach(petal => {
-                const calculatedDPS = (petal.damage / petal.reload).toFixed(2);
+                const effectiveDPS = calculateEffectiveDPS(petal).toFixed(2);
                 
                 const row = `<tr>
                     <td>${petal.name}</td>
@@ -68,7 +109,7 @@
                     <td>${petal.armor}</td>
                     <td>${petal.damage}</td>
                     <td>${petal.reload}</td>
-                    <td>${calculatedDPS}</td>
+                    <td>${effectiveDPS}</td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
@@ -76,8 +117,8 @@
 
         function sortByDPS() {
             activePetals.sort((a, b) => {
-                const dpsA = a.damage / a.reload;
-                const dpsB = b.damage / b.reload;
+                const dpsA = calculateEffectiveDPS(a);
+                const dpsB = calculateEffectiveDPS(b);
                 
                 if (isAscending) {
                     return dpsA - dpsB;
@@ -108,8 +149,7 @@
         }
 
         function addPetal(index) {
-            const selectedPetal = petals[index];
-            activePetals.push(selectedPetal);
+            activePetals.push(petals[index]);
             renderTable();
             closeLightbox();
         }
