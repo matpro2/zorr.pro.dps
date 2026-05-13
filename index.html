@@ -23,6 +23,9 @@
             border: 1px solid #ccc;
             display: inline-block;
         }
+        .tier-container {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -42,6 +45,7 @@
         <thead>
             <tr>
                 <th>Name</th>
+                <th>Tier</th>
                 <th>Health</th>
                 <th>Armor</th>
                 <th>Damage</th>
@@ -56,6 +60,10 @@
     <div id="lightbox">
         <div class="lightbox-content">
             <h3>Select a petal:</h3>
+            <div class="tier-container">
+                <label for="tier-selection">Petal Tier:</label>
+                <input type="number" id="tier-selection" value="0" min="0">
+            </div>
             <ul id="selection-list">
             </ul>
             <button onclick="closeLightbox()">Close</button>
@@ -105,6 +113,7 @@
                 
                 const row = `<tr>
                     <td>${petal.name}</td>
+                    <td>${petal.tier}</td>
                     <td>${petal.health}</td>
                     <td>${petal.armor}</td>
                     <td>${petal.damage}</td>
@@ -149,7 +158,18 @@
         }
 
         function addPetal(index) {
-            activePetals.push(petals[index]);
+            const tierInput = document.getElementById('tier-selection').value;
+            const selectedTier = parseInt(tierInput) || 0;
+            const statMultiplier = Math.pow(3, selectedTier);
+            
+            const clonedPetal = structuredClone(petals[index]);
+            
+            clonedPetal.tier = selectedTier;
+            clonedPetal.health *= statMultiplier;
+            clonedPetal.damage *= statMultiplier;
+            clonedPetal.armor *= statMultiplier;
+            
+            activePetals.push(clonedPetal);
             renderTable();
             closeLightbox();
         }
