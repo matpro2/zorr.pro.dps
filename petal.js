@@ -12,7 +12,7 @@ const petals = [
             type: "luckMultiplier",
             chance: 0.08,
             multiplier: 69
-    }},
+        }},
     { name: "Heavy", reload: 7.0,  health: 1000, damage: 35, armor: 1, },
     { name: "Rock", reload: 2.0,  health: 250, damage: 30, armor: 0, },
     { name: "Dollar", reload: 1.0,  health: 10, damage: 30, armor: 0, },

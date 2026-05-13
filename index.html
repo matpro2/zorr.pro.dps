@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>zorr.pro.dps</title>
     <style>
-        #lightbox {
+        .lightbox-modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -17,7 +17,7 @@
             width: 300px;
             border: 1px solid black;
         }
-        .stats-container {
+        .stats-container, .mob-container {
             margin-bottom: 20px;
             padding: 10px;
             border: 1px solid #ccc;
@@ -31,6 +31,14 @@
 <body>
 
     <h1>zorr.pro.dps</h1>
+
+    <div class="mob-container">
+        <h2>Target Mob</h2>
+        <div id="active-mob-display">No mob selected</div>
+        <br>
+        <button onclick="openMobLightbox()">Select Mob</button>
+    </div>
+    <br>
     
     <div class="stats-container">
         <label for="player-luck">Player Luck Multiplier:</label>
@@ -38,7 +46,7 @@
     </div>
     <br>
 
-    <button onclick="openLightbox()">+ Add Petal</button>
+    <button onclick="openPetalLightbox()">+ Add Petal</button>
     <br><br>
 
     <table border="1">
@@ -57,22 +65,33 @@
         </tbody>
     </table>
 
-    <div id="lightbox">
+    <div id="petal-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
             <h3>Select a petal:</h3>
             <div class="tier-container">
                 <label for="tier-selection">Petal Tier:</label>
                 <input type="number" id="tier-selection" value="0" min="0">
             </div>
-            <ul id="selection-list">
+            <ul id="petal-selection-list">
             </ul>
-            <button onclick="closeLightbox()">Close</button>
+            <button onclick="closePetalLightbox()">Close</button>
+        </div>
+    </div>
+
+    <div id="mob-lightbox" class="lightbox-modal">
+        <div class="lightbox-content">
+            <h3>Select a mob:</h3>
+            <ul id="mob-selection-list">
+            </ul>
+            <button onclick="closeMobLightbox()">Close</button>
         </div>
     </div>
 
     <script src="petal.js"></script>
+    <script src="mob.js"></script>
     <script>
         let activePetals = [];
+        let activeMob = null;
         let isAscending = false;
         
         const playerStats = {
@@ -139,10 +158,10 @@
             renderTable(); 
         }
 
-        function openLightbox() {
-            document.getElementById('lightbox').style.display = 'block'; 
+        function openPetalLightbox() {
+            document.getElementById('petal-lightbox').style.display = 'block'; 
             
-            const selectionList = document.getElementById('selection-list');
+            const selectionList = document.getElementById('petal-selection-list');
             selectionList.innerHTML = ""; 
 
             petals.forEach((petal, index) => {
@@ -153,8 +172,8 @@
             });
         }
 
-        function closeLightbox() {
-            document.getElementById('lightbox').style.display = 'none';
+        function closePetalLightbox() {
+            document.getElementById('petal-lightbox').style.display = 'none';
         }
 
         function addPetal(index) {
@@ -171,10 +190,44 @@
             
             activePetals.push(clonedPetal);
             renderTable();
-            closeLightbox();
+            closePetalLightbox();
+        }
+
+        function renderActiveMob() {
+            const display = document.getElementById('active-mob-display');
+            if (!activeMob) {
+                display.innerHTML = "No mob selected";
+                return;
+            }
+            display.innerHTML = `<strong>${activeMob.name}</strong> - Health: ${activeMob.health} | Damage: ${activeMob.damage} | Armor: ${activeMob.armor}`;
+        }
+
+        function openMobLightbox() {
+            document.getElementById('mob-lightbox').style.display = 'block'; 
+            
+            const selectionList = document.getElementById('mob-selection-list');
+            selectionList.innerHTML = ""; 
+
+            mobs.forEach((mob, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<button onclick="selectMob(${index})">Select ${mob.name}</button>`;
+                li.style.marginBottom = "5px"; 
+                selectionList.appendChild(li);
+            });
+        }
+
+        function closeMobLightbox() {
+            document.getElementById('mob-lightbox').style.display = 'none';
+        }
+
+        function selectMob(index) {
+            activeMob = structuredClone(mobs[index]);
+            renderActiveMob();
+            closeMobLightbox();
         }
 
         renderTable();
+        renderActiveMob();
     </script>
 </body>
 </html>
