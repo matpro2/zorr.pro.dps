@@ -85,5 +85,41 @@ const petals = [
     { name: "Trident", entity: 1, reload: 3.75, health: 15, damage: 1000, armor: 5 },
     { name: "Wing", entity: 1, reload: 1.0, health: 10, damage: 45, armor: 3 },
     { name: "Yuan", entity: 1, reload: 1.0, health: 10, damage: 20, armor: 0 },
-    { name: "Zodiac", entity: 1, reload: 2.0, health: 100, damage: 200, armor: 5 }
+    { name: "Zodiac", entity: 1, reload: 2.0, health: 100, damage: 200, armor: 5,
+        specials: [
+            { type: "reloadFactor", 
+              value: {
+                    0: -5,
+                    1: -6.8,
+                    2: -8.6,
+                    3: -10.4,
+                    4: -12.2,
+                    5: -14,
+                    6: -15.8,
+                    7: -17.6,
+                    8: -19.4,
+                    9: -21.2, 
+                } 
+            },
+            { type: "Fire", duration: 3, damage: 150, stack: false },
+        ]
+    },
+    { name: "Golden Leaf", entity: 1, reload: 1.0, health: 24, damage: 24, armor: 0,
+        specials: [
+            { type: "reloadFactor", 
+              value: {
+                    0: 4,
+                    1: 6.5,
+                    2: 9,
+                    3: 11.5,
+                    4: 14,
+                    5: 16.5,
+                    6: 19,
+                    7: 21.5,
+                    8: 29,
+                    9: 36.5, 
+                } 
+            },
+        ]
+    },
 ];

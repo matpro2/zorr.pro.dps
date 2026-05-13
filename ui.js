@@ -26,11 +26,15 @@ const ui = {
             const bonusPercent = (stats.multipliers.Damage - 1) * 100;
             html += `<div style="color: #27ae60; font-weight: bold; margin-top: 5px;">Total DMG Multiplier: x${stats.multipliers.Damage.toFixed(2)} (+${bonusPercent.toFixed(1)}%)</div>`;
         }
+        if (stats.multipliers.Reload !== 0) {
+            const reloadPercent = (stats.multipliers.Reload * 100).toFixed(1);
+            html += `<div style="color: #8e44ad; font-weight: bold; margin-top: 5px;">Total Reload Speed: ${reloadPercent > 0 ? '+' : ''}${reloadPercent}%</div>`;
+        }
         
         if (stats.activeSupports.length > 0) {
             html += `<div style="margin-top: 5px; font-size: 0.9em;"><strong>Active Supports:</strong></div>`;
             stats.activeSupports.forEach(b => {
-                html += `<div style="color: #7f8c8d; margin-left: 10px;">└ ${b.name} (T${b.tier}): ${b.type} ${b.stat} <strong>+${b.value}%</strong></div>`;
+                html += `<div style="color: #7f8c8d; margin-left: 10px;">└ ${b.name} (T${b.tier}): ${b.type} ${b.stat} <strong>${b.value}</strong></div>`;
             });
         }
         
@@ -51,8 +55,12 @@ const ui = {
                 if (e.type === "Critical") {
                     return `Crit (x${val.boost} @ ${val.chance}%)`;
                 }
+                if (e.type === "reloadFactor") {
+                    return `Reload Speed (${val > 0 ? '+' : ''}${val}%)`;
+                }
                 return `${e.type} ${e.stats} (+${val}%)`;
             }
+            if (e.type === "Poison" || e.type === "Fire") return `${e.type} (${e.damage}/s)`;
             return e.type;
         }).join(", ");
     },
@@ -65,17 +73,20 @@ const ui = {
             const row = document.createElement('tr');
             row.style.backgroundColor = engine.tierColors[p.tier] || 'transparent';
             
-            const isSupport = (p.damage == null || p.health == null);
+            const isPureSupport = (p.damage == null || p.health == null);
+            
+            // Calculer et afficher le Reload actualisé par le reloadFactor
+            const actualReloadStr = p.reload != null ? (Math.max(0.01, p.reload * (1 - (stats.multipliers.Reload || 0)))).toFixed(2) + "s" : "-";
 
             row.innerHTML = `
                 <td>${p.name}</td><td>${p.tier}</td><td>${p.currentEntities || 1}</td>
                 <td>${p.health != null ? Math.round(p.health).toLocaleString() : "-"}</td>
                 <td>${p.armor != null ? Math.round(p.armor).toLocaleString() : "-"}</td>
                 <td>${p.damage != null ? Math.round(p.damage).toLocaleString() : "-"}</td>
-                <td>${p.reload != null ? p.reload + "s" : "-"}</td>
+                <td><strong>${actualReloadStr}</strong></td>
                 <td>${ui.getSpecDesc(p)}</td>
                 <td>${perf.ticks}</td>
-                <td><strong>${(perf.baseDps || 0).toFixed(2)}</strong></td>
+                <td><strong>${isPureSupport ? "SUPPORT" : (perf.baseDps || 0).toFixed(2)}</strong></td>
                 <td><button onclick="ui.equip(${i})">Equip</button></td>
             `;
             tbody.appendChild(row);
@@ -97,7 +108,7 @@ const ui = {
         list.innerHTML = "";
         let total = 0;
         ui.equippedPetals.forEach((p, i) => {
-            const isSupport = (p.damage == null || p.health == null);
+            const isPureSupport = (p.damage == null || p.health == null);
             const perf = engine.calculatePerformance(p, ui.activeMob, stats);
             const nsp = (i === pIdx) ? perf.nonStackingPoisonDps : 0;
             const nsf = (i === fIdx) ? perf.nonStackingFireDps : 0;
@@ -110,10 +121,10 @@ const ui = {
             div.innerHTML = `
                 <div class="item-main-row">
                     <span>${p.name} ${p.currentEntities && p.currentEntities > 1 ? 'x'+p.currentEntities : ''} (T${p.tier})</span>
-                    <span>${isSupport ? 'SUPPORT' : dps.toFixed(2) + ' DPS'}</span>
+                    <span>${isPureSupport ? 'SUPPORT' : dps.toFixed(2) + ' DPS'}</span>
                     <button class="btn-delete" onclick="ui.unequip(${i})">X</button>
                 </div>
-                ${isSupport ? '' : `<div class="dps-details">Phys: ${perf.physicalDps.toFixed(2)} | Poison: ${(perf.stackingPoisonDps + nsp).toFixed(2)} | Fire: ${(perf.stackingFireDps + nsf).toFixed(2)} | Light: ${perf.lightningDps.toFixed(2)}</div>`}
+                ${isPureSupport ? '' : `<div class="dps-details">Phys: ${perf.physicalDps.toFixed(2)} | Poison: ${(perf.stackingPoisonDps + nsp).toFixed(2)} | Fire: ${(perf.stackingFireDps + nsf).toFixed(2)} | Light: ${perf.lightningDps.toFixed(2)}</div>`}
             `;
             list.appendChild(div);
         });
@@ -161,7 +172,7 @@ window.openPetalLightbox = () => {
     const list = document.getElementById('petal-selection-list');
     list.innerHTML = "";
     petals.forEach((p, i) => {
-        if (p.health == null || p.damage == null) return; // Ignore supports
+        if (p.health == null || p.damage == null) return; // Ignore pure supports
         const li = document.createElement('li');
         li.innerHTML = `<span>${p.name}</span><button onclick="addPetalToTable(${i})">Add</button>`;
         list.appendChild(li);
@@ -175,7 +186,11 @@ window.openSupportLightbox = () => {
     const list = document.getElementById('support-selection-list');
     list.innerHTML = "";
     petals.forEach((p, i) => {
-        if (p.health != null && p.damage != null) return; // Ignore non-supports
+        // Pour les supports : on affiche TOUTE pétale qui possède un effet de support 
+        // (Cela inclut les DPS hybrides comme Zodiac et Golden Leaf)
+        const hasSupport = (p.specials || (p.special ? [p.special] : [])).some(e => engine.supportEffects.includes(e.type));
+        if (!hasSupport) return;
+        
         const li = document.createElement('li');
         li.innerHTML = `<span>${p.name}</span><button onclick="addSupportToSlots(${i})" class="btn-add-support" style="margin:0;">Equip</button>`;
         list.appendChild(li);
@@ -186,6 +201,7 @@ window.closeSupportLightbox = () => document.getElementById('support-lightbox').
 
 window.addSupportToSlots = (idx) => {
     const t = parseInt(document.getElementById('support-tier-selection').value) || 0;
+    const m = Math.pow(3, t);
     const c = structuredClone(petals[idx]);
     c.tier = t; 
     
@@ -193,6 +209,23 @@ window.addSupportToSlots = (idx) => {
         alert(`You cannot stack multiple ${c.name} !`);
         return;
     }
+    
+    // Scale stats au cas où la pétale hybride est ajoutée d'ici
+    if (c.health != null) c.health *= m; 
+    if (c.damage != null) c.damage *= m; 
+    if (c.armor != null) c.armor *= m;
+    const effs = c.specials || (c.special ? [c.special] : []);
+    effs.forEach(e => { if (e.damage != null) e.damage *= m; });
+    
+    let qty = 1;
+    if (c.entity != null) {
+        if (typeof c.entity === 'number') qty = c.entity;
+        else {
+            const maxT = Math.max(...Object.keys(c.entity).map(Number));
+            qty = c.entity[t > maxT ? maxT : t];
+        }
+    }
+    c.currentEntities = qty;
     
     ui.equippedPetals.push(c);
     ui.refresh();

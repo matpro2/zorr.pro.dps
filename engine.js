@@ -3,12 +3,12 @@ const engine = {
         0: "#7eef6d", 1: "#ffe65d", 2: "#4d52e3", 3: "#861fde",
         4: "#de1f1f", 5: "#1fdbde", 6: "#ff2b75", 7: "#2bffa3"
     },
-    // Liste des effets considérés comme supports
-    supportEffects: ["Boost", "Critical"],
+    // Liste des effets considérés comme supports globaux
+    supportEffects: ["Boost", "Critical", "reloadFactor"],
 
     // Parcourt les pétales équipées pour extraire les bonus globaux
     getGlobalStats: (equippedPetals, baseLuck) => {
-        const stats = { luck: baseLuck, multipliers: { Damage: 1 }, activeSupports: [] };
+        const stats = { luck: baseLuck, multipliers: { Damage: 1, Reload: 0 }, activeSupports: [] };
         
         equippedPetals.forEach(p => {
             const effects = p.specials || (p.special ? [p.special] : []);
@@ -22,16 +22,19 @@ const engine = {
 
                     if (e.type === "Boost" && e.stats === "Damage") {
                         stats.multipliers.Damage += (val / 100);
-                        stats.activeSupports.push({ name: p.name, type: e.type, stat: e.stats, value: val, tier: p.tier });
+                        stats.activeSupports.push({ name: p.name, type: e.type, stat: e.stats, value: `+${val}%`, tier: p.tier });
                     }
                     else if (e.type === "Critical" && e.stats === "Damage") {
-                        // Le bonus final (espérance) = (chance + luck) * (boost - 1)
                         const actualChance = Math.min((val.chance / 100) + (stats.luck / 100), 1.0);
                         const expectedBonus = actualChance * (val.boost - 1);
                         stats.multipliers.Damage += expectedBonus;
                         
                         const displayPercent = (expectedBonus * 100).toFixed(2);
-                        stats.activeSupports.push({ name: p.name, type: "Crit Exp.", stat: e.stats, value: displayPercent, tier: p.tier });
+                        stats.activeSupports.push({ name: p.name, type: "Crit Exp.", stat: e.stats, value: `+${displayPercent}%`, tier: p.tier });
+                    }
+                    else if (e.type === "reloadFactor") {
+                        stats.multipliers.Reload += (val / 100);
+                        stats.activeSupports.push({ name: p.name, type: "Reload", stat: "Speed", value: `${val > 0 ? '+' : ''}${val}%`, tier: p.tier });
                     }
                 }
             });
@@ -41,7 +44,6 @@ const engine = {
 
     effectHandlers: {
         luckMultiplier: (perf, effect, stats, context, petal) => {
-            // Chance de base (ex: 0.08) + Bonus de luck en % (ex: 0.8% -> 0.008)
             const triggerChance = Math.min(effect.chance + (stats.luck / 100), 1.0);
             const expectedMultiplier = ((1 - triggerChance) * 1) + (triggerChance * effect.multiplier);
             perf.physicalDps *= expectedMultiplier;
@@ -91,7 +93,6 @@ const engine = {
         if (petal.damage == null || petal.health == null) return perf;
         if (!mob) return perf;
 
-        // On applique le multiplicateur de dégâts global (1 + sommes des %) apporté par les supports
         const boostedDamage = petal.damage * (globalStats.multipliers.Damage || 1);
         
         const mDmg = Math.max(0, mob.damage - (petal.armor || 0));
@@ -102,7 +103,11 @@ const engine = {
         if (mDmg > 0) {
             survivalTicks = Math.ceil(petal.health / mDmg);
             lifeDuration = survivalTicks * 0.1;
-            totalCycleDuration = lifeDuration + (petal.reload || 0);
+            
+            // Calcul du vrai temps de rechargement : base * (1 - TotalReloadFactor)
+            const actualReload = Math.max(0.01, (petal.reload || 0) * (1 - (globalStats.multipliers.Reload || 0)));
+            
+            totalCycleDuration = lifeDuration + actualReload;
             isInfinite = false;
             perf.ticks = survivalTicks;
         } else {
