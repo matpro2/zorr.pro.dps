@@ -1,150 +1,134 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>zorr.pro.dps</title>
     <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; margin: 20px; }
+        h1 { color: #333; }
+        
+        .layout { display: flex; gap: 20px; flex-wrap: wrap; }
+        
+        .panel { 
+            background: white; padding: 15px; border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd;
+        }
+
+        .stats-container, .mob-container { flex: 1; min-width: 250px; }
+        .slots-container { flex: 2; min-width: 400px; }
+
         .lightbox-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 1000;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6); z-index: 1000;
         }
         .lightbox-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 20px;
-            width: 350px;
-            border: 1px solid black;
-            /* Scroll feature */
-            max-height: 80vh;
-            overflow-y: auto;
-            border-radius: 8px;
+            background-color: white; margin: 5vh auto; padding: 20px;
+            width: 400px; max-height: 85vh; overflow-y: auto;
+            border-radius: 12px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
-        .stats-container, .mob-container, .slots-container {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            display: inline-block;
-            vertical-align: top;
-            margin-right: 10px;
-            border-radius: 8px;
-        }
-        #active-mob-display, .equipped-item {
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 5px;
-            border: 1px solid #999;
-        }
+        
+        .sticky-header { position: sticky; top: -20px; background: white; padding: 10px 0; z-index: 10; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+
         .equipped-item {
-            display: block; /* Change to block to allow details below */
-            margin-bottom: 8px;
+            padding: 12px; border-radius: 6px; margin-bottom: 10px;
+            border: 1px solid rgba(0,0,0,0.1);
         }
-        .item-main-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-        }
-        .dps-details {
-            font-size: 0.8em;
-            color: #444;
-            margin-top: 4px;
-            border-top: 1px border rgba(0,0,0,0.1);
-            padding-top: 2px;
-        }
-        .tier-container {
-            margin-bottom: 15px;
-            position: sticky;
-            top: 0;
-            background: white;
-            padding-bottom: 10px;
-        }
-        #total-dps-display {
-            font-size: 1.3em;
-            color: #2c3e50;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid #2c3e50;
-        }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { padding: 8px; text-align: left; }
+        .item-main-row { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .dps-details { font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1); }
+
+        #total-dps-display { font-size: 1.4em; font-weight: bold; margin-top: 15px; color: #2c3e50; text-align: right; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; cursor: pointer; }
+        tr:hover { background-color: rgba(0,0,0,0.02); }
+
+        input[type="number"] { width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        button { cursor: pointer; padding: 8px 12px; border-radius: 4px; border: none; background: #3498db; color: white; transition: 0.2s; }
+        button:hover { background: #2980b9; }
+        .btn-add { background: #27ae60; width: 100%; margin: 10px 0; font-size: 1em; }
+        .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.8em; }
+        
+        ul { list-style: none; padding: 0; }
+        li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
     <h1>zorr.pro.dps</h1>
 
-    <div class="slots-container">
-        <h2>Equipped Slots</h2>
-        <div id="slots-list">No petals equipped</div>
-        <div id="total-dps-display">Total DPS: <strong>0.00</strong></div>
+    <div class="layout">
+        <div class="panel slots-container">
+            <h2>Equipped Slots</h2>
+            <div id="slots-list">No petals equipped</div>
+            <div id="total-dps-display">Total DPS: <strong>0.00</strong></div>
+        </div>
+
+        <div class="panel mob-container">
+            <h2>Target Mob</h2>
+            <div id="active-mob-display">No mob selected</div>
+            <button onclick="openMobLightbox()" style="margin-top:10px;">Select Mob</button>
+        </div>
+        
+        <div class="panel stats-container">
+            <h2>Player Stats</h2>
+            <label>Luck Multiplier:</label>
+            <input type="number" id="player-luck" value="1.0" step="0.1" oninput="ui.updatePlayerStats()">
+        </div>
     </div>
 
-    <div class="mob-container">
-        <h2>Target Mob</h2>
-        <div id="active-mob-display">No mob selected</div>
-        <br>
-        <button onclick="openMobLightbox()">Select Mob</button>
+    <button class="btn-add" onclick="openPetalLightbox()">+ Add Petal to Comparison</button>
+
+    <div class="panel">
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="ui.sortTable('name')">Name ↕️</th>
+                    <th onclick="ui.sortTable('tier')">Tier ↕️</th>
+                    <th>Qty</th>
+                    <th>Health</th>
+                    <th>Damage</th>
+                    <th>Reload</th>
+                    <th>Special</th>
+                    <th>Ticks</th>
+                    <th onclick="ui.sortByDPS()">Effective DPS ↕️</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
     </div>
-    
-    <div class="stats-container">
-        <h2>Player Stats</h2>
-        <label for="player-luck">Player Luck Multiplier:</label>
-        <input type="number" id="player-luck" value="1.0" step="0.1" oninput="updatePlayerStats()">
-    </div>
-    <br>
 
-    <button onclick="openPetalLightbox()">+ Add Petal to Comparison</button>
-    <br><br>
-
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Tier</th>
-                <th>Qty</th>
-                <th>Health</th>
-                <th>Damage</th>
-                <th>Armor</th>
-                <th>Reload (s)</th>
-                <th>Special</th>
-                <th>Ticks</th>
-                <th><button onclick="sortByDPS()">Effective DPS ↕️</button></th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="table-body">
-        </tbody>
-    </table>
-
+    <!-- Lightbox Petals -->
     <div id="petal-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
-            <div class="tier-container">
-                <h3>Select a petal:</h3>
-                <label for="tier-selection">Petal Tier:</label>
+            <div class="sticky-header">
+                <h3>Add a Petal</h3>
+                <label>Tier:</label>
                 <input type="number" id="tier-selection" value="0" min="0">
             </div>
             <ul id="petal-selection-list"></ul>
-            <button onclick="closePetalLightbox()" style="width:100%; margin-top:10px;">Close</button>
+            <button onclick="closePetalLightbox()" style="width:100%; background:#95a5a6;">Close</button>
         </div>
     </div>
 
+    <!-- Lightbox Mobs -->
     <div id="mob-lightbox" class="lightbox-modal">
         <div class="lightbox-content">
-            <div class="tier-container">
-                <h3>Select a mob:</h3>
-                <label for="mob-tier-selection">Mob Tier:</label>
+            <div class="sticky-header">
+                <h3>Select Mob</h3>
+                <label>Tier:</label>
                 <input type="number" id="mob-tier-selection" value="0" min="0">
             </div>
             <ul id="mob-selection-list"></ul>
-            <button onclick="closeMobLightbox()" style="width:100%; margin-top:10px;">Close</button>
+            <button onclick="closeMobLightbox()" style="width:100%; background:#95a5a6;">Close</button>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="petal.js"></script>
     <script src="mob.js"></script>
-    <script src="script.js"></script>
+    <script src="engine.js"></script>
+    <script src="ui.js"></script>
 </body>
 </html>
