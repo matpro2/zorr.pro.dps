@@ -11,14 +11,29 @@ const tierColors = {
 const playerStats = { luck: 1.0 };
 
 const effectHandlers = {
-    luckMultiplier: (baseValue, effect, stats) => {
+    luckMultiplier: (perf, effect, stats, context) => {
         const triggerChance = Math.min(effect.chance * stats.luck, 1.0);
         const standardChance = 1 - triggerChance;
         const expectedMultiplier = (standardChance * 1) + (triggerChance * effect.multiplier);
-        return baseValue * expectedMultiplier;
+        perf.physicalDps *= expectedMultiplier;
     },
-    damageSeconds: (baseValue, effect, stats) => {
-        return baseValue / 10;
+    damageSeconds: (perf, effect, stats, context) => {
+        perf.physicalDps /= 10;
+    },
+    Poison: (perf, effect, stats, context) => {
+        let poisonUptimeRatio = 1;
+        if (!context.isInfinite) {
+            const poisonActiveTime = context.lifeDuration + effect.duration;
+            poisonUptimeRatio = Math.min(poisonActiveTime / context.totalCycleDuration, 1.0);
+        }
+        
+        const poisonDps = effect.damage * poisonUptimeRatio;
+
+        if (effect.stack) {
+            perf.stackingPoisonDps += poisonDps;
+        } else {
+            perf.nonStackingPoisonDps += poisonDps;
+        }
     }
 };
 
@@ -30,32 +45,55 @@ function updatePlayerStats() {
 }
 
 function calculatePetalPerformance(petal) {
-    if (!activeMob) return { ticks: 0, dps: 0 };
+    if (!activeMob) return { ticks: 0, dps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0 };
 
     const effectiveMobDmg = Math.max(0, activeMob.damage - petal.armor);
     const effectivePetalDmg = Math.max(0, petal.damage - activeMob.armor);
 
     let survivalTicks;
-    let finalDps;
+    let lifeDuration = 0;
+    let totalCycleDuration = 0;
 
     if (effectiveMobDmg > 0) {
         survivalTicks = Math.ceil(petal.health / effectiveMobDmg);
-        const lifeDuration = survivalTicks * 0.1;
-        const totalCycleDuration = lifeDuration + petal.reload;
-        const totalDamageDealt = survivalTicks * effectivePetalDmg;
-        finalDps = totalDamageDealt / totalCycleDuration;
+        lifeDuration = survivalTicks * 0.1;
+        totalCycleDuration = lifeDuration + petal.reload;
     } else {
         survivalTicks = "∞";
-        finalDps = effectivePetalDmg * 10;
     }
 
+    let initialPhysicalDps = 0;
+    if (survivalTicks === "∞") {
+        initialPhysicalDps = effectivePetalDmg * 10;
+    } else {
+        initialPhysicalDps = (survivalTicks * effectivePetalDmg) / totalCycleDuration;
+    }
+
+    let perf = {
+        ticks: survivalTicks,
+        physicalDps: initialPhysicalDps,
+        stackingPoisonDps: 0,
+        nonStackingPoisonDps: 0
+    };
+
+    const context = {
+        lifeDuration: lifeDuration,
+        totalCycleDuration: totalCycleDuration,
+        isInfinite: survivalTicks === "∞"
+    };
+
     if (petal.special && effectHandlers[petal.special.type]) {
-        finalDps = effectHandlers[petal.special.type](finalDps, petal.special, playerStats);
+        effectHandlers[petal.special.type](perf, petal.special, playerStats, context);
     }
 
     const eCount = petal.currentEntities || 1;
+    
+    perf.physicalDps *= eCount;
+    perf.stackingPoisonDps *= eCount;
 
-    return { ticks: survivalTicks, dps: finalDps * eCount };
+    perf.dps = perf.physicalDps + perf.stackingPoisonDps + perf.nonStackingPoisonDps;
+
+    return perf;
 }
 
 function equipPetal(index) {
@@ -79,11 +117,20 @@ function renderEquippedSlots() {
     }
 
     listContainer.innerHTML = "";
-    let totalDps = 0;
+    
+    let totalPhysical = 0;
+    let totalStackingPoison = 0;
+    let maxNonStackingPoison = 0;
 
     equippedPetals.forEach((petal, index) => {
         const perf = calculatePetalPerformance(petal);
-        totalDps += perf.dps;
+        
+        totalPhysical += perf.physicalDps;
+        totalStackingPoison += perf.stackingPoisonDps;
+        if (perf.nonStackingPoisonDps > maxNonStackingPoison) {
+            maxNonStackingPoison = perf.nonStackingPoisonDps;
+        }
+
         const bgColor = tierColors[petal.tier] || "transparent";
         const eCount = petal.currentEntities || 1;
 
@@ -97,7 +144,8 @@ function renderEquippedSlots() {
         listContainer.appendChild(item);
     });
 
-    totalDpsDisplay.innerHTML = totalDps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const finalTotalDps = totalPhysical + totalStackingPoison + maxNonStackingPoison;
+    totalDpsDisplay.innerHTML = finalTotalDps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 function renderTable() {
@@ -157,6 +205,10 @@ function addPetal(index) {
     clone.health *= multiplier;
     clone.damage *= multiplier;
     clone.armor *= multiplier;
+
+    if (clone.special && clone.special.damage) {
+        clone.special.damage *= multiplier;
+    }
 
     let eCount = 1;
     if (clone.entity !== undefined) {
