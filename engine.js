@@ -5,17 +5,15 @@ const engine = {
     },
 
     effectHandlers: {
-        luckMultiplier: (perf, effect, luck, context, petal) => {
-            // Système ADDITIF : chance de base + luck du joueur
-            // Exemple : 0.08 (8%) + 0.8 (luck) = 0.88 (88%)
-            const triggerChance = Math.min(effect.chance + luck, 1.0);
+        luckMultiplier: (perf, effect, stats, context, petal) => {
+            const triggerChance = Math.min(effect.chance + stats.luck, 1.0);
             const expectedMultiplier = ((1 - triggerChance) * 1) + (triggerChance * effect.multiplier);
             perf.physicalDps *= expectedMultiplier;
         },
         damageSeconds: (perf) => {
             perf.physicalDps /= 10;
         },
-        Poison: (perf, effect, luck, context) => {
+        Poison: (perf, effect, stats, context) => {
             let uptime = 1;
             if (!context.isInfinite && context.totalCycleDuration > 0) {
                 uptime = Math.min((context.lifeDuration + effect.duration) / context.totalCycleDuration, 1.0);
@@ -24,7 +22,7 @@ const engine = {
             if (effect.stack) perf.stackingPoisonDps += dps;
             else perf.nonStackingPoisonDps += dps;
         },
-        Fire: (perf, effect, luck, context) => {
+        Fire: (perf, effect, stats, context) => {
             let uptime = 1;
             if (!context.isInfinite && context.totalCycleDuration > 0) {
                 uptime = Math.min((context.lifeDuration + effect.duration) / context.totalCycleDuration, 1.0);
@@ -33,7 +31,7 @@ const engine = {
             if (effect.stack) perf.stackingFireDps += dps;
             else perf.nonStackingFireDps += dps;
         },
-        Lightning: (perf, effect, luck, context, petal) => {
+        Lightning: (perf, effect, stats, context, petal) => {
             let bounces = 0;
             if (typeof effect.bounce === 'number') bounces = effect.bounce;
             else if (effect.bounce) {
@@ -46,17 +44,20 @@ const engine = {
         }
     },
 
-    calculatePerformance: (petal, mob, luck) => {
+    calculatePerformance: (petal, mob, stats) => {
         const perf = {
             ticks: "∞", baseDps: 0, physicalDps: 0, 
             stackingPoisonDps: 0, nonStackingPoisonDps: 0,
             stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0
         };
         
+        if (!petal.damage && !petal.special && !petal.specials) return perf;
         if (!mob) return perf;
 
         const mDmg = Math.max(0, mob.damage - petal.armor);
-        const pDmg = Math.max(0, petal.damage - mob.armor);
+        // On applique le boost de dégâts global du joueur aux dégâts physiques de la pétale
+        const boostedDamage = petal.damage * (stats.damageBoost || 1);
+        const pDmg = Math.max(0, boostedDamage - mob.armor);
 
         let lifeDuration = 0, totalCycleDuration = 0, isInfinite = true, survivalTicks = 0;
 
@@ -74,7 +75,7 @@ const engine = {
         const effects = petal.specials || (petal.special ? [petal.special] : []);
 
         effects.forEach(e => {
-            if (engine.effectHandlers[e.type]) engine.effectHandlers[e.type](perf, e, luck, context, petal);
+            if (engine.effectHandlers[e.type]) engine.effectHandlers[e.type](perf, e, stats, context, petal);
         });
 
         const qty = petal.currentEntities || 1;

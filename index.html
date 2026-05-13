@@ -7,8 +7,7 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; margin: 20px; }
         .layout { display: flex; gap: 20px; flex-wrap: wrap; }
         .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; }
-        .stats-container { flex: 1; min-width: 250px; }
-        .mob-container { flex: 1; min-width: 250px; }
+        .stats-container, .mob-container { flex: 1; min-width: 250px; }
         .slots-container { flex: 2; min-width: 400px; }
         .lightbox-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; }
         .lightbox-content { background-color: white; margin: 5vh auto; padding: 20px; width: 400px; max-height: 85vh; overflow-y: auto; border-radius: 12px; position: relative; }
@@ -17,6 +16,7 @@
         .item-main-row { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .dps-details { font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1); }
         #total-dps-display { font-size: 1.4em; font-weight: bold; margin-top: 15px; color: #2c3e50; text-align: right; }
+        #player-stats-display { margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 4px; border-left: 3px solid #3498db; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #f8f9fa; cursor: pointer; }
@@ -46,8 +46,9 @@
         
         <div class="panel stats-container">
             <h2>Player Stats</h2>
-            <label>Extra Luck Bonus (ex: 0.8 = +80%):</label>
+            <label>Extra Luck Bonus:</label>
             <input type="number" id="player-luck" value="0.0" step="0.1" oninput="ui.updatePlayerStats()">
+            <div id="player-stats-display"></div>
         </div>
     </div>
 
