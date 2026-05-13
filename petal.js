@@ -4,6 +4,18 @@ const petals = [
     { name: "Bone", entity: 1, reload: 1.0, health: 1, damage: 50, armor: 13 },
     { name: "Clover", entity: 1, reload: 2.5, health: 10, damage: 10, armor: 0 },
     { 
+        name: "Comb", 
+        entity: 1, 
+        reload: 3, 
+        health: 5, 
+        damage: 25, 
+        armor: 0, 
+        specials: [
+            { type: "Poison", duration: 5, damage: 125, stack: false },
+            { type: "Fire", duration: 3, damage: 50, stack: false }
+        ]
+    },
+    { 
         name: "Dice", 
         entity: 1,
         reload: 1.0, 
@@ -21,14 +33,36 @@ const petals = [
         damage: 120, 
         armor: 69420,
         special: { type: "damageSeconds" }
-     },
+    },
     { name: "Heavy", entity: 1, reload: 7.0, health: 1000, damage: 35, armor: 1 },
-    { name: "Iris", entity: 1, reload: 2.0, health: 5, damage: 5, armor: 0,
+    { 
+        name: "Iris", 
+        entity: 1, 
+        reload: 2.0, 
+        health: 5, 
+        damage: 5, 
+        armor: 0,
         special: { type: "Poison", duration: 3, damage: 40, stack: false }
-     },
-    { name: "Leaf", entity: 1, reload: 1.0, health: 12, damage: 15, armor: 0,
-        
-     },
+    },
+    { name: "Leaf", entity: 1, reload: 1.0, health: 12, damage: 15, armor: 0 },
+    { 
+        name: "Plasma", 
+        entity: 1, 
+        reload: 3, 
+        health: 5, 
+        damage: 5, 
+        armor: 0, 
+        specials: [
+            { type: "Poison", duration: 5, damage: 100, stack: false },
+            { 
+                type: "Lightning", 
+                bounce: { 0: 3, 1: 3, 2: 4, 3: 4, 4: 5, 5: 5, 6: 6, 7: 6, 8: 7, 9: 7 }, 
+                damage: 40, 
+                multiHit: true 
+            },
+            { type: "Fire", duration: 3, damage: 100, stack: false }
+        ]
+    },
     { name: "Rock", entity: 1, reload: 2.0, health: 250, damage: 30, armor: 0 },
     { name: "Sad", entity: 1, reload: 4.0, health: 250, damage: 250, armor: 5 },
     { 

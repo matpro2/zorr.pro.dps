@@ -11,16 +11,16 @@ const tierColors = {
 const playerStats = { luck: 1.0 };
 
 const effectHandlers = {
-    luckMultiplier: (perf, effect, stats, context) => {
+    luckMultiplier: (perf, effect, stats, context, petal) => {
         const triggerChance = Math.min(effect.chance * stats.luck, 1.0);
         const standardChance = 1 - triggerChance;
         const expectedMultiplier = (standardChance * 1) + (triggerChance * effect.multiplier);
         perf.physicalDps *= expectedMultiplier;
     },
-    damageSeconds: (perf, effect, stats, context) => {
+    damageSeconds: (perf, effect, stats, context, petal) => {
         perf.physicalDps /= 10;
     },
-    Poison: (perf, effect, stats, context) => {
+    Poison: (perf, effect, stats, context, petal) => {
         let poisonUptimeRatio = 1;
         if (!context.isInfinite) {
             const poisonActiveTime = context.lifeDuration + effect.duration;
@@ -34,6 +34,41 @@ const effectHandlers = {
         } else {
             perf.nonStackingPoisonDps += poisonDps;
         }
+    },
+    Fire: (perf, effect, stats, context, petal) => {
+        let fireUptimeRatio = 1;
+        if (!context.isInfinite) {
+            const fireActiveTime = context.lifeDuration + effect.duration;
+            fireUptimeRatio = Math.min(fireActiveTime / context.totalCycleDuration, 1.0);
+        }
+        
+        const fireDps = effect.damage * fireUptimeRatio;
+
+        if (effect.stack) {
+            perf.stackingFireDps += fireDps;
+        } else {
+            perf.nonStackingFireDps += fireDps;
+        }
+    },
+    Lightning: (perf, effect, stats, context, petal) => {
+        if (effect.multiHit) {
+            let bounces = 0;
+            if (typeof effect.bounce === 'number') {
+                bounces = effect.bounce;
+            } else if (effect.bounce) {
+                const maxTier = Math.max(...Object.keys(effect.bounce).map(Number));
+                const targetTier = petal.tier > maxTier ? maxTier : petal.tier;
+                bounces = effect.bounce[targetTier];
+            }
+
+            const lightningDamagePerHit = effect.damage * bounces;
+            
+            if (context.isInfinite) {
+                perf.physicalDps += lightningDamagePerHit * 10;
+            } else {
+                perf.physicalDps += (lightningDamagePerHit * context.survivalTicks) / context.totalCycleDuration;
+            }
+        }
     }
 };
 
@@ -45,7 +80,7 @@ function updatePlayerStats() {
 }
 
 function calculatePetalPerformance(petal) {
-    if (!activeMob) return { ticks: 0, dps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0 };
+    if (!activeMob) return { ticks: 0, dps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0, stackingFireDps: 0, nonStackingFireDps: 0 };
 
     const effectiveMobDmg = Math.max(0, activeMob.damage - petal.armor);
     const effectivePetalDmg = Math.max(0, petal.damage - activeMob.armor);
@@ -73,25 +108,33 @@ function calculatePetalPerformance(petal) {
         ticks: survivalTicks,
         physicalDps: initialPhysicalDps,
         stackingPoisonDps: 0,
-        nonStackingPoisonDps: 0
+        nonStackingPoisonDps: 0,
+        stackingFireDps: 0,
+        nonStackingFireDps: 0
     };
 
     const context = {
         lifeDuration: lifeDuration,
         totalCycleDuration: totalCycleDuration,
-        isInfinite: survivalTicks === "∞"
+        isInfinite: survivalTicks === "∞",
+        survivalTicks: survivalTicks
     };
 
-    if (petal.special && effectHandlers[petal.special.type]) {
-        effectHandlers[petal.special.type](perf, petal.special, playerStats, context);
-    }
+    const effects = petal.specials || (petal.special ? [petal.special] : []);
+
+    effects.forEach(effect => {
+        if (effectHandlers[effect.type]) {
+            effectHandlers[effect.type](perf, effect, playerStats, context, petal);
+        }
+    });
 
     const eCount = petal.currentEntities || 1;
     
     perf.physicalDps *= eCount;
     perf.stackingPoisonDps *= eCount;
+    perf.stackingFireDps *= eCount;
 
-    perf.dps = perf.physicalDps + perf.stackingPoisonDps + perf.nonStackingPoisonDps;
+    perf.dps = perf.physicalDps + perf.stackingPoisonDps + perf.nonStackingPoisonDps + perf.stackingFireDps + perf.nonStackingFireDps;
 
     return perf;
 }
@@ -121,14 +164,22 @@ function renderEquippedSlots() {
     let totalPhysical = 0;
     let totalStackingPoison = 0;
     let maxNonStackingPoison = 0;
+    let totalStackingFire = 0;
+    let maxNonStackingFire = 0;
 
     equippedPetals.forEach((petal, index) => {
         const perf = calculatePetalPerformance(petal);
         
         totalPhysical += perf.physicalDps;
+        
         totalStackingPoison += perf.stackingPoisonDps;
         if (perf.nonStackingPoisonDps > maxNonStackingPoison) {
             maxNonStackingPoison = perf.nonStackingPoisonDps;
+        }
+
+        totalStackingFire += perf.stackingFireDps;
+        if (perf.nonStackingFireDps > maxNonStackingFire) {
+            maxNonStackingFire = perf.nonStackingFireDps;
         }
 
         const bgColor = tierColors[petal.tier] || "transparent";
@@ -144,7 +195,7 @@ function renderEquippedSlots() {
         listContainer.appendChild(item);
     });
 
-    const finalTotalDps = totalPhysical + totalStackingPoison + maxNonStackingPoison;
+    const finalTotalDps = totalPhysical + totalStackingPoison + maxNonStackingPoison + totalStackingFire + maxNonStackingFire;
     totalDpsDisplay.innerHTML = finalTotalDps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
@@ -206,9 +257,10 @@ function addPetal(index) {
     clone.damage *= multiplier;
     clone.armor *= multiplier;
 
-    if (clone.special && clone.special.damage) {
-        clone.special.damage *= multiplier;
-    }
+    const effects = clone.specials || (clone.special ? [clone.special] : []);
+    effects.forEach(effect => {
+        if (effect.damage) effect.damage *= multiplier;
+    });
 
     let eCount = 1;
     if (clone.entity !== undefined) {
