@@ -1,5 +1,11 @@
 const petals = [
     { name: "Basic", entity: 1, reload: 1.0, health: 10, damage: 10, armor: 0 },
+    { name: "Yin Yang", entity: 1, reload: 1.0, health: 30, damage: 30, armor: 0 },
+    { name: "Faster", entity: 1, reload: 1.0, health: 5, damage: 40, armor: 0 },
+    { name: "Orb", entity: 1, reload: 2.0, health: 25, damage: 175, armor: 10 },
+    { name: "Corn", entity: 1, reload: 10, health: 10000, damage: 10, armor: 0 },
+    { name: "Rice", entity: 1, reload: 0.05, health: 1, damage: 20, armor: 0 },
+    { name: "Obsidian", entity: 2, reload: 2.0, health: 5, damage: 25, armor: 150 },
     { name: "Bitcoin", entity: 1, reload: 1.0, health: 15, damage: 40, armor: 2 },
     { name: "Bone", entity: 1, reload: 1.0, health: 1, damage: 50, armor: 13 },
     { name: "Clover", entity: 1, reload: 2.5, health: 10, damage: 10, armor: 0 },
@@ -9,6 +15,14 @@ const petals = [
         specials: [
             { type: "Poison", duration: 5, damage: 125, stack: false },
             { type: "Fire", duration: 3, damage: 50, stack: false }
+        ]
+    },
+    { 
+        name: "Triangle", 
+        entity: 1, reload: 1, health: 75, damage: 50, armor: 8, 
+        specials: [
+            { type: "Poison", duration: 5, damage: 75, stack: false },
+            { type: "Fire", duration: 3, damage: 75, stack: false }
         ]
     },
     { 
@@ -106,6 +120,7 @@ const petals = [
     },
     { name: "Trident", entity: 1, reload: 3.75, health: 15, damage: 1000, armor: 5 },
     { name: "Wing", entity: 1, reload: 1.0, health: 10, damage: 45, armor: 3 },
+    { name: "Amethyst", entity: 1, reload: 20.0, health: 1, damage: 1250, armor: 6 },
     { name: "Yuan", entity: 1, reload: 1.0, health: 10, damage: 20, armor: 0 },
     { name: "Zodiac", entity: 1, reload: 2.0, health: 100, damage: 200, armor: 5,
         specials: [
