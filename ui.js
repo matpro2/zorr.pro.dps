@@ -30,27 +30,39 @@ const ui = {
         const panel = document.getElementById('player-stats-display');
         let html = `<div>Total Luck Bonus: <strong>+${stats.luck.toFixed(2)}%</strong></div>`;
         
-        if (stats.multipliers.Damage > 1) {
-            const bonusPercent = (stats.multipliers.Damage - 1) * 100;
-            html += `<div style="color: #27ae60; font-weight: bold; margin-top: 5px;">Total DMG Multiplier: x${stats.multipliers.Damage.toFixed(2)} (+${bonusPercent.toFixed(1)}%)</div>`;
+        // Mana Stats
+        const manaBalance = stats.manaRegen - stats.manaDrain;
+        const manaColor = manaBalance < 0 ? "#e74c3c" : "#3498db";
+        html += `<div style="color: ${manaColor}; font-weight: bold; margin-top: 5px;">Mana Flow: ${manaBalance >= 0 ? '+' : ''}${manaBalance.toFixed(2)}/s (Regen: ${stats.manaRegen.toFixed(1)} | Drain: ${stats.manaDrain.toFixed(1)})</div>`;
+
+        const maxModsPetal = engine.getModifiersForTier(0, stats, "Petal");
+        const maxModsPet = engine.getModifiersForTier(0, stats, "Pet");
+        
+        if (maxModsPetal.Damage > 1) {
+            const bonusPercent = (maxModsPetal.Damage - 1) * 100;
+            html += `<div style="color: #27ae60; font-weight: bold; margin-top: 5px;">Max Petal DMG Multiplier (T0): x${maxModsPetal.Damage.toFixed(2)} (+${bonusPercent.toFixed(1)}%)</div>`;
         }
-        if (stats.multipliers.Health > 1) {
-            const healthPercent = (stats.multipliers.Health - 1) * 100;
-            html += `<div style="color: #e67e22; font-weight: bold; margin-top: 5px;">Total HP Multiplier: x${stats.multipliers.Health.toFixed(2)} (+${healthPercent.toFixed(1)}%)</div>`;
+        if (maxModsPet.Damage > 1) {
+            const bonusPercent = (maxModsPet.Damage - 1) * 100;
+            html += `<div style="color: #d35400; font-weight: bold; margin-top: 5px;">Max Pet DMG Multiplier (T0): x${maxModsPet.Damage.toFixed(2)} (+${bonusPercent.toFixed(1)}%)</div>`;
         }
-        if (stats.multipliers.Reload !== 0) {
-            const reloadPercent = (stats.multipliers.Reload * 100).toFixed(1);
-            html += `<div style="color: #8e44ad; font-weight: bold; margin-top: 5px;">Total Reload Speed: ${reloadPercent > 0 ? '+' : ''}${reloadPercent}%</div>`;
+        if (maxModsPetal.Health > 1) {
+            const healthPercent = (maxModsPetal.Health - 1) * 100;
+            html += `<div style="color: #e67e22; font-weight: bold; margin-top: 5px;">Max HP Multiplier (T0): x${maxModsPetal.Health.toFixed(2)} (+${healthPercent.toFixed(1)}%)</div>`;
         }
-        if (stats.multipliers.SecondReload !== 0) {
-            const secReloadPercent = (stats.multipliers.SecondReload * 100).toFixed(1);
-            html += `<div style="color: #c0392b; font-weight: bold; margin-top: 5px;">Total Sec. Reload Speed: ${secReloadPercent > 0 ? '+' : ''}${secReloadPercent}%</div>`;
+        if (maxModsPetal.Reload !== 0) {
+            const reloadPercent = (maxModsPetal.Reload * 100).toFixed(1);
+            html += `<div style="color: #8e44ad; font-weight: bold; margin-top: 5px;">Max Reload Speed (T0): ${reloadPercent > 0 ? '+' : ''}${reloadPercent}%</div>`;
+        }
+        if (maxModsPetal.SecondReload !== 0) {
+            const secReloadPercent = (maxModsPetal.SecondReload * 100).toFixed(1);
+            html += `<div style="color: #c0392b; font-weight: bold; margin-top: 5px;">Max Sec. Reload Speed (T0): ${secReloadPercent > 0 ? '+' : ''}${secReloadPercent}%</div>`;
         }
         
         if (stats.activeSupports.length > 0) {
             html += `<div style="margin-top: 5px; font-size: 0.9em;"><strong>Active Supports:</strong></div>`;
             stats.activeSupports.forEach(b => {
-                html += `<div style="color: #7f8c8d; margin-left: 10px;">└ ${b.name} (T${b.tier}): ${b.type} ${b.stat} <strong>${b.value}</strong></div>`;
+                html += `<div style="color: #7f8c8d; margin-left: 10px;">└ ${b.name} (T${b.tier}): ${b.type} ${b.stat} <strong>${b.value}</strong> <em>${b.restriction || ''}</em></div>`;
             });
         }
         
@@ -68,6 +80,16 @@ const ui = {
         const effs = p.specials || (p.special ? [p.special] : []);
         if (effs.length > 0) {
             const mappedEffs = effs.map(e => {
+                
+                if (e.type === "Magic") {
+                    let magicInfo = [];
+                    if (e.regen) magicInfo.push(`Regen +${e.regen * Math.pow(2, p.tier)}/s`);
+                    if (e.cost) magicInfo.push(`Cost ${e.cost * Math.pow(2, p.tier)}`);
+                    if (e.drain) magicInfo.push(`Drain -${e.drain * Math.pow(2, p.tier)}/s`);
+                    if (e.petArmor) magicInfo.push(`Pet Armor +${e.petArmor * Math.pow(3, p.tier)}`);
+                    return `Magic [${magicInfo.join(', ')}]`;
+                }
+
                 let val = e.value;
                 if (typeof val === 'object' && val[0] !== undefined) {
                     const maxT = Math.max(...Object.keys(val).map(Number));
@@ -79,12 +101,24 @@ const ui = {
                 }
                 
                 if (e.global) {
-                    if (e.type === "reloadFactor") return `Reload Speed (${val > 0 ? '+' : ''}${val}%)`;
-                    if (e.type === "secondaryReloadFactor") return `Sec. Reload Speed (${val > 0 ? '+' : ''}${val}%)`;
-                    if (e.type === "petalHealthBuff") return `Health Buff (+${val}%)`;
+                    let restrictStr = e.tierRestricted ? `≤ T${p.tier}` : `All Tiers`;
+                    if (e.target) restrictStr += `, ${e.target}s`;
+                    const restrictText = `(${restrictStr})`;
+
+                    if (e.type === "petMutation") {
+                        let chanceVal = e.chance;
+                        if (typeof chanceVal === 'object' && chanceVal[0] !== undefined) {
+                            const maxT = Math.max(...Object.keys(chanceVal).map(Number));
+                            chanceVal = chanceVal[p.tier > maxT ? maxT : p.tier];
+                        }
+                        return `Mutation (+${chanceVal}%) ${restrictText}`;
+                    }
+                    if (e.type === "reloadFactor") return `Reload Speed (${val > 0 ? '+' : ''}${val}%) ${restrictText}`;
+                    if (e.type === "secondaryReloadFactor") return `Sec. Reload Speed (${val > 0 ? '+' : ''}${val}%) ${restrictText}`;
+                    if (e.type === "petalHealthBuff") return `Health Buff (+${val}%) ${restrictText}`;
                     if (e.type === "Luck") return `Luck (+${val}%)`;
-                    if (e.type === "Critical") return `Crit Buff`;
-                    return `${e.type} ${e.stats} (+${val}%)`;
+                    if (e.type === "Critical") return `Crit Buff ${restrictText}`;
+                    return `${e.type} ${e.stats} (+${val}%) ${restrictText}`;
                 }
                 
                 if (e.type === "Poison" || e.type === "Fire") return `${e.type} (${e.damage}/s)`;
@@ -111,8 +145,10 @@ const ui = {
             const actualHealthStr = displayStats.health != null ? Math.round(displayStats.health).toLocaleString() : "-";
             const actualArmorStr = displayStats.armor != null ? Math.round(displayStats.armor).toLocaleString() : "-";
             const actualDamageStr = displayStats.damage != null ? Math.round(displayStats.damage).toLocaleString() : "-";
-            const actualReloadStr = displayStats.reload != null ? displayStats.reload.toFixed(2) + "s" : "-";
+            let actualReloadStr = displayStats.reload != null ? displayStats.reload.toFixed(2) + "s" : "-";
             
+            if (displayStats.reload === Infinity) actualReloadStr = "∞";
+
             const equippedCount = ui.equippedPetals.filter(eq => eq.name === p.name && eq.tier === p.tier).length;
             const ownedQty = p.ownedQuantity || 1;
 
@@ -187,13 +223,11 @@ const ui = {
     equip: (i) => {
         const item = ui.activeItems[i];
         
-        // Empêcher l'équipement si l'item ne stack pas
         if (item.stack === false && ui.equippedPetals.some(p => p.name === item.name)) {
             alert(`Vous ne pouvez pas équiper plusieurs ${item.name} ! (Stack désactivé)`);
             return;
         }
         
-        // Vérification de la quantité possédée
         const owned = item.ownedQuantity || 1;
         const equippedCount = ui.equippedPetals.filter(p => p.name === item.name && p.tier === item.tier).length;
         if (equippedCount >= owned) {
@@ -209,7 +243,6 @@ const ui = {
     
     removeActiveItem: (i) => { 
         const item = ui.activeItems[i];
-        // Retire toutes les instances équipées de cet objet avant de le supprimer
         ui.equippedPetals = ui.equippedPetals.filter(p => !(p.name === item.name && p.tier === item.tier));
         ui.activeItems.splice(i, 1); 
         ui.refresh(); 
@@ -265,7 +298,8 @@ window.openSupportLightbox = () => {
     const list = document.getElementById('support-selection-list');
     list.innerHTML = "";
     petals.forEach((p, i) => {
-        const hasSupport = (p.specials || (p.special ? [p.special] : [])).some(e => e.global === true);
+        // Est considérée comme support toute pétale ayant un effet global OU un effet magique
+        const hasSupport = (p.specials || (p.special ? [p.special] : [])).some(e => e.global === true || e.type === "Magic");
         if (!hasSupport) return;
         
         const li = document.createElement('li');
@@ -282,7 +316,6 @@ window.addSupportToSlots = (idx) => {
     const c = structuredClone(petals[idx]);
     c.tier = t; 
     
-    // Si la pétale de support n'est pas encore dans le comparateur, on l'ajoute
     let existingIdx = ui.activeItems.findIndex(item => item.name === c.name && item.tier === c.tier);
     
     if (existingIdx === -1) {
@@ -308,7 +341,6 @@ window.addSupportToSlots = (idx) => {
         existingIdx = ui.activeItems.length - 1;
     }
     
-    // Ensuite, on l'équipe
     ui.equip(existingIdx);
     window.closeSupportLightbox();
 };
@@ -403,7 +435,6 @@ window.selectMob = (idx) => {
     closeMobLightbox();
 };
 
-// Initialisation de la sauvegarde au lancement
 window.onload = () => {
     ui.loadFromLocal();
     ui.refresh();
