@@ -17,17 +17,20 @@
         .item-main-row { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .dps-details { font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1); }
         #total-dps-display { font-size: 1.4em; font-weight: bold; margin-top: 15px; color: #2c3e50; text-align: right; }
-        #player-stats-display { margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 4px; border-left: 3px solid #3498db; line-height: 1.5; }
+        #player-stats-display { padding: 10px; background: #f9f9f9; border-radius: 4px; border-left: 3px solid #3498db; line-height: 1.5; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #f8f9fa; cursor: pointer; }
         button { cursor: pointer; padding: 8px 12px; border-radius: 4px; border: none; background: #3498db; color: white; }
-        .btn-add { background: #27ae60; width: 100%; margin: 10px 0; font-size: 1.05em; font-weight: bold; }
+        .btn-add { background: #27ae60; padding: 10px 20px; font-size: 1.05em; font-weight: bold; }
+        .btn-add-egg { background: #f39c12; padding: 10px 20px; font-size: 1.05em; font-weight: bold; }
         .btn-add-support { background: #8e44ad; padding: 6px 12px; font-size: 0.9em; font-weight: bold; border-radius: 4px; }
         .btn-add-support:hover { background: #732d91; }
         .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.8em; }
         ul { list-style: none; padding: 0; }
         li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .action-buttons { display: flex; gap: 10px; margin: 20px 0; }
+        .input-group { display: flex; gap: 10px; align-items: center; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -40,7 +43,7 @@
                 <h2 style="margin: 0;">Equipped Slots</h2>
                 <button class="btn-add-support" onclick="openSupportLightbox()">+ Add Support</button>
             </div>
-            <div id="slots-list">No petals equipped</div>
+            <div id="slots-list">No items equipped</div>
             <div id="total-dps-display">Total DPS: <strong>0.00</strong></div>
         </div>
 
@@ -52,13 +55,14 @@
         
         <div class="panel stats-container">
             <h2>Player Stats</h2>
-            <label>Extra Luck Bonus (%):</label>
-            <input type="number" id="player-luck" value="0.0" step="0.1" oninput="ui.updatePlayerStats()">
             <div id="player-stats-display"></div>
         </div>
     </div>
 
-    <button class="btn-add" onclick="openPetalLightbox()">+ Add DPS Petal to Comparison</button>
+    <div class="action-buttons">
+        <button class="btn-add" onclick="openPetalLightbox()">+ Add DPS Petal</button>
+        <button class="btn-add-egg" onclick="openEggLightbox()">+ Add Egg</button>
+    </div>
 
     <div class="panel">
         <table>
@@ -66,7 +70,8 @@
                 <tr>
                     <th onclick="ui.sortTable('name')">Name ↕️</th>
                     <th onclick="ui.sortTable('tier')">Tier ↕️</th>
-                    <th>Qty</th>
+                    <th>Entities</th>
+                    <th>Eqp / Owned</th>
                     <th>Health</th>
                     <th>Armor</th>
                     <th>Damage</th>
@@ -86,11 +91,31 @@
         <div class="lightbox-content">
             <div class="sticky-header">
                 <h3>Add a DPS Petal</h3>
-                <label>Tier:</label>
-                <input type="number" id="tier-selection" value="0" min="0">
+                <div class="input-group">
+                    <label>Tier:</label>
+                    <input type="number" id="tier-selection" value="0" min="0" style="width: 50px;">
+                    <label>Quantité :</label>
+                    <input type="number" id="petal-quantity-input" value="1" min="1" style="width: 60px;">
+                </div>
             </div>
             <ul id="petal-selection-list"></ul>
             <button onclick="closePetalLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
+        </div>
+    </div>
+    
+    <div id="egg-lightbox" class="lightbox-modal">
+        <div class="lightbox-content">
+            <div class="sticky-header">
+                <h3>Add an Egg</h3>
+                <div class="input-group">
+                    <label>Tier:</label>
+                    <input type="number" id="egg-tier-selection" value="0" min="0" style="width: 50px;">
+                    <label>Quantité :</label>
+                    <input type="number" id="egg-quantity-input" value="1" min="1" style="width: 60px;">
+                </div>
+            </div>
+            <ul id="egg-selection-list"></ul>
+            <button onclick="closeEggLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
         </div>
     </div>
 
@@ -98,8 +123,12 @@
         <div class="lightbox-content">
             <div class="sticky-header">
                 <h3>Equip a Support Petal</h3>
-                <label>Tier:</label>
-                <input type="number" id="support-tier-selection" value="0" min="0">
+                <div class="input-group">
+                    <label>Tier:</label>
+                    <input type="number" id="support-tier-selection" value="0" min="0" style="width: 50px;">
+                    <label>Quantité :</label>
+                    <input type="number" id="support-quantity-input" value="1" min="1" style="width: 60px;">
+                </div>
             </div>
             <ul id="support-selection-list"></ul>
             <button onclick="closeSupportLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
@@ -119,6 +148,7 @@
     </div>
 
     <script src="petal.js"></script>
+    <script src="eggs.js"></script>
     <script src="mob.js"></script>
     <script src="engine.js"></script>
     <script src="ui.js"></script>

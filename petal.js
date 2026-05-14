@@ -8,7 +8,11 @@ const petals = [
     { name: "Obsidian", entity: 2, reload: 2.0, health: 5, damage: 25, armor: 150 },
     { name: "Bitcoin", entity: 1, reload: 1.0, health: 15, damage: 40, armor: 2 },
     { name: "Bone", entity: 1, reload: 1.0, health: 1, damage: 50, armor: 13 },
-    { name: "Clover", entity: 1, reload: 2.5, health: 10, damage: 10, armor: 0 },
+     { name: "Clover", stack: true, entity: 1, reload: 2.5, health: 10, damage: 10, armor: 0,
+        specials: [
+            { type: "Luck", global: true, value: { 0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4, 4: 0.5, 5: 0.6, 6: 0.7, 7: 0.8, 8: 1.3, 9: 1.8 } }
+        ]
+    },
     { 
         name: "Comb", 
         entity: 1, reload: 3, health: 5, damage: 25, armor: 0, 
@@ -157,6 +161,25 @@ const petals = [
                     7: 21.5,
                     8: 29,
                     9: 36.5, 
+                } 
+            },
+        ]
+    },
+    { name: "Golden Palm Leaf", entity: 1, reload: 1.5, health: 20, damage: 20, armor: 0,
+        specials: [
+            { type: "secondaryReloadFactor", 
+              global: true,
+              value: {
+                    0: 1.5,
+                    1: 2.25,
+                    2: 3,
+                    3: 4.5,
+                    4: 6,
+                    5: 7.5,
+                    6: 10,
+                    7: 20,
+                    8: 35,
+                    9: 75, 
                 } 
             },
         ]
