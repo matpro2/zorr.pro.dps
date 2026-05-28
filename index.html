@@ -4,33 +4,35 @@
     <meta charset="UTF-8">
     <title>zorr.pro.dps</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; margin: 20px; }
-        h1 { color: #333; }
-        .layout { display: flex; gap: 20px; flex-wrap: wrap; }
-        .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; }
-        .stats-container, .mob-container { flex: 1; min-width: 250px; }
+        /* Reset basique et Typographie */
+        body { font-family: sans-serif; margin: 10px; color: #222; }
+        button { cursor: pointer; padding: 6px 12px; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee; }
+        input[type="number"] { width: 60px; padding: 4px; }
+        
+        /* Grille principale */
+        .layout { display: flex; gap: 15px; flex-wrap: wrap; }
+        .panel { flex: 1; min-width: 250px; padding: 15px; border: 1px solid #ccc; }
         .slots-container { flex: 2; min-width: 400px; }
-        .lightbox-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; }
-        .lightbox-content { background-color: white; margin: 5vh auto; padding: 20px; width: 400px; max-height: 85vh; overflow-y: auto; border-radius: 12px; position: relative; }
-        .sticky-header { position: sticky; top: -20px; background: white; padding: 10px 0; z-index: 10; border-bottom: 1px solid #eee; margin-bottom: 10px; }
-        .equipped-item { padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.1); }
+        .action-buttons, .input-group { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+        
+        /* Table de comparaison */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { cursor: pointer; background: #eee; }
+        
+        /* Affichage des Slots équipés & Stats */
+        .equipped-item { border: 1px solid #999; margin-bottom: 8px; padding: 8px; }
         .item-main-row { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-        .dps-details { font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1); }
-        #total-dps-display { font-size: 1.4em; font-weight: bold; margin-top: 15px; color: #2c3e50; text-align: right; }
-        #player-stats-display { padding: 10px; background: #f9f9f9; border-radius: 4px; border-left: 3px solid #3498db; line-height: 1.5; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; cursor: pointer; }
-        button { cursor: pointer; padding: 8px 12px; border-radius: 4px; border: none; background: #3498db; color: white; }
-        .btn-add { background: #27ae60; padding: 10px 20px; font-size: 1.05em; font-weight: bold; }
-        .btn-add-egg { background: #f39c12; padding: 10px 20px; font-size: 1.05em; font-weight: bold; }
-        .btn-add-support { background: #8e44ad; padding: 6px 12px; font-size: 0.9em; font-weight: bold; border-radius: 4px; }
-        .btn-add-support:hover { background: #732d91; }
-        .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.8em; }
-        ul { list-style: none; padding: 0; }
-        li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .action-buttons { display: flex; gap: 10px; margin: 20px 0; }
-        .input-group { display: flex; gap: 10px; align-items: center; margin-top: 5px; }
+        .dps-details { font-size: 0.85em; border-top: 1px dashed #999; margin-top: 6px; padding-top: 6px; }
+        #total-dps-display { text-align: right; font-size: 1.2em; font-weight: bold; margin-top: 10px; }
+        #player-stats-display { padding: 10px; background: #f8f8f8; border-left: 4px solid #666; line-height: 1.6; }
+        
+        /* Lightboxes (Modales) - Strictement nécessaire pour le fonctionnement */
+        .lightbox-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .lightbox-content { background: #fff; margin: 5vh auto; padding: 15px; width: 90%; max-width: 450px; max-height: 85vh; overflow-y: auto; border: 1px solid #333; }
+        .sticky-header { position: sticky; top: -15px; background: #fff; padding-bottom: 10px; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -41,7 +43,7 @@
         <div class="panel slots-container">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 style="margin: 0;">Equipped Slots</h2>
-                <button class="btn-add-support" onclick="openSupportLightbox()">+ Add Support</button>
+                <button onclick="openSupportLightbox()">+ Add Support</button>
             </div>
             <div id="slots-list">No items equipped</div>
             <div id="total-dps-display">Total DPS: <strong>0.00</strong></div>
@@ -60,8 +62,8 @@
     </div>
 
     <div class="action-buttons">
-        <button class="btn-add" onclick="openPetalLightbox()">+ Add DPS Petal</button>
-        <button class="btn-add-egg" onclick="openEggLightbox()">+ Add Egg</button>
+        <button onclick="openPetalLightbox()">+ Add DPS Petal</button>
+        <button onclick="openEggLightbox()">+ Add Egg</button>
     </div>
 
     <div class="panel">
@@ -93,13 +95,13 @@
                 <h3>Add a DPS Petal</h3>
                 <div class="input-group">
                     <label>Tier:</label>
-                    <input type="number" id="tier-selection" value="0" min="0" style="width: 50px;">
+                    <input type="number" id="tier-selection" value="0" min="0">
                     <label>Quantité :</label>
-                    <input type="number" id="petal-quantity-input" value="1" min="1" style="width: 60px;">
+                    <input type="number" id="petal-quantity-input" value="1" min="1">
                 </div>
             </div>
             <ul id="petal-selection-list"></ul>
-            <button onclick="closePetalLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
+            <button onclick="closePetalLightbox()" style="width:100%; margin-top:10px;">Close</button>
         </div>
     </div>
     
@@ -109,13 +111,13 @@
                 <h3>Add an Egg</h3>
                 <div class="input-group">
                     <label>Tier:</label>
-                    <input type="number" id="egg-tier-selection" value="0" min="0" style="width: 50px;">
+                    <input type="number" id="egg-tier-selection" value="0" min="0">
                     <label>Quantité :</label>
-                    <input type="number" id="egg-quantity-input" value="1" min="1" style="width: 60px;">
+                    <input type="number" id="egg-quantity-input" value="1" min="1">
                 </div>
             </div>
             <ul id="egg-selection-list"></ul>
-            <button onclick="closeEggLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
+            <button onclick="closeEggLightbox()" style="width:100%; margin-top:10px;">Close</button>
         </div>
     </div>
 
@@ -125,13 +127,13 @@
                 <h3>Equip a Support Petal</h3>
                 <div class="input-group">
                     <label>Tier:</label>
-                    <input type="number" id="support-tier-selection" value="0" min="0" style="width: 50px;">
+                    <input type="number" id="support-tier-selection" value="0" min="0">
                     <label>Quantité :</label>
-                    <input type="number" id="support-quantity-input" value="1" min="1" style="width: 60px;">
+                    <input type="number" id="support-quantity-input" value="1" min="1">
                 </div>
             </div>
             <ul id="support-selection-list"></ul>
-            <button onclick="closeSupportLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
+            <button onclick="closeSupportLightbox()" style="width:100%; margin-top:10px;">Close</button>
         </div>
     </div>
 
@@ -143,7 +145,7 @@
                 <input type="number" id="mob-tier-selection" value="0" min="0">
             </div>
             <ul id="mob-selection-list"></ul>
-            <button onclick="closeMobLightbox()" style="width:100%; background:#95a5a6; margin-top:10px;">Close</button>
+            <button onclick="closeMobLightbox()" style="width:100%; margin-top:10px;">Close</button>
         </div>
     </div>
 

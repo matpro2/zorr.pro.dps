@@ -17,9 +17,10 @@ const ui = {
     },
 
     refresh: () => {
-        const stats = engine.getGlobalStats(ui.equippedPetals);
+        const effectiveEquipped = engine.getEffectivePetals(ui.equippedPetals);
+        const stats = engine.getGlobalStats(effectiveEquipped);
         ui.renderTable(stats);
-        ui.renderEquipped(stats);
+        ui.renderEquipped(effectiveEquipped, stats);
         ui.renderMob();
         ui.renderStatPanel(stats);
         
@@ -28,12 +29,33 @@ const ui = {
 
     renderStatPanel: (stats) => {
         const panel = document.getElementById('player-stats-display');
-        let html = `<div>Total Luck Bonus: <strong>+${stats.luck.toFixed(2)}%</strong></div>`;
+        let html = '';
         
-        // Mana Stats
-        const manaBalance = stats.manaRegen - stats.manaDrain;
-        const manaColor = manaBalance < 0 ? "#e74c3c" : "#3498db";
-        html += `<div style="color: ${manaColor}; font-weight: bold; margin-top: 5px;">Mana Flow: ${manaBalance >= 0 ? '+' : ''}${manaBalance.toFixed(2)}/s (Regen: ${stats.manaRegen.toFixed(1)} | Drain: ${stats.manaDrain.toFixed(1)})</div>`;
+        if (stats.luck > 0) {
+            html += `<div>Total Luck Bonus: <strong>+${stats.luck.toFixed(2)}%</strong></div>`;
+        }
+        
+        if (stats.manaRegen > 0 || stats.manaDrain > 0) {
+            const manaBalance = stats.manaRegen - stats.manaDrain;
+            const manaColor = manaBalance < 0 ? "#e74c3c" : "#3498db";
+            html += `<div style="color: ${manaColor}; font-weight: bold; margin-top: 5px;">Mana Flow: ${manaBalance >= 0 ? '+' : ''}${manaBalance.toFixed(2)}/s (Regen: ${stats.manaRegen.toFixed(1)} | Drain: ${stats.manaDrain.toFixed(1)})</div>`;
+        }
+
+        let totalLocalHps = 0;
+        const effectiveEquipped = engine.getEffectivePetals(ui.equippedPetals);
+        effectiveEquipped.forEach(p => {
+            const perf = engine.calculatePerformance(p, ui.activeMob, stats);
+            totalLocalHps += perf.healingHps || 0;
+        });
+        const finalHps = stats.hpRegen + totalLocalHps;
+        
+        if (finalHps > 0) {
+            html += `<div style="color: #2ecc71; font-weight: bold; margin-top: 5px;">Total Health Regen: +${finalHps.toFixed(2)} HP/s</div>`;
+        }
+
+        if (stats.shieldRegen > 0) {
+            html += `<div style="color: #00cec9; font-weight: bold; margin-top: 5px;">Total Shield Regen: +${stats.shieldRegen.toFixed(2)} SH/s</div>`;
+        }
 
         const maxModsPetal = engine.getModifiersForTier(0, stats, "Petal");
         const maxModsPet = engine.getModifiersForTier(0, stats, "Pet");
@@ -58,6 +80,10 @@ const ui = {
             const secReloadPercent = (maxModsPetal.SecondReload * 100).toFixed(1);
             html += `<div style="color: #c0392b; font-weight: bold; margin-top: 5px;">Max Sec. Reload Speed (T0): ${secReloadPercent > 0 ? '+' : ''}${secReloadPercent}%</div>`;
         }
+        if (maxModsPetal.reloadSkipChance > 0) {
+            const skipPercent = (maxModsPetal.reloadSkipChance * 100).toFixed(1);
+            html += `<div style="color: #f1c40f; font-weight: bold; margin-top: 5px;">Max Reload Skip Chance (T0): +${skipPercent}%</div>`;
+        }
         
         if (stats.activeSupports.length > 0) {
             html += `<div style="margin-top: 5px; font-size: 0.9em;"><strong>Active Supports:</strong></div>`;
@@ -66,6 +92,9 @@ const ui = {
             });
         }
         
+        if (html === '') {
+            html = '<div style="color: #7f8c8d; font-style: italic;">No active modifiers</div>';
+        }
         panel.innerHTML = html;
     },
 
@@ -76,11 +105,14 @@ const ui = {
             const petTier = typeof p.mobTier === 'object' ? (p.mobTier[p.tier] !== undefined ? p.mobTier[p.tier] : 0) : (p.mobTier || 0);
             desc.push(`Spawns T${petTier} Pet`);
         }
+        
+        if (p.isSpill) {
+            desc.push(`Spill Puddle (5s)`);
+        }
 
         const effs = p.specials || (p.special ? [p.special] : []);
         if (effs.length > 0) {
             const mappedEffs = effs.map(e => {
-                
                 if (e.type === "Magic") {
                     let magicInfo = [];
                     if (e.regen) magicInfo.push(`Regen +${e.regen * Math.pow(2, p.tier)}/s`);
@@ -88,6 +120,18 @@ const ui = {
                     if (e.drain) magicInfo.push(`Drain -${e.drain * Math.pow(2, p.tier)}/s`);
                     if (e.petArmor) magicInfo.push(`Pet Armor +${e.petArmor * Math.pow(3, p.tier)}`);
                     return `Magic [${magicInfo.join(', ')}]`;
+                }
+
+                if (e.type === "Heal") {
+                    const scale = Math.pow(3, p.tier);
+                    if (e.regen) return `Heal Regen (+${(e.regen * scale).toFixed(1)}/s Global)`;
+                    if (e.value) return `Heal on Cooldown (${(e.value * scale).toFixed(1)} HP)`;
+                    if (e.onDamage) return `Heal on Tick (${(e.onDamage * scale).toFixed(1)} HP)`;
+                }
+
+                if (e.type === "Shield") {
+                    const scale = Math.pow(3, p.tier);
+                    if (e.regen) return `Shield Regen (+${(e.regen * scale).toFixed(1)}/s Global)`;
                 }
 
                 let val = e.value;
@@ -116,6 +160,7 @@ const ui = {
                     if (e.type === "reloadFactor") return `Reload Speed (${val > 0 ? '+' : ''}${val}%) ${restrictText}`;
                     if (e.type === "secondaryReloadFactor") return `Sec. Reload Speed (${val > 0 ? '+' : ''}${val}%) ${restrictText}`;
                     if (e.type === "petalHealthBuff") return `Health Buff (+${val}%) ${restrictText}`;
+                    if (e.type === "petalReloadSkipRate") return `Reload Skip Chance (+${val}%) ${restrictText}`;
                     if (e.type === "Luck") return `Luck (+${val}%)`;
                     if (e.type === "Critical") return `Crit Buff ${restrictText}`;
                     return `${e.type} ${e.stats} (+${val}%) ${restrictText}`;
@@ -139,7 +184,7 @@ const ui = {
             const row = document.createElement('tr');
             row.style.backgroundColor = engine.tierColors[p.tier] || 'transparent';
             
-            const isPureSupport = !p.isEgg && (p.damage == null || p.health == null);
+            const isPureSupport = !p.isEgg && !p.isSpill && (p.damage == null || p.health == null);
             const displayStats = engine.getDisplayStats(p, stats);
             
             const actualHealthStr = displayStats.health != null ? Math.round(displayStats.health).toLocaleString() : "-";
@@ -172,27 +217,51 @@ const ui = {
         });
     },
 
-    renderEquipped: (stats) => {
+    renderEquipped: (effectiveEquipped, stats) => {
         const list = document.getElementById('slots-list');
         const totalDisp = document.querySelector('#total-dps-display strong');
-        if (ui.equippedPetals.length === 0) { list.innerHTML = "No items equipped"; totalDisp.innerText = "0.00"; return; }
+        
+        if (effectiveEquipped.length === 0) { list.innerHTML = "No items equipped"; totalDisp.innerText = "0.00 DPS"; return; }
 
         let maxP = 0, pIdx = -1, maxF = 0, fIdx = -1;
-        ui.equippedPetals.forEach((p, i) => {
+        effectiveEquipped.forEach((p, i) => {
             const perf = engine.calculatePerformance(p, ui.activeMob, stats);
             if (perf.nonStackingPoisonDps > maxP) { maxP = perf.nonStackingPoisonDps; pIdx = i; }
             if (perf.nonStackingFireDps > maxF) { maxF = perf.nonStackingFireDps; fIdx = i; }
         });
 
         list.innerHTML = "";
-        let total = 0;
-        ui.equippedPetals.forEach((p, i) => {
-            const isPureSupport = !p.isEgg && (p.damage == null || p.health == null);
+        let totalDPS = 0;
+        
+        ui.equippedPetals.forEach((originalPetal, originalIndex) => {
+            const effectiveVersion = effectiveEquipped.find(e => e.originalIndex === originalIndex) || originalPetal;
+            const isConsumed = !effectiveEquipped.some(e => e === originalPetal || e.originalIndex === originalIndex);
+            
+            if (isConsumed) {
+                const div = document.createElement('div');
+                div.className = "equipped-item";
+                div.style.backgroundColor = "#e0e0e0"; 
+                div.style.color = "#7f8c8d";
+                div.innerHTML = `
+                    <div class="item-main-row" style="font-size: 0.9em; opacity: 0.8;">
+                        <span>${originalPetal.name} (T${originalPetal.tier}) ➔ <em>Fusioned</em></span>
+                        <button class="btn-delete" onclick="ui.unequip(${originalIndex})">X</button>
+                    </div>
+                `;
+                list.appendChild(div);
+                return; 
+            }
+
+            const p = effectiveVersion;
+            
+            const isPureSupport = !p.isEgg && !p.isSpill && (p.damage == null || p.health == null) && !p.originalName && !p.specials?.some(e => e.type === "Heal" && e.regen);
+            
             const perf = engine.calculatePerformance(p, ui.activeMob, stats);
-            const nsp = (i === pIdx) ? perf.nonStackingPoisonDps : 0;
-            const nsf = (i === fIdx) ? perf.nonStackingFireDps : 0;
+            const nsp = (originalIndex === pIdx) ? perf.nonStackingPoisonDps : 0;
+            const nsf = (originalIndex === fIdx) ? perf.nonStackingFireDps : 0;
             const dps = perf.physicalDps + perf.stackingPoisonDps + nsp + perf.stackingFireDps + nsf + perf.lightningDps;
-            total += dps;
+            
+            totalDPS += dps;
 
             const displayStats = engine.getDisplayStats(p, stats);
             const actualHealthStr = displayStats.health != null ? Math.round(displayStats.health).toLocaleString() : "-";
@@ -200,17 +269,30 @@ const ui = {
             const div = document.createElement('div');
             div.className = "equipped-item";
             div.style.backgroundColor = engine.tierColors[p.tier];
+            
+            let resultDisplay = "";
+            if (isPureSupport) resultDisplay = "SUPPORT";
+            else if (dps > 0) resultDisplay += `${dps.toFixed(2)} DPS`;
+
+            let nameDisplay = p.name;
+            let tierDisplay = `(T${p.tier})`;
+            if (p.originalName) {
+                nameDisplay = `${p.originalName} (T${p.originalTier}) ➔ ${p.name}`;
+            }
+            const entitiesDisplay = p.currentEntities && p.currentEntities > 1 ? ` x${p.currentEntities}` : '';
+
             div.innerHTML = `
                 <div class="item-main-row">
-                    <span>${p.name} ${p.currentEntities && p.currentEntities > 1 ? 'x'+p.currentEntities : ''} (T${p.tier})</span>
-                    <span>${isPureSupport ? 'SUPPORT' : dps.toFixed(2) + ' DPS'}</span>
-                    <button class="btn-delete" onclick="ui.unequip(${i})">X</button>
+                    <span>${nameDisplay}${entitiesDisplay} ${p.originalName ? tierDisplay : tierDisplay}</span>
+                    <span>${resultDisplay}</span>
+                    <button class="btn-delete" onclick="ui.unequip(${originalIndex})">X</button>
                 </div>
-                ${isPureSupport ? '' : `<div class="dps-details">Phys: ${perf.physicalDps.toFixed(2)} | Poison: ${(perf.stackingPoisonDps + nsp).toFixed(2)} | Fire: ${(perf.stackingFireDps + nsf).toFixed(2)} | Light: ${perf.lightningDps.toFixed(2)} | HP: ${actualHealthStr}</div>`}
+                ${isPureSupport ? '' : `<div class="dps-details">Phys: ${perf.physicalDps.toFixed(2)} | Poison: ${(perf.stackingPoisonDps + nsp).toFixed(2)} | Fire: ${(perf.stackingFireDps + nsf).toFixed(2)} | Light: ${perf.lightningDps.toFixed(2)} ${p.isSpill ? '' : '| HP: ' + actualHealthStr}</div>`}
             `;
             list.appendChild(div);
         });
-        totalDisp.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+        
+        totalDisp.innerHTML = `${totalDPS.toLocaleString(undefined, {minimumFractionDigits: 2})} DPS`;
     },
 
     renderMob: () => {
@@ -249,7 +331,8 @@ const ui = {
     },
 
     sortByDPS: () => { 
-        const stats = engine.getGlobalStats(ui.equippedPetals);
+        const effectiveEquipped = engine.getEffectivePetals(ui.equippedPetals);
+        const stats = engine.getGlobalStats(effectiveEquipped);
         ui.activeItems.sort((a,b) => engine.calculatePerformance(b, ui.activeMob, stats).baseDps - engine.calculatePerformance(a, ui.activeMob, stats).baseDps); 
         ui.renderTable(stats); 
         ui.saveToLocal(); 
@@ -265,13 +348,14 @@ const ui = {
     }
 };
 
-// Global Handlers
 window.openPetalLightbox = () => {
     document.getElementById('petal-lightbox').style.display = 'block';
     const list = document.getElementById('petal-selection-list');
     list.innerHTML = "";
     petals.forEach((p, i) => {
-        if (p.health == null || p.damage == null) return; 
+        if (p.health == null || p.damage == null) {
+            if(!p.isSpill && !p.specials?.some(e => e.type === "Heal") && !p.special?.type === "Heal" && p.name !== "Mimic" && p.name !== "Fission" && p.name !== "Fusion") return; 
+        }
         const li = document.createElement('li');
         li.innerHTML = `<span>${p.name}</span><button onclick="addPetalToTable(${i})">Add</button>`;
         list.appendChild(li);
@@ -298,8 +382,7 @@ window.openSupportLightbox = () => {
     const list = document.getElementById('support-selection-list');
     list.innerHTML = "";
     petals.forEach((p, i) => {
-        // Est considérée comme support toute pétale ayant un effet global OU un effet magique
-        const hasSupport = (p.specials || (p.special ? [p.special] : [])).some(e => e.global === true || e.type === "Magic");
+        const hasSupport = p.name === "Mimic" || p.name === "Fission" || p.name === "Fusion" || (p.specials || (p.special ? [p.special] : [])).some(e => e.global === true || e.type === "Magic" || (e.type === "Heal" && e.regen) || (e.type === "Shield" && e.regen));
         if (!hasSupport) return;
         
         const li = document.createElement('li');

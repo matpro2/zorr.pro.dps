@@ -5,20 +5,153 @@ const engine = {
         8: "#f329d9", 9: "#444444"
     },
 
-    supportEffects: ["Boost", "Critical", "reloadFactor", "secondaryReloadFactor", "petalHealthBuff", "Luck", "petMutation"],
+    supportEffects: ["Boost", "Critical", "reloadFactor", "secondaryReloadFactor", "petalHealthBuff", "Luck", "petMutation", "petalReloadSkipRate"],
 
-    getGlobalStats: (equippedPetals) => {
+    getEffectivePetals: (equippedPetals) => {
+        let effective = structuredClone(equippedPetals);
+        let itemsToHide = new Set(); 
+
+        for (let i = effective.length - 1; i >= 0; i--) {
+            let p = effective[i];
+            
+            if (itemsToHide.has(i)) continue;
+
+            if (p.name === "Fusion") {
+                let ingredients = [];
+                for (let j = i + 1; j < effective.length && ingredients.length < 3; j++) {
+                    if (!itemsToHide.has(j)) {
+                        ingredients.push({ item: effective[j], index: j });
+                    }
+                }
+
+                if (ingredients.length === 3) {
+                    let p1 = ingredients[0].item;
+                    let p2 = ingredients[1].item;
+                    let p3 = ingredients[2].item;
+                    
+                    if (p1.name === p2.name && p2.name === p3.name &&
+                        p1.tier === p2.tier && p2.tier === p3.tier && 
+                        p1.name !== "Fusion" && p1.name !== "Fission" && p1.name !== "Mimic") { 
+                        
+                        let baseDef = petals.find(x => x.name === p1.name) || (typeof eggs !== 'undefined' ? eggs.find(x => x.name === p1.name) : null) || p1;
+                        let newPetal = structuredClone(baseDef);
+                        
+                        newPetal.tier = p1.tier + 1;
+                        
+                        const m = Math.pow(3, newPetal.tier);
+                        if (baseDef.health != null) newPetal.health = baseDef.health * m;
+                        if (baseDef.damage != null) newPetal.damage = baseDef.damage * m;
+                        if (baseDef.armor != null) newPetal.armor = baseDef.armor * m;
+                        
+                        if (newPetal.specials) {
+                            newPetal.specials.forEach(e => { if (e.damage != null) e.damage = (baseDef.specials.find(x=>x.type === e.type)?.damage || e.damage) * m; });
+                        }
+                        if (newPetal.special && newPetal.special.damage != null) {
+                            newPetal.special.damage = (baseDef.special.damage) * m;
+                        }
+
+                        let baseQty = 1;
+                        if (baseDef.entity != null) {
+                            if (typeof baseDef.entity === 'number') baseQty = baseDef.entity;
+                            else {
+                                const maxT = Math.max(...Object.keys(baseDef.entity).map(Number));
+                                baseQty = baseDef.entity[newPetal.tier > maxT ? maxT : newPetal.tier] || 1;
+                            }
+                        }
+                        newPetal.currentEntities = baseQty;
+                        newPetal.originalName = p.name;
+                        newPetal.originalTier = p.tier;
+                        
+                        newPetal.originalIndex = i;
+
+                        effective[i] = newPetal;
+                        
+                        ingredients.forEach(ing => itemsToHide.add(ing.index));
+                    }
+                }
+            }
+            else if (p.name === "Mimic") {
+                let targetIdx = -1;
+                for (let j = i + 1; j < effective.length; j++) {
+                    if (!itemsToHide.has(j)) {
+                        targetIdx = j;
+                        break;
+                    }
+                }
+
+                if (targetIdx !== -1) {
+                    let target = effective[targetIdx];
+                    if (target.name !== "Mimic" && target.name !== "Fission" && target.name !== "Fusion") {
+                        let baseDef = petals.find(x => x.name === target.name) || (typeof eggs !== 'undefined' ? eggs.find(x => x.name === target.name) : null) || target;
+                        let newPetal = structuredClone(baseDef);
+                        
+                        newPetal.tier = Math.min(p.tier, target.tier);
+
+                        const m = Math.pow(3, newPetal.tier);
+                        if (baseDef.health != null) newPetal.health = baseDef.health * m;
+                        if (baseDef.damage != null) newPetal.damage = baseDef.damage * m;
+                        if (baseDef.armor != null) newPetal.armor = baseDef.armor * m;
+                        
+                        if (newPetal.specials) {
+                            newPetal.specials.forEach(e => { if (e.damage != null) e.damage = (baseDef.specials.find(x=>x.type === e.type)?.damage || e.damage) * m; });
+                        }
+                        if (newPetal.special && newPetal.special.damage != null) {
+                            newPetal.special.damage = (baseDef.special.damage) * m;
+                        }
+
+                        let baseQty = 1;
+                        if (baseDef.entity != null) {
+                            if (typeof baseDef.entity === 'number') baseQty = baseDef.entity;
+                            else {
+                                const maxT = Math.max(...Object.keys(baseDef.entity).map(Number));
+                                baseQty = baseDef.entity[newPetal.tier > maxT ? maxT : newPetal.tier] || 1;
+                            }
+                        }
+                        newPetal.currentEntities = baseQty;
+                        newPetal.originalName = p.name;
+                        newPetal.originalTier = p.tier;
+                        
+                        newPetal.originalIndex = i;
+
+                        effective[i] = newPetal;
+                    }
+                }
+            }
+            else if (p.name === "Fission") {
+                 let targetIdx = -1;
+                for (let j = i + 1; j < effective.length; j++) {
+                    if (!itemsToHide.has(j)) {
+                        targetIdx = j;
+                        break;
+                    }
+                }
+                if (targetIdx !== -1) {
+                    effective[targetIdx].currentEntities = (effective[targetIdx].currentEntities || 1) * 3;
+                    effective[targetIdx].isBuffedByFission = true;
+                    effective[i].originalIndex = i;
+                    effective[targetIdx].originalIndex = targetIdx;
+                }
+            } else {
+                effective[i].originalIndex = i;
+            }
+        }
+        
+        return effective.filter((_, index) => !itemsToHide.has(index));
+    },
+
+    getGlobalStats: (effectivePetals) => {
         const stats = { 
             luck: 0, 
             manaRegen: 0,
             manaDrain: 0,
+            hpRegen: 0,
+            shieldRegen: 0,
             rawSupports: [], 
             activeSupports: [],
             multipliers: { Damage: 1, Reload: 0, SecondReload: 0, Health: 1 }, 
         };
         
-        // Pass 1 : Récupérer d'abord toute la Luck (Clover) et les Stats de Mana
-        equippedPetals.forEach(p => {
+        effectivePetals.forEach(p => {
             const effects = p.specials || (p.special ? [p.special] : []);
             const qty = p.currentEntities || 1;
             
@@ -33,37 +166,23 @@ const engine = {
                     stats.activeSupports.push({ name: p.name, type: "Luck", stat: "Bonus", value: `+${(val * qty).toFixed(1)}%`, tier: p.tier, restriction: "(All Tiers)" });
                 }
                 
-                // Gestion du Mana Global
                 if (e.type === "Magic") {
-                    if (e.regen) {
-                        // La regen augmente de 2^Tier
-                        const regenVal = e.regen * Math.pow(2, p.tier) * qty;
-                        stats.manaRegen += regenVal;
-                    }
-                    if (e.drain) {
-                        // Le drain augmente de 2^Tier
-                        const drainVal = e.drain * Math.pow(2, p.tier) * qty;
-                        stats.manaDrain += drainVal;
-                    }
+                    if (e.regen) stats.manaRegen += (e.regen * Math.pow(2, p.tier) * qty);
+                    if (e.drain) stats.manaDrain += (e.drain * Math.pow(2, p.tier) * qty);
                 }
+
+                if (e.type === "Heal" && e.regen) stats.hpRegen += (e.regen * Math.pow(3, p.tier) * qty);
+                if (e.type === "Shield" && e.regen) stats.shieldRegen += (e.regen * Math.pow(3, p.tier) * qty);
             });
         });
 
-        // Pass 2 : Traiter les autres supports et les stocker en brut pour un calcul par tier
-        equippedPetals.forEach(p => {
+        effectivePetals.forEach(p => {
             const effects = p.specials || (p.special ? [p.special] : []);
             effects.forEach(e => {
                 
-                // Cas Spécial : Topaz (Donne de l'armure globale aux familiers, mais pas soumis aux mêmes restrictions)
                 if (e.type === "Magic" && e.petArmor) {
-                     // Les stats "classiques" dans un bloc Magic s'échelonnent par 3^Tier
                      const pArmor = e.petArmor * Math.pow(3, p.tier);
-                     stats.rawSupports.push({
-                        type: "petArmorBuff",
-                        value: pArmor,
-                        target: "Pet",
-                        name: p.name
-                     });
+                     stats.rawSupports.push({ type: "petArmorBuff", value: pArmor, target: "Pet", name: p.name });
                      stats.activeSupports.push({ name: p.name, type: "Pet Armor", stat: "Buff", value: `+${pArmor.toFixed(1)}`, tier: p.tier, restriction: "(All Tiers, Pets only)" });
                 }
 
@@ -89,12 +208,11 @@ const engine = {
                         multiplier: e.multiplier || (typeof val === 'object' ? val.multiplier : undefined),
                         sourceTier: p.tier,
                         tierRestricted: e.tierRestricted === true,
-                        target: e.target, // IMPORTANT: "Petal" ou "Pet" ou undefined
+                        target: e.target, 
                         affectedByClover: e.affectedByClover,
                         name: p.name
                     });
 
-                    // Formatage pour l'UI activeSupports
                     let restrictStr = e.tierRestricted ? `≤ T${p.tier}` : `All Tiers`;
                     if (e.target) restrictStr += `, ${e.target}s`;
                     const restrictionText = `(${restrictStr})`;
@@ -114,6 +232,8 @@ const engine = {
                         stats.activeSupports.push({ name: p.name, type: "Sec. Reload", stat: "Speed", value: `${val > 0 ? '+' : ''}${val}%`, tier: p.tier, restriction: restrictionText });
                     } else if (e.type === "petalHealthBuff") {
                         stats.activeSupports.push({ name: p.name, type: "Health", stat: "Buff", value: `+${val}%`, tier: p.tier, restriction: restrictionText });
+                    } else if (e.type === "petalReloadSkipRate") {
+                        stats.activeSupports.push({ name: p.name, type: "Reload Skip", stat: "Chance", value: `+${val}%`, tier: p.tier, restriction: restrictionText });
                     }
                 }
             });
@@ -122,7 +242,7 @@ const engine = {
     },
 
     getModifiersForTier: (targetTier, globalStats, targetType) => {
-        const mods = { Damage: 1, Reload: 0, SecondReload: 0, Health: 1, eggMutationChance: 0, flatArmor: 0 };
+        const mods = { Damage: 1, Reload: 0, SecondReload: 0, Health: 1, eggMutationChance: 0, flatArmor: 0, reloadSkipChance: 0 };
         
         globalStats.rawSupports.forEach(sup => {
             if (sup.tierRestricted && targetTier > sup.sourceTier) return;
@@ -141,7 +261,12 @@ const engine = {
                 mods.eggMutationChance += actualChance;
             }
             else if (sup.type === "petArmorBuff") mods.flatArmor += sup.value;
+            else if (sup.type === "petalReloadSkipRate") mods.reloadSkipChance += (sup.value / 100);
         });
+        
+        // Cap la probabilité de skip à 100% maximum
+        mods.reloadSkipChance = Math.min(mods.reloadSkipChance, 1.0);
+        
         return mods;
     },
 
@@ -157,26 +282,30 @@ const engine = {
             const expectedBonus = actualChance * (val.multiplier - 1);
             perf.physicalDps *= (1 + expectedBonus);
         },
-        damageSeconds: (perf) => {
-            perf.physicalDps /= 10;
-        },
+        damageSeconds: (perf) => { perf.physicalDps /= 10; },
         Poison: (perf, effect, stats, context) => {
-            let uptime = 1;
-            if (!context.isInfinite && context.totalCycleDuration > 0) {
-                uptime = Math.min((context.lifeDuration + effect.duration) / context.totalCycleDuration, 1.0);
+            if (effect.stack) {
+                let dps = 0;
+                if (context.isInfinite) dps = 10 * effect.duration * effect.damage;
+                else if (context.totalCycleDuration > 0) dps = (context.survivalTicks * effect.duration * effect.damage) / context.totalCycleDuration;
+                perf.stackingPoisonDps += dps;
+            } else {
+                let uptime = 1;
+                if (!context.isInfinite && context.totalCycleDuration > 0) uptime = Math.min((context.lifeDuration + effect.duration) / context.totalCycleDuration, 1.0);
+                perf.nonStackingPoisonDps += effect.damage * uptime;
             }
-            const dps = effect.damage * uptime;
-            if (effect.stack) perf.stackingPoisonDps += dps;
-            else perf.nonStackingPoisonDps += dps;
         },
         Fire: (perf, effect, stats, context) => {
-            let uptime = 1;
-            if (!context.isInfinite && context.totalCycleDuration > 0) {
-                uptime = Math.min((context.lifeDuration + effect.duration) / context.totalCycleDuration, 1.0);
+            if (effect.stack) {
+                let dps = 0;
+                if (context.isInfinite) dps = 10 * effect.duration * effect.damage;
+                else if (context.totalCycleDuration > 0) dps = (context.survivalTicks * effect.duration * effect.damage) / context.totalCycleDuration;
+                perf.stackingFireDps += dps;
+            } else {
+                let uptime = 1;
+                if (!context.isInfinite && context.totalCycleDuration > 0) uptime = Math.min((context.lifeDuration + effect.duration) / context.totalCycleDuration, 1.0);
+                perf.nonStackingFireDps += effect.damage * uptime;
             }
-            const dps = effect.damage * uptime;
-            if (effect.stack) perf.stackingFireDps += dps;
-            else perf.nonStackingFireDps += dps;
         },
         Lightning: (perf, effect, stats, context, petal) => {
             let bounces = 0;
@@ -188,6 +317,24 @@ const engine = {
             const totalLmg = effect.damage * bounces;
             const lDps = context.isInfinite ? (totalLmg * 10) : (context.totalCycleDuration > 0 ? (totalLmg * context.survivalTicks) / context.totalCycleDuration : 0);
             perf.lightningDps += lDps;
+        },
+        Heal: (perf, effect, stats, context, petal) => {
+            if (effect.regen) return; 
+            const scale = Math.pow(3, petal.tier);
+            if (effect.value) {
+                const totalHeal = effect.value * scale;
+                let hps = 0;
+                if (context.totalCycleDuration > 0) hps = totalHeal / context.totalCycleDuration;
+                else if (context.isInfinite) hps = totalHeal / (petal.reload || 0.1); 
+                perf.healingHps += hps;
+            }
+            else if (effect.onDamage) {
+                const healPerTick = effect.onDamage * scale;
+                let hps = 0;
+                if (context.isInfinite) hps = healPerTick * 10;
+                else if (context.totalCycleDuration > 0) hps = (context.survivalTicks * healPerTick) / context.totalCycleDuration;
+                perf.healingHps += hps;
+            }
         }
     },
 
@@ -195,21 +342,26 @@ const engine = {
         const targetType = item.isEgg ? "Pet" : "Petal";
         const mods = engine.getModifiersForTier(item.tier, globalStats, targetType);
         
-        if (!item.isEgg) {
-            let baseReload = item.reload != null ? Math.max(0.01, item.reload * (1 - mods.Reload)) : null;
+        if (item.isSpill) {
+            const sr = item.secondReload || 0;
+            const actualBaseReload = Math.max(0.01, (item.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
+            const actualSecondReload = Math.max(0, sr * (1 - mods.SecondReload));
+
+            return { 
+                health: null, 
+                damage: item.damage != null ? item.damage * mods.Damage : null, 
+                armor: null, 
+                reload: actualBaseReload + actualSecondReload 
+            };
+        } else if (!item.isEgg) {
+            let baseReload = item.reload != null ? Math.max(0.01, item.reload * (1 - mods.Reload) * (1 - mods.reloadSkipChance)) : null;
             
-            // Calcul du temps de reload additionnel si c'est une Magic Cost Petal et manque de mana
             if (item.special && item.special.type === "Magic" && item.special.cost) {
                 const cost = item.special.cost * Math.pow(2, item.tier);
-                // Si la regen est insuffisante, le temps de rechargement s'allonge du temps nécessaire pour générer le mana manquant
                 if (globalStats.manaRegen > 0) {
                      const timeToRegen = cost / globalStats.manaRegen;
-                     if (timeToRegen > baseReload) {
-                         baseReload = timeToRegen;
-                     }
-                } else {
-                     baseReload = Infinity; // Ne peut jamais spawn si 0 regen
-                }
+                     if (timeToRegen > baseReload) baseReload = timeToRegen;
+                } else baseReload = Infinity;
             }
 
             return {
@@ -225,7 +377,6 @@ const engine = {
 
             const petTier = typeof item.mobTier === 'object' ? (item.mobTier[item.tier] !== undefined ? item.mobTier[item.tier] : 0) : (item.mobTier || 0);
             const sr = typeof item.secondReload === 'object' ? (item.secondReload[item.tier] !== undefined ? item.secondReload[item.tier] : 0) : (item.secondReload || 0);
-
             const factors = [3.75, 3.6, 4, 7.5, 6, 15, 12];
             
             let hMult = 1; for (let i = 0; i < petTier; i++) hMult *= (factors[i] || 1);
@@ -241,7 +392,7 @@ const engine = {
                 expSMult = sMult * (1 - mods.eggMutationChance) + sMultMut * mods.eggMutationChance;
             }
 
-            const actualBaseReload = Math.max(0.01, (item.reload || 0) * (1 - mods.Reload));
+            const actualBaseReload = Math.max(0.01, (item.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
             const actualSecondReload = Math.max(0, sr * (1 - mods.SecondReload));
 
             return {
@@ -253,25 +404,68 @@ const engine = {
         }
     },
 
-    calculatePerformance: (item, mob, globalStats) => {
-        if (item.isEgg) return engine.calculateEggPerformance(item, mob, globalStats);
-
-        const perf = {
-            ticks: "-", baseDps: 0, physicalDps: 0, 
-            stackingPoisonDps: 0, nonStackingPoisonDps: 0,
-            stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0
-        };
-        
-        if (item.damage == null || item.health == null) return perf;
+    calculateSpillPerformance: (spill, mob, globalStats) => {
+        const perf = { ticks: "50 (5s)", baseDps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0, stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0, healingHps: 0 };
         if (!mob) return perf;
 
-        // VÉRIFICATION DU MANA DRAIN
+        const mods = engine.getModifiersForTier(spill.tier, globalStats, "Petal");
+        const sr = spill.secondReload || 0;
+        const actualBaseReload = Math.max(0.01, (spill.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
+        const actualSecondReload = Math.max(0, sr * (1 - mods.SecondReload));
+        const actualCooldown = actualBaseReload + actualSecondReload;
+
+        const SPILL_DURATION = 5.0; 
+        const SPILL_TICKS = 50;
+
+        const cycleDuration = Math.max(SPILL_DURATION, actualCooldown);
+        const context = { lifeDuration: SPILL_DURATION, totalCycleDuration: cycleDuration, isInfinite: false, survivalTicks: SPILL_TICKS };
+        
+        if (spill.damage != null) {
+            const boostedDamage = spill.damage * mods.Damage;
+            const pDmg = Math.max(0, boostedDamage - mob.armor);
+            perf.physicalDps = (pDmg * SPILL_TICKS) / cycleDuration;
+        }
+
+        const effects = spill.specials || (spill.special ? [spill.special] : []);
+        effects.forEach(e => {
+            if (engine.effectHandlers[e.type]) engine.effectHandlers[e.type](perf, e, globalStats, context, spill);
+        });
+
+        const qty = spill.currentEntities || 1;
+        perf.physicalDps *= qty; perf.stackingPoisonDps *= qty; perf.stackingFireDps *= qty; perf.lightningDps *= qty; perf.healingHps *= qty;
+        perf.baseDps = perf.physicalDps + perf.stackingPoisonDps + perf.nonStackingPoisonDps + perf.stackingFireDps + perf.nonStackingFireDps + perf.lightningDps;
+        return perf;
+    },
+
+    calculatePerformance: (item, mob, globalStats) => {
+        if (item.isEgg) return engine.calculateEggPerformance(item, mob, globalStats);
+        if (item.isSpill) return engine.calculateSpillPerformance(item, mob, globalStats);
+
+        const perf = { ticks: "-", baseDps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0, stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0, healingHps: 0 };
+        
+        if (item.damage == null || item.health == null) {
+            const mods = engine.getModifiersForTier(item.tier, globalStats, "Petal"); // Ajouté pour récupérer le skip
+            let actualReload = Math.max(0.01, (item.reload || 0.1) * (1 - (globalStats.multipliers.Reload || 0)) * (1 - mods.reloadSkipChance));
+            const sr = item.secondReload || 0;
+            actualReload += Math.max(0, sr * (1 - (globalStats.multipliers.SecondReload || 0)));
+            const context = { lifeDuration: 0, totalCycleDuration: actualReload, isInfinite: false, survivalTicks: 0 };
+            const effects = item.specials || (item.special ? [item.special] : []);
+            effects.forEach(e => {
+                if (engine.effectHandlers[e.type]) engine.effectHandlers[e.type](perf, e, globalStats, context, item);
+            });
+            const qty = item.currentEntities || 1;
+            perf.healingHps *= qty;
+            return perf;
+        }
+
+        if (!mob) return perf;
+
         let uptimeRatio = 1.0;
         let isDrained = false;
         if (item.special && item.special.type === "Magic" && item.special.drain) {
             const drainReq = item.special.drain * Math.pow(2, item.tier);
             if (globalStats.manaRegen < drainReq) {
-                if (globalStats.manaRegen <= 0) return perf; // Aucun DPS si 0 regen
+                if (globalStats.manaRegen <= 0) return perf; 
                 uptimeRatio = globalStats.manaRegen / drainReq;
                 isDrained = true;
             }
@@ -286,17 +480,15 @@ const engine = {
         const pDmg = Math.max(0, boostedDamage - mob.armor);
 
         let lifeDuration = 0, totalCycleDuration = 0, isInfinite = true, survivalTicks = 0;
-        
-        let baseReload = Math.max(0.01, (item.reload || 0) * (1 - mods.Reload));
+        let baseReload = Math.max(0.01, (item.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
+        baseReload += Math.max(0, (item.secondReload || 0) * (1 - mods.SecondReload));
         
         if (item.special && item.special.type === "Magic" && item.special.cost) {
             const cost = item.special.cost * Math.pow(2, item.tier);
             if (globalStats.manaRegen > 0) {
                  const timeToRegen = cost / globalStats.manaRegen;
                  if (timeToRegen > baseReload) baseReload = timeToRegen;
-            } else {
-                 return perf; // 0 DPS si coût en mana et 0 regen
-            }
+            } else return perf; 
         }
 
         if (mDmg > 0) {
@@ -307,36 +499,31 @@ const engine = {
             perf.ticks = survivalTicks;
         } else {
             perf.ticks = "∞";
+            totalCycleDuration = baseReload; 
         }
 
         perf.physicalDps = isInfinite ? (pDmg * 10) : (totalCycleDuration > 0 ? (survivalTicks * pDmg) / totalCycleDuration : 0);
-        
-        // Appliquer la pénalité de drain si actif
         if (isDrained) perf.physicalDps *= uptimeRatio;
 
         const context = { lifeDuration, totalCycleDuration, isInfinite, survivalTicks };
         const effects = item.specials || (item.special ? [item.special] : []);
-
         effects.forEach(e => {
             if (engine.effectHandlers[e.type]) engine.effectHandlers[e.type](perf, e, globalStats, context, item);
         });
 
         const qty = item.currentEntities || 1;
-        perf.physicalDps *= qty;
-        perf.stackingPoisonDps *= qty;
-        perf.stackingFireDps *= qty;
-        perf.lightningDps *= qty;
+        perf.physicalDps *= qty; perf.stackingPoisonDps *= qty; perf.stackingFireDps *= qty; perf.lightningDps *= qty; perf.healingHps *= qty;
+
+        if (isDrained) {
+            perf.stackingPoisonDps *= uptimeRatio; perf.stackingFireDps *= uptimeRatio; perf.lightningDps *= uptimeRatio; perf.healingHps *= uptimeRatio;
+        }
 
         perf.baseDps = perf.physicalDps + perf.stackingPoisonDps + perf.nonStackingPoisonDps + perf.stackingFireDps + perf.nonStackingFireDps + perf.lightningDps;
         return perf;
     },
 
     calcSingleEggPerf: (egg, targetMob, globalStats, petTier, mods) => {
-        const perf = {
-            ticks: "-", baseDps: 0, physicalDps: 0, 
-            stackingPoisonDps: 0, nonStackingPoisonDps: 0,
-            stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0
-        };
+        const perf = { ticks: "-", baseDps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0, stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0, healingHps: 0 };
         if (!targetMob) return perf;
 
         const mobName = egg.name.replace(" Egg", "");
@@ -363,7 +550,7 @@ const engine = {
 
         let lifeDuration = 0, survivalTicks = 0, isInfinite = true;
 
-        const actualBaseReload = Math.max(0.01, (egg.reload || 0) * (1 - mods.Reload));
+        const actualBaseReload = Math.max(0.01, (egg.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
         const actualSecondReload = Math.max(0, sr * (1 - mods.SecondReload));
         const actualCooldown = actualBaseReload + actualSecondReload;
 
@@ -372,26 +559,18 @@ const engine = {
             lifeDuration = survivalTicks * 0.1;
             isInfinite = false;
             perf.ticks = survivalTicks;
-        } else {
-            perf.ticks = "∞";
-        }
+        } else { perf.ticks = "∞"; }
 
         const cycleDuration = isInfinite ? Infinity : Math.max(lifeDuration, actualCooldown);
-
         perf.physicalDps = isInfinite ? (pDmg * 10) : (cycleDuration > 0 ? (survivalTicks * pDmg) / cycleDuration : 0);
         
         const context = { lifeDuration, totalCycleDuration: cycleDuration, isInfinite, survivalTicks };
         const effects = egg.specials || (egg.special ? [egg.special] : []);
-
         effects.forEach(e => {
             if (engine.effectHandlers[e.type]) engine.effectHandlers[e.type](perf, e, globalStats, context, egg);
         });
 
-        perf.physicalDps *= qty;
-        perf.stackingPoisonDps *= qty;
-        perf.stackingFireDps *= qty;
-        perf.lightningDps *= qty;
-
+        perf.physicalDps *= qty; perf.stackingPoisonDps *= qty; perf.stackingFireDps *= qty; perf.lightningDps *= qty; perf.healingHps *= qty;
         perf.baseDps = perf.physicalDps + perf.stackingPoisonDps + perf.nonStackingPoisonDps + perf.stackingFireDps + perf.nonStackingFireDps + perf.lightningDps;
         return perf;
     },
@@ -401,7 +580,6 @@ const engine = {
         const petTier = typeof egg.mobTier === 'object' ? (egg.mobTier[egg.tier] !== undefined ? egg.mobTier[egg.tier] : 0) : (egg.mobTier || 0);
         
         const basePerf = engine.calcSingleEggPerf(egg, targetMob, globalStats, petTier, mods);
-        
         const mutChance = mods.eggMutationChance;
 
         if (mutChance > 0) {
@@ -413,13 +591,11 @@ const engine = {
             basePerf.stackingFireDps = (basePerf.stackingFireDps * (1 - mutChance)) + (mutPerf.stackingFireDps * mutChance);
             basePerf.nonStackingFireDps = (basePerf.nonStackingFireDps * (1 - mutChance)) + (mutPerf.nonStackingFireDps * mutChance);
             basePerf.lightningDps = (basePerf.lightningDps * (1 - mutChance)) + (mutPerf.lightningDps * mutChance);
+            basePerf.healingHps = (basePerf.healingHps * (1 - mutChance)) + (mutPerf.healingHps * mutChance);
             basePerf.baseDps = (basePerf.baseDps * (1 - mutChance)) + (mutPerf.baseDps * mutChance);
 
-            if (basePerf.ticks !== mutPerf.ticks) {
-                basePerf.ticks = `${basePerf.ticks} / ${mutPerf.ticks}`;
-            }
+            if (basePerf.ticks !== mutPerf.ticks) basePerf.ticks = `${basePerf.ticks} / ${mutPerf.ticks}`;
         }
-
         return basePerf;
     }
 };
