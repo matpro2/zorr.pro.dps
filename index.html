@@ -43,7 +43,10 @@
         <div class="panel slots-container">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 style="margin: 0;">Equipped Slots</h2>
-                <button onclick="openSupportLightbox()">+ Add Support</button>
+                <div>
+                    <button onclick="openOptimizerLightbox()" style="background: #9b59b6; color: white; border: none; font-weight: bold; margin-right: 5px;">✨ Optimizer</button>
+                    <button onclick="openSupportLightbox()">+ Add Support</button>
+                </div>
             </div>
             <div id="slots-list">No items equipped</div>
             <div id="total-dps-display">Total DPS: <strong>0.00</strong></div>
@@ -149,10 +152,27 @@
         </div>
     </div>
 
+    <div id="optimizer-lightbox" class="lightbox-modal">
+        <div class="lightbox-content">
+            <div class="sticky-header">
+                <h3>Build Optimizer</h3>
+                <p style="font-size: 0.85em; color: #555;">Sélectionnez les éléments de votre inventaire à prendre en compte. La machine trouvera la meilleure composition pour vous.</p>
+                <div class="input-group">
+                    <label>Nombre de Slots :</label>
+                    <input type="number" id="optimizer-slots" value="5" min="1" max="15">
+                </div>
+            </div>
+            <ul id="optimizer-selection-list" style="margin-bottom: 15px;"></ul>
+            <button onclick="runOptimizer()" style="width:100%; background: #27ae60; color: white; font-weight: bold; font-size: 1.1em; padding: 10px;">Lancer l'Optimisation</button>
+            <button onclick="closeOptimizerLightbox()" style="width:100%; margin-top:10px;">Annuler</button>
+        </div>
+    </div>
+
     <script src="petal.js"></script>
     <script src="eggs.js"></script>
     <script src="mob.js"></script>
     <script src="engine.js"></script>
+    <script src="optimizer.js"></script>
     <script src="ui.js"></script>
 </body>
 </html>

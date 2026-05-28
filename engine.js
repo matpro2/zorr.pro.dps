@@ -8,7 +8,8 @@ const engine = {
     supportEffects: ["Boost", "Critical", "reloadFactor", "secondaryReloadFactor", "petalHealthBuff", "Luck", "petMutation", "petalReloadSkipRate"],
 
     getEffectivePetals: (equippedPetals) => {
-        let effective = structuredClone(equippedPetals);
+        // CORRECTION : Sépare définitivement les objets en mémoire pour éviter le bug "Fusioned"
+        let effective = equippedPetals.map(p => structuredClone(p)); 
         let itemsToHide = new Set(); 
 
         for (let i = effective.length - 1; i >= 0; i--) {
@@ -29,11 +30,15 @@ const engine = {
                     let p2 = ingredients[1].item;
                     let p3 = ingredients[2].item;
                     
-                    if (p1.name === p2.name && p2.name === p3.name &&
+                    let n1 = p1.originalName || p1.name;
+                    let n2 = p2.originalName || p2.name;
+                    let n3 = p3.originalName || p3.name;
+                    
+                    if (n1 === n2 && n2 === n3 &&
                         p1.tier === p2.tier && p2.tier === p3.tier && 
-                        p1.name !== "Fusion" && p1.name !== "Fission" && p1.name !== "Mimic") { 
+                        n1 !== "Fusion" && n1 !== "Fission" && n1 !== "Mimic") { 
                         
-                        let baseDef = petals.find(x => x.name === p1.name) || (typeof eggs !== 'undefined' ? eggs.find(x => x.name === p1.name) : null) || p1;
+                        let baseDef = petals.find(x => x.name === n1) || (typeof eggs !== 'undefined' ? eggs.find(x => x.name === n1) : null) || p1;
                         let newPetal = structuredClone(baseDef);
                         
                         newPetal.tier = p1.tier + 1;
@@ -61,75 +66,104 @@ const engine = {
                         newPetal.currentEntities = baseQty;
                         newPetal.originalName = p.name;
                         newPetal.originalTier = p.tier;
-                        
                         newPetal.originalIndex = i;
 
                         effective[i] = newPetal;
-                        
                         ingredients.forEach(ing => itemsToHide.add(ing.index));
+                    } else {
+                        effective[i].originalIndex = i;
                     }
+                } else {
+                    effective[i].originalIndex = i;
                 }
             }
             else if (p.name === "Mimic") {
                 let targetIdx = -1;
                 for (let j = i + 1; j < effective.length; j++) {
                     if (!itemsToHide.has(j)) {
-                        targetIdx = j;
+                        targetIdx = j; 
                         break;
                     }
                 }
 
                 if (targetIdx !== -1) {
                     let target = effective[targetIdx];
-                    if (target.name !== "Mimic" && target.name !== "Fission" && target.name !== "Fusion") {
-                        let baseDef = petals.find(x => x.name === target.name) || (typeof eggs !== 'undefined' ? eggs.find(x => x.name === target.name) : null) || target;
-                        let newPetal = structuredClone(baseDef);
-                        
-                        newPetal.tier = Math.min(p.tier, target.tier);
+                    let originalName = target.originalName || target.name; 
 
-                        const m = Math.pow(3, newPetal.tier);
-                        if (baseDef.health != null) newPetal.health = baseDef.health * m;
-                        if (baseDef.damage != null) newPetal.damage = baseDef.damage * m;
-                        if (baseDef.armor != null) newPetal.armor = baseDef.armor * m;
+                    if (originalName !== "Mimic" && originalName !== "Fission" && originalName !== "Fusion") {
+                        let baseDef = petals.find(x => x.name === originalName) || (typeof eggs !== 'undefined' ? eggs.find(x => x.name === originalName) : null) || target;
                         
-                        if (newPetal.specials) {
-                            newPetal.specials.forEach(e => { if (e.damage != null) e.damage = (baseDef.specials.find(x=>x.type === e.type)?.damage || e.damage) * m; });
-                        }
-                        if (newPetal.special && newPetal.special.damage != null) {
-                            newPetal.special.damage = (baseDef.special.damage) * m;
-                        }
+                        if (baseDef.stack !== false) {
+                            let newPetal = structuredClone(baseDef);
+                            
+                            // CORRECTION : Le Mimic impose sa propre rareté à l'objet copié
+                            newPetal.tier = p.tier;
 
-                        let baseQty = 1;
-                        if (baseDef.entity != null) {
-                            if (typeof baseDef.entity === 'number') baseQty = baseDef.entity;
-                            else {
-                                const maxT = Math.max(...Object.keys(baseDef.entity).map(Number));
-                                baseQty = baseDef.entity[newPetal.tier > maxT ? maxT : newPetal.tier] || 1;
+                            const m = Math.pow(3, newPetal.tier);
+                            if (baseDef.health != null) newPetal.health = baseDef.health * m;
+                            if (baseDef.damage != null) newPetal.damage = baseDef.damage * m;
+                            if (baseDef.armor != null) newPetal.armor = baseDef.armor * m;
+                            
+                            if (newPetal.specials) {
+                                newPetal.specials.forEach(e => { if (e.damage != null) e.damage = (baseDef.specials.find(x=>x.type === e.type)?.damage || e.damage) * m; });
                             }
-                        }
-                        newPetal.currentEntities = baseQty;
-                        newPetal.originalName = p.name;
-                        newPetal.originalTier = p.tier;
-                        
-                        newPetal.originalIndex = i;
+                            if (newPetal.special && newPetal.special.damage != null) {
+                                newPetal.special.damage = (baseDef.special.damage) * m;
+                            }
 
-                        effective[i] = newPetal;
+                            let baseQty = 1;
+                            if (baseDef.entity != null) {
+                                if (typeof baseDef.entity === 'number') baseQty = baseDef.entity;
+                                else {
+                                    const maxT = Math.max(...Object.keys(baseDef.entity).map(Number));
+                                    baseQty = baseDef.entity[newPetal.tier > maxT ? maxT : newPetal.tier] || 1;
+                                }
+                            }
+                            newPetal.currentEntities = baseQty;
+                            newPetal.originalName = p.name; 
+                            newPetal.originalTier = p.tier;
+                            newPetal.originalIndex = i;
+
+                            effective[i] = newPetal;
+                        } else {
+                            effective[i].originalIndex = i; 
+                        }
+                    } else {
+                        effective[i].originalIndex = i; 
                     }
+                } else {
+                    effective[i].originalIndex = i; 
                 }
             }
             else if (p.name === "Fission") {
-                 let targetIdx = -1;
+                let targetIdx = -1;
                 for (let j = i + 1; j < effective.length; j++) {
                     if (!itemsToHide.has(j)) {
-                        targetIdx = j;
+                        targetIdx = j; 
                         break;
                     }
                 }
+                
                 if (targetIdx !== -1) {
-                    effective[targetIdx].currentEntities = (effective[targetIdx].currentEntities || 1) * 3;
-                    effective[targetIdx].isBuffedByFission = true;
-                    effective[i].originalIndex = i;
-                    effective[targetIdx].originalIndex = targetIdx;
+                    let target = effective[targetIdx];
+                    let originalName = target.originalName || target.name;
+                    
+                    if (originalName !== "Mimic" && originalName !== "Fission" && originalName !== "Fusion") {
+                        let baseDef = petals.find(x => x.name === originalName) || (typeof eggs !== 'undefined' ? eggs.find(x => x.name === originalName) : null) || target;
+                        
+                        if (baseDef.stack !== false) {
+                            effective[targetIdx].currentEntities = (effective[targetIdx].currentEntities || 1) * 3;
+                            effective[targetIdx].isBuffedByFission = true;
+                            effective[i].originalIndex = i;
+                            effective[targetIdx].originalIndex = targetIdx;
+                        } else {
+                            effective[i].originalIndex = i; 
+                        }
+                    } else {
+                        effective[i].originalIndex = i; 
+                    }
+                } else {
+                    effective[i].originalIndex = i; 
                 }
             } else {
                 effective[i].originalIndex = i;
@@ -140,6 +174,8 @@ const engine = {
     },
 
     getGlobalStats: (effectivePetals) => {
+        const hasRoot = effectivePetals.some(p => p.name === "Root");
+
         const stats = { 
             luck: 0, 
             manaRegen: 0,
@@ -148,10 +184,11 @@ const engine = {
             shieldRegen: 0,
             rawSupports: [], 
             activeSupports: [],
-            multipliers: { Damage: 1, Reload: 0, SecondReload: 0, Health: 1 }, 
+            multipliers: { Damage: 1, Reload: 1, SecondReload: 1, Health: 1 }, 
         };
         
         effectivePetals.forEach(p => {
+            if (p.name === "Dizzy" && !hasRoot) return;
             const effects = p.specials || (p.special ? [p.special] : []);
             const qty = p.currentEntities || 1;
             
@@ -177,6 +214,8 @@ const engine = {
         });
 
         effectivePetals.forEach(p => {
+            if (p.name === "Dizzy" && !hasRoot) return;
+
             const effects = p.specials || (p.special ? [p.special] : []);
             effects.forEach(e => {
                 
@@ -242,7 +281,7 @@ const engine = {
     },
 
     getModifiersForTier: (targetTier, globalStats, targetType) => {
-        const mods = { Damage: 1, Reload: 0, SecondReload: 0, Health: 1, eggMutationChance: 0, flatArmor: 0, reloadSkipChance: 0 };
+        const mods = { Damage: 1, Reload: 1, SecondReload: 1, Health: 1, eggMutationChance: 0, flatArmor: 0, reloadSkipChance: 0 };
         
         globalStats.rawSupports.forEach(sup => {
             if (sup.tierRestricted && targetTier > sup.sourceTier) return;
@@ -253,8 +292,8 @@ const engine = {
                 const actualChance = Math.min((sup.value.chance / 100) + (globalStats.luck / 100), 1.0);
                 mods.Damage += actualChance * (sup.value.multiplier - 1);
             }
-            else if (sup.type === "reloadFactor") mods.Reload += (sup.value / 100);
-            else if (sup.type === "secondaryReloadFactor") mods.SecondReload += (sup.value / 100);
+            else if (sup.type === "reloadFactor") mods.Reload *= Math.max(0.01, 1 + (sup.value / 100));
+            else if (sup.type === "secondaryReloadFactor") mods.SecondReload *= Math.max(0.01, 1 + (sup.value / 100));
             else if (sup.type === "petalHealthBuff") mods.Health += (sup.value / 100);
             else if (sup.type === "petMutation") {
                 const actualChance = Math.min((sup.chance / 100) + (sup.affectedByClover ? (globalStats.luck / 100) : 0), 1.0);
@@ -264,7 +303,6 @@ const engine = {
             else if (sup.type === "petalReloadSkipRate") mods.reloadSkipChance += (sup.value / 100);
         });
         
-        // Cap la probabilité de skip à 100% maximum
         mods.reloadSkipChance = Math.min(mods.reloadSkipChance, 1.0);
         
         return mods;
@@ -344,8 +382,8 @@ const engine = {
         
         if (item.isSpill) {
             const sr = item.secondReload || 0;
-            const actualBaseReload = Math.max(0.01, (item.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
-            const actualSecondReload = Math.max(0, sr * (1 - mods.SecondReload));
+            const actualBaseReload = Math.max(0.01, ((item.reload || 0) / mods.Reload) * (1 - mods.reloadSkipChance));
+            const actualSecondReload = Math.max(0, sr / mods.SecondReload);
 
             return { 
                 health: null, 
@@ -354,7 +392,7 @@ const engine = {
                 reload: actualBaseReload + actualSecondReload 
             };
         } else if (!item.isEgg) {
-            let baseReload = item.reload != null ? Math.max(0.01, item.reload * (1 - mods.Reload) * (1 - mods.reloadSkipChance)) : null;
+            let baseReload = item.reload != null ? Math.max(0.01, ((item.reload || 0) / mods.Reload) * (1 - mods.reloadSkipChance)) : null;
             
             if (item.special && item.special.type === "Magic" && item.special.cost) {
                 const cost = item.special.cost * Math.pow(2, item.tier);
@@ -392,8 +430,8 @@ const engine = {
                 expSMult = sMult * (1 - mods.eggMutationChance) + sMultMut * mods.eggMutationChance;
             }
 
-            const actualBaseReload = Math.max(0.01, (item.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
-            const actualSecondReload = Math.max(0, sr * (1 - mods.SecondReload));
+            const actualBaseReload = Math.max(0.01, ((item.reload || 0) / mods.Reload) * (1 - mods.reloadSkipChance));
+            const actualSecondReload = Math.max(0, sr / mods.SecondReload);
 
             return {
                 health: basePet.health * expHMult * mods.Health,
@@ -410,14 +448,14 @@ const engine = {
 
         const mods = engine.getModifiersForTier(spill.tier, globalStats, "Petal");
         const sr = spill.secondReload || 0;
-        const actualBaseReload = Math.max(0.01, (spill.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
-        const actualSecondReload = Math.max(0, sr * (1 - mods.SecondReload));
+        const actualBaseReload = Math.max(0.01, ((spill.reload || 0) / mods.Reload) * (1 - mods.reloadSkipChance));
+        const actualSecondReload = Math.max(0, sr / mods.SecondReload);
         const actualCooldown = actualBaseReload + actualSecondReload;
 
         const SPILL_DURATION = 5.0; 
         const SPILL_TICKS = 50;
 
-        const cycleDuration = Math.max(SPILL_DURATION, actualCooldown);
+        const cycleDuration = actualCooldown;
         const context = { lifeDuration: SPILL_DURATION, totalCycleDuration: cycleDuration, isInfinite: false, survivalTicks: SPILL_TICKS };
         
         if (spill.damage != null) {
@@ -444,10 +482,10 @@ const engine = {
         const perf = { ticks: "-", baseDps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0, stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0, healingHps: 0 };
         
         if (item.damage == null || item.health == null) {
-            const mods = engine.getModifiersForTier(item.tier, globalStats, "Petal"); // Ajouté pour récupérer le skip
-            let actualReload = Math.max(0.01, (item.reload || 0.1) * (1 - (globalStats.multipliers.Reload || 0)) * (1 - mods.reloadSkipChance));
+            const mods = engine.getModifiersForTier(item.tier, globalStats, "Petal"); 
+            let actualReload = Math.max(0.01, ((item.reload || 0.1) / mods.Reload) * (1 - mods.reloadSkipChance));
             const sr = item.secondReload || 0;
-            actualReload += Math.max(0, sr * (1 - (globalStats.multipliers.SecondReload || 0)));
+            actualReload += Math.max(0, sr / mods.SecondReload);
             const context = { lifeDuration: 0, totalCycleDuration: actualReload, isInfinite: false, survivalTicks: 0 };
             const effects = item.specials || (item.special ? [item.special] : []);
             effects.forEach(e => {
@@ -480,8 +518,8 @@ const engine = {
         const pDmg = Math.max(0, boostedDamage - mob.armor);
 
         let lifeDuration = 0, totalCycleDuration = 0, isInfinite = true, survivalTicks = 0;
-        let baseReload = Math.max(0.01, (item.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
-        baseReload += Math.max(0, (item.secondReload || 0) * (1 - mods.SecondReload));
+        let baseReload = Math.max(0.01, ((item.reload || 0) / mods.Reload) * (1 - mods.reloadSkipChance));
+        baseReload += Math.max(0, (item.secondReload || 0) / mods.SecondReload);
         
         if (item.special && item.special.type === "Magic" && item.special.cost) {
             const cost = item.special.cost * Math.pow(2, item.tier);
@@ -550,8 +588,8 @@ const engine = {
 
         let lifeDuration = 0, survivalTicks = 0, isInfinite = true;
 
-        const actualBaseReload = Math.max(0.01, (egg.reload || 0) * (1 - mods.Reload) * (1 - mods.reloadSkipChance));
-        const actualSecondReload = Math.max(0, sr * (1 - mods.SecondReload));
+        const actualBaseReload = Math.max(0.01, ((egg.reload || 0) / mods.Reload) * (1 - mods.reloadSkipChance));
+        const actualSecondReload = Math.max(0, sr / mods.SecondReload);
         const actualCooldown = actualBaseReload + actualSecondReload;
 
         if (mDmg > 0) {
