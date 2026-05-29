@@ -7,4 +7,5 @@ const mobs = [
     { name: "Velociraptor", health: 1050, damage: 80, armor: 3.5, },
     { name: "Rat", health: 550, damage: 75, armor: 0.5, },
     { name: "Roach", health: 350, damage: 60, armor: 0.75, },
+    { name: "Sandstorm", health: 125, damage: 40, armor: 0.1, },
 ];

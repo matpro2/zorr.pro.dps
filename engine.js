@@ -5,11 +5,47 @@ const engine = {
         8: "#f329d9", 9: "#444444"
     },
 
-    supportEffects: ["Boost", "Critical", "reloadFactor", "secondaryReloadFactor", "petalHealthBuff", "Luck", "petMutation", "petalReloadSkipRate"],
+    supportEffects: ["Boost", "Critical", "reloadFactor", "secondaryReloadFactor", "petalHealthBuff", "Luck", "petMutation", "petalReloadSkipRate", "mobDamageFactor"],
 
     getEffectivePetals: (equippedPetals) => {
-        // CORRECTION : Sépare définitivement les objets en mémoire pour éviter le bug "Fusioned"
-        let effective = equippedPetals.map(p => structuredClone(p)); 
+        // SYNERGIE : Si un Joystick est présent, tous les Stick se transforment en Joystick
+        const hasJoystick = equippedPetals.some(p => p.name === "Joystick");
+        
+        let effective = equippedPetals.map(p => {
+            let clone = structuredClone(p);
+            if (hasJoystick && clone.name === "Stick") {
+                let joyDef = petals.find(x => x.name === "Joystick");
+                if (joyDef) {
+                    let newJoy = structuredClone(joyDef);
+                    newJoy.tier = clone.tier; 
+                    newJoy.ownedQuantity = clone.ownedQuantity;
+                    newJoy.originalName = "Stick";
+                    newJoy.originalTier = clone.tier;
+                    
+                    const m = Math.pow(3, newJoy.tier);
+                    if (joyDef.health != null) newJoy.health = joyDef.health * m;
+                    if (joyDef.damage != null) newJoy.damage = joyDef.damage * m;
+                    if (joyDef.armor != null) newJoy.armor = joyDef.armor * m;
+                    
+                    if (newJoy.specials) {
+                        newJoy.specials.forEach(e => { if (e.damage != null) e.damage = (joyDef.specials.find(x=>x.type === e.type)?.damage || e.damage) * m; });
+                    }
+                    
+                    let baseQty = 1;
+                    if (joyDef.entity != null) {
+                        if (typeof joyDef.entity === 'number') baseQty = joyDef.entity;
+                        else {
+                            const maxT = Math.max(...Object.keys(joyDef.entity).map(Number));
+                            baseQty = joyDef.entity[newJoy.tier > maxT ? maxT : newJoy.tier] || 1;
+                        }
+                    }
+                    newJoy.currentEntities = baseQty;
+                    return newJoy;
+                }
+            }
+            return clone;
+        }); 
+        
         let itemsToHide = new Set(); 
 
         for (let i = effective.length - 1; i >= 0; i--) {
@@ -273,6 +309,8 @@ const engine = {
                         stats.activeSupports.push({ name: p.name, type: "Health", stat: "Buff", value: `+${val}%`, tier: p.tier, restriction: restrictionText });
                     } else if (e.type === "petalReloadSkipRate") {
                         stats.activeSupports.push({ name: p.name, type: "Reload Skip", stat: "Chance", value: `+${val}%`, tier: p.tier, restriction: restrictionText });
+                    } else if (e.type === "mobDamageFactor") {
+                        stats.activeSupports.push({ name: p.name, type: "Mob DMG", stat: "Reduction", value: `-${val}%`, tier: p.tier, restriction: restrictionText });
                     }
                 }
             });
@@ -281,7 +319,7 @@ const engine = {
     },
 
     getModifiersForTier: (targetTier, globalStats, targetType) => {
-        const mods = { Damage: 1, Reload: 1, SecondReload: 1, Health: 1, eggMutationChance: 0, flatArmor: 0, reloadSkipChance: 0 };
+        const mods = { Damage: 1, Reload: 1, SecondReload: 1, Health: 1, eggMutationChance: 0, flatArmor: 0, reloadSkipChance: 0, mobDamageReduction: 0 };
         
         globalStats.rawSupports.forEach(sup => {
             if (sup.tierRestricted && targetTier > sup.sourceTier) return;
@@ -301,9 +339,11 @@ const engine = {
             }
             else if (sup.type === "petArmorBuff") mods.flatArmor += sup.value;
             else if (sup.type === "petalReloadSkipRate") mods.reloadSkipChance += (sup.value / 100);
+            else if (sup.type === "mobDamageFactor") mods.mobDamageReduction += (sup.value / 100);
         });
         
         mods.reloadSkipChance = Math.min(mods.reloadSkipChance, 1.0);
+        mods.mobDamageReduction = Math.min(mods.mobDamageReduction, 1.0); // Plafonné à 100% pour éviter que le mob ne te soigne !
         
         return mods;
     },
@@ -409,7 +449,8 @@ const engine = {
                 reload: baseReload
             };
         } else {
-            const mobName = item.name.replace(" Egg", "");
+            // Utilise mobSpawned en priorité, sinon retire " Egg" du nom
+            const mobName = item.mobSpawned || item.name.replace(" Egg", "");
             const basePet = mobs.find(m => m.name === mobName);
             if (!basePet) return { health: null, damage: null, armor: null, reload: null };
 
@@ -514,7 +555,8 @@ const engine = {
         const boostedDamage = item.damage * mods.Damage;
         const boostedHealth = item.health * mods.Health;
         
-        const mDmg = Math.max(0, mob.damage - (item.armor || 0));
+        const actualMobDamage = mob.damage * Math.max(0, 1 - mods.mobDamageReduction);
+        const mDmg = Math.max(0, actualMobDamage - (item.armor || 0));
         const pDmg = Math.max(0, boostedDamage - mob.armor);
 
         let lifeDuration = 0, totalCycleDuration = 0, isInfinite = true, survivalTicks = 0;
@@ -540,7 +582,14 @@ const engine = {
             totalCycleDuration = baseReload; 
         }
 
-        perf.physicalDps = isInfinite ? (pDmg * 10) : (totalCycleDuration > 0 ? (survivalTicks * pDmg) / totalCycleDuration : 0);
+        // MÉCANIQUE FINAL DAMAGE : 1 seule fois à la mort (0 DPS si infini)
+        const hasFinalDamage = (item.specials || (item.special ? [item.special] : [])).some(e => e.type === "finalDamage");
+        if (hasFinalDamage) {
+            perf.physicalDps = isInfinite ? 0 : (totalCycleDuration > 0 ? pDmg / totalCycleDuration : 0);
+        } else {
+            perf.physicalDps = isInfinite ? (pDmg * 10) : (totalCycleDuration > 0 ? (survivalTicks * pDmg) / totalCycleDuration : 0);
+        }
+        
         if (isDrained) perf.physicalDps *= uptimeRatio;
 
         const context = { lifeDuration, totalCycleDuration, isInfinite, survivalTicks };
@@ -564,7 +613,8 @@ const engine = {
         const perf = { ticks: "-", baseDps: 0, physicalDps: 0, stackingPoisonDps: 0, nonStackingPoisonDps: 0, stackingFireDps: 0, nonStackingFireDps: 0, lightningDps: 0, healingHps: 0 };
         if (!targetMob) return perf;
 
-        const mobName = egg.name.replace(" Egg", "");
+        // Utilise mobSpawned en priorité, sinon retire " Egg" du nom
+        const mobName = egg.mobSpawned || egg.name.replace(" Egg", "");
         const basePet = mobs.find(m => m.name === mobName);
         if (!basePet) return perf;
 
@@ -583,7 +633,8 @@ const engine = {
         const boostedHealth = petHealth * mods.Health;
         const boostedArmor = petArmor + mods.flatArmor;
 
-        const mDmg = Math.max(0, targetMob.damage - boostedArmor);
+        const actualMobDamage = targetMob.damage * Math.max(0, 1 - mods.mobDamageReduction);
+        const mDmg = Math.max(0, actualMobDamage - boostedArmor);
         const pDmg = Math.max(0, boostedDamage - targetMob.armor);
 
         let lifeDuration = 0, survivalTicks = 0, isInfinite = true;
@@ -600,7 +651,13 @@ const engine = {
         } else { perf.ticks = "∞"; }
 
         const cycleDuration = isInfinite ? Infinity : Math.max(lifeDuration, actualCooldown);
-        perf.physicalDps = isInfinite ? (pDmg * 10) : (cycleDuration > 0 ? (survivalTicks * pDmg) / cycleDuration : 0);
+        
+        const hasFinalDamage = (egg.specials || (egg.special ? [egg.special] : [])).some(e => e.type === "finalDamage");
+        if (hasFinalDamage) {
+            perf.physicalDps = isInfinite ? 0 : (cycleDuration > 0 ? pDmg / cycleDuration : 0);
+        } else {
+            perf.physicalDps = isInfinite ? (pDmg * 10) : (cycleDuration > 0 ? (survivalTicks * pDmg) / cycleDuration : 0);
+        }
         
         const context = { lifeDuration, totalCycleDuration: cycleDuration, isInfinite, survivalTicks };
         const effects = egg.specials || (egg.special ? [egg.special] : []);

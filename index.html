@@ -45,6 +45,7 @@
                 <h2 style="margin: 0;">Equipped Slots</h2>
                 <div>
                     <button onclick="openOptimizerLightbox()" style="background: #9b59b6; color: white; border: none; font-weight: bold; margin-right: 5px;">✨ Optimizer</button>
+                    <button onclick="ui.exportBuild()" style="background: #2c3e50; color: white; border: none; font-weight: bold; margin-right: 5px;">💾 Export Build Brut</button>
                     <button onclick="openSupportLightbox()">+ Add Support</button>
                 </div>
             </div>
@@ -64,25 +65,36 @@
         </div>
     </div>
 
-    <div class="action-buttons">
-        <button onclick="openPetalLightbox()">+ Add DPS Petal</button>
-        <button onclick="openEggLightbox()">+ Add Egg</button>
-    </div>
+   <div class="action-buttons" style="flex-wrap: wrap;">
+                <button onclick="openPetalLightbox()">+ Add Petal</button>
+                <button onclick="openEggLightbox()" style="background: #f39c12; color:white; border:none;">+ Add Egg</button>
+                <button onclick="ui.sortByDPS()" style="background: #2ecc71; color:white; border:none;">Sort by DPS</button>
+                <button onclick="ui.exportInventory()" style="background: #34495e; color:white; border:none;">📤 Export Inv.</button>
+                <label style="background: #e67e22; color:white; padding: 6px 12px; cursor: pointer; border: none; display: inline-block; font-size: 13.3333px; font-family: sans-serif; border-radius: 2px;">
+                    📥 Import Inv. <input type="file" id="import-inv-input" accept=".json" onchange="ui.importInventory(event)" style="display: none;">
+                </label>
+            </div>
 
     <div class="panel">
+        <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+            <label for="variable-column-select" style="font-weight: bold;">Colonne variable :</label>
+            <select id="variable-column-select" onchange="ui.refresh()" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; background: #fff;">
+                <option value="special">Special Effects</option>
+                <option value="entities">Entities Qty</option>
+                <option value="ticks">Survival Ticks</option>
+            </select>
+        </div>
         <table>
             <thead>
                 <tr>
                     <th onclick="ui.sortTable('name')">Name ↕️</th>
                     <th onclick="ui.sortTable('tier')">Tier ↕️</th>
-                    <th>Entities</th>
                     <th>Eqp / Owned</th>
                     <th>Health</th>
                     <th>Armor</th>
                     <th>Damage</th>
                     <th>Reload</th>
-                    <th>Special</th>
-                    <th>Ticks</th>
+                    <th id="variable-column-header">Special Effects</th>
                     <th onclick="ui.sortByDPS()">Effective DPS ↕️</th>
                     <th>Action</th>
                 </tr>

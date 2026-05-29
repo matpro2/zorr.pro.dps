@@ -16,12 +16,154 @@ const ui = {
         if (equipped) ui.equippedPetals = JSON.parse(equipped);
     },
 
+    exportInventory: () => {
+        if (ui.activeItems.length === 0) {
+            alert("Votre inventaire est vide, rien à exporter !");
+            return;
+        }
+        
+        // On crée un inventaire épuré avec uniquement les données essentielles
+        const cleanInventory = ui.activeItems.map(p => ({
+            name: p.name,
+            tier: p.tier,
+            ownedQuantity: p.ownedQuantity || 1
+        }));
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanInventory, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "inventaire_petals.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    },
+
+    importInventory: (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (Array.isArray(imported)) {
+                    
+                    // On reconstruit complètement les statistiques des objets à partir de leur nom et tier
+                    let reconstructedItems = [];
+                    imported.forEach(imp => {
+                        let baseDef = petals.find(p => p.name === imp.name);
+                        if (!baseDef && typeof eggs !== 'undefined') {
+                            baseDef = eggs.find(eg => eg.name === imp.name);
+                        }
+
+                        if (baseDef) {
+                            let c = structuredClone(baseDef);
+                            c.tier = imp.tier;
+                            c.ownedQuantity = imp.ownedQuantity || 1;
+                            
+                            // Recalcul des multiplicateurs de stats
+                            const m = Math.pow(3, c.tier);
+                            if (c.health != null) c.health *= m; 
+                            if (c.damage != null) c.damage *= m; 
+                            if (c.armor != null) c.armor *= m;
+                            const effs = c.specials || (c.special ? [c.special] : []);
+                            effs.forEach(e => { if (e.damage != null) e.damage *= m; });
+                            
+                            // Recalcul des entités (pour les œufs ou les flaques)
+                            let qty = 1;
+                            if (c.entity != null) {
+                                if (typeof c.entity === 'number') qty = c.entity;
+                                else {
+                                    const maxT = Math.max(...Object.keys(c.entity).map(Number));
+                                    qty = c.entity[c.tier > maxT ? maxT : c.tier];
+                                }
+                            }
+                            c.currentEntities = qty;
+                            
+                            reconstructedItems.push(c);
+                        }
+                    });
+
+                    ui.activeItems = reconstructedItems;
+                    ui.refresh();
+                    alert("✅ Inventaire importé et reconstruit avec succès !");
+                } else {
+                    alert("Format invalide : Le fichier JSON doit être un tableau d'objets.");
+                }
+            } catch (err) {
+                alert("Erreur lors de la lecture du fichier JSON : " + err.message);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ""; 
+    },
+
+    exportBuild: () => {
+        if (ui.equippedPetals.length === 0) {
+            alert("Aucun build équipé à exporter !");
+            return;
+        }
+        const effectiveEquipped = engine.getEffectivePetals(ui.equippedPetals);
+        const stats = engine.getGlobalStats(effectiveEquipped);
+        
+        // Compile l'intégralité des statistiques brutes et calculées calcul après calcul
+        const buildDetails = effectiveEquipped.map(p => {
+            const perf = engine.calculatePerformance(p, ui.activeMob, stats);
+            const displayStats = engine.getDisplayStats(p, stats);
+            return {
+                name: p.name,
+                tier: p.tier,
+                originalName: p.originalName || null,
+                originalTier: p.originalTier || null,
+                entities: p.currentEntities || 1,
+                calculatedStats: {
+                    health: displayStats.health,
+                    damage: displayStats.damage,
+                    armor: displayStats.armor,
+                    reload: displayStats.reload
+                },
+                performanceAgainstMob: {
+                    targetMob: ui.activeMob ? `${ui.activeMob.name} (T${ui.activeMob.tier})` : "Aucun monstre sélectionné",
+                    ticksBeforeDeath: perf.ticks,
+                    totalDps: perf.baseDps,
+                    physicalDps: perf.physicalDps,
+                    poisonStackingDps: perf.stackingPoisonDps,
+                    poisonNonStackingDps: perf.nonStackingPoisonDps,
+                    fireStackingDps: perf.stackingFireDps,
+                    fireNonStackingDps: perf.nonStackingFireDps,
+                    lightningDps: perf.lightningDps,
+                    healingHps: perf.healingHps
+                }
+            };
+        });
+
+        const exportData = {
+            exportTime: new Date().toISOString(),
+            activeMob: ui.activeMob,
+            globalModifiers: {
+                luckBonus: stats.luck,
+                manaFlow: stats.manaRegen - stats.manaDrain,
+                hpRegenGlobal: stats.hpRegen,
+                shieldRegenGlobal: stats.shieldRegen,
+                activeSupportsList: stats.activeSupports
+            },
+            build: buildDetails
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "build_stats_brutes.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    },
+
     refresh: () => {
         const effectiveEquipped = engine.getEffectivePetals(ui.equippedPetals);
         const stats = engine.getGlobalStats(effectiveEquipped);
         ui.renderTable(stats);
         ui.renderEquipped(effectiveEquipped, stats);
-        ui.renderMob();
+        ui.renderMob(stats); // <-- Ajout de 'stats' ici
         ui.renderStatPanel(stats);
         
         ui.saveToLocal();
@@ -83,6 +225,10 @@ const ui = {
         if (maxModsPetal.reloadSkipChance > 0) {
             const skipPercent = (maxModsPetal.reloadSkipChance * 100).toFixed(1);
             html += `<div style="color: #f1c40f; font-weight: bold; margin-top: 5px;">Max Reload Skip Chance (T0): +${skipPercent}%</div>`;
+        }
+        if (maxModsPetal.mobDamageReduction > 0) {
+            const mobDmgRedPercent = (maxModsPetal.mobDamageReduction * 100).toFixed(1);
+            html += `<div style="color: #8e44ad; font-weight: bold; margin-top: 5px;">Max Mob DMG Reduction (T0): -${mobDmgRedPercent}%</div>`;
         }
         
         if (stats.activeSupports.length > 0) {
@@ -161,6 +307,7 @@ const ui = {
                     if (e.type === "secondaryReloadFactor") return `Sec. Reload Speed (${val > 0 ? '+' : ''}${val}%) ${restrictText}`;
                     if (e.type === "petalHealthBuff") return `Health Buff (+${val}%) ${restrictText}`;
                     if (e.type === "petalReloadSkipRate") return `Reload Skip Chance (+${val}%) ${restrictText}`;
+                    if (e.type === "mobDamageFactor") return `Mob Damage Reduction (-${val}%) ${restrictText}`;
                     if (e.type === "Luck") return `Luck (+${val}%)`;
                     if (e.type === "Critical") return `Crit Buff ${restrictText}`;
                     return `${e.type} ${e.stats} (+${val}%) ${restrictText}`;
@@ -168,6 +315,8 @@ const ui = {
                 
                 if (e.type === "Poison" || e.type === "Fire") return `${e.type} (${e.damage}/s)`;
                 if (e.type === "Lightning") return `Lightning`;
+                if (e.type === "finalDamage") return `Damage on Death`;
+                if (e.type === "joyStick") return `Transforms Sticks`;
                 return e.type;
             });
             desc = desc.concat(mappedEffs);
@@ -179,6 +328,19 @@ const ui = {
     renderTable: (stats) => {
         const tbody = document.getElementById('table-body');
         tbody.innerHTML = "";
+        
+        // Récupère le choix de la colonne variable
+        const varColSelect = document.getElementById('variable-column-select');
+        const varColVal = varColSelect ? varColSelect.value : 'special';
+        const varColHeader = document.getElementById('variable-column-header');
+        
+        // Met à jour le titre de la colonne
+        if (varColHeader) {
+            if (varColVal === 'special') varColHeader.innerText = 'Special Effects';
+            else if (varColVal === 'entities') varColHeader.innerText = 'Entities Qty';
+            else if (varColVal === 'ticks') varColHeader.innerText = 'Survival Ticks';
+        }
+
         ui.activeItems.forEach((p, i) => {
             const perf = engine.calculatePerformance(p, ui.activeMob, stats);
             const row = document.createElement('tr');
@@ -197,16 +359,20 @@ const ui = {
             const equippedCount = ui.equippedPetals.filter(eq => eq.name === p.name && eq.tier === p.tier).length;
             const ownedQty = p.ownedQuantity || 1;
 
+            // Détermine ce qui doit s'afficher dans la colonne variable
+            let variableContent = "";
+            if (varColVal === 'special') variableContent = ui.getSpecDesc(p);
+            else if (varColVal === 'entities') variableContent = p.currentEntities || 1;
+            else if (varColVal === 'ticks') variableContent = perf.ticks;
+
             row.innerHTML = `
                 <td>${p.name}</td><td>${p.tier}</td>
-                <td>${p.currentEntities || 1}</td>
                 <td><strong>${equippedCount} / ${ownedQty}</strong></td>
                 <td>${actualHealthStr}</td>
                 <td>${actualArmorStr}</td>
                 <td>${actualDamageStr}</td>
                 <td><strong>${actualReloadStr}</strong></td>
-                <td>${ui.getSpecDesc(p)}</td>
-                <td>${perf.ticks}</td>
+                <td>${variableContent}</td>
                 <td><strong>${isPureSupport ? "SUPPORT" : (perf.baseDps || 0).toFixed(2)}</strong></td>
                 <td>
                     <button onclick="ui.equip(${i})">Equip</button>
@@ -295,11 +461,19 @@ const ui = {
         totalDisp.innerHTML = `${totalDPS.toLocaleString(undefined, {minimumFractionDigits: 2})} DPS`;
     },
 
-    renderMob: () => {
+    renderMob: (stats) => {
         const d = document.getElementById('active-mob-display');
         if (!ui.activeMob) { d.innerHTML = "No mob selected"; return; }
         d.style.backgroundColor = engine.tierColors[ui.activeMob.tier];
-        d.innerHTML = `<strong>${ui.activeMob.name} (T${ui.activeMob.tier})</strong><br>H: ${Math.round(ui.activeMob.health).toLocaleString()} | D: ${Math.round(ui.activeMob.damage).toLocaleString()} | A: ${Math.round(ui.activeMob.armor).toLocaleString()}`;
+        
+        // Calcul visuel des dégâts réduits
+        let actualDamage = ui.activeMob.damage;
+        if (stats) {
+            const mods = engine.getModifiersForTier(0, stats, "Petal"); // On récupère la stat globale
+            actualDamage = ui.activeMob.damage * Math.max(0, 1 - (mods.mobDamageReduction || 0));
+        }
+
+        d.innerHTML = `<strong>${ui.activeMob.name} (T${ui.activeMob.tier})</strong><br>H: ${Math.round(ui.activeMob.health).toLocaleString()} | D: ${Math.round(actualDamage).toLocaleString()} | A: ${Math.round(ui.activeMob.armor).toLocaleString()}`;
     },
 
     equip: (i) => {

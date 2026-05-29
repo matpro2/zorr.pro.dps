@@ -1,5 +1,20 @@
 const petals = [
+    { name: "Coconut", stack: true, entity: 1, reload: 5.0, health: 10000, damage: 2500, armor: 0,
+        specials: [
+            { type: "finalDamage"}
+        ]
+     },
+    { name: "Joystick", stack: true, entity: 1, reload: 0.9, health: 5, damage: 400, armor: -1,
+        specials: [
+            { type: "joyStick"}
+        ]
+    },
     { name: "Basic", stack: true, entity: 1, reload: 1.0, health: 10, damage: 10, armor: 0 },
+    { name: "Neurotoxin", stack: true, entity: 1, reload: 2.0, health: 10, damage: 10, armor: 0,
+        specials: [
+            { type: "mobDamageFactor", value: { 0: 10, 1: 15, 2: 20, 3: 25, 4: 30, 5: 35, 6: 40, 7: 45, 8: 60, 9: 75 } }
+        ]
+    },
     { name: "Bitcoin", stack: true, entity: 1, reload: 1.0, health: 15, damage: 40, armor: 2 },
     { name: "Bone", stack: true, entity: 1, reload: 1.0, health: 1, damage: 50, armor: 13 },
     { name: "Clover", stack: true, entity: 1, reload: 2.5, health: 10, damage: 10, armor: 0,
