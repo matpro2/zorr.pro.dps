@@ -10,9 +10,9 @@ const petals = [
         ]
     },
     { name: "Basic", stack: true, entity: 1, reload: 1.0, health: 10, damage: 10, armor: 0 },
-    { name: "Neurotoxin", stack: true, entity: 1, reload: 2.0, health: 10, damage: 10, armor: 0,
+    { name: "Neurotoxin", stack: false, entity: 1, reload: 2.0, health: 10, damage: 10, armor: 0,
         specials: [
-            { type: "mobDamageFactor", value: { 0: 10, 1: 15, 2: 20, 3: 25, 4: 30, 5: 35, 6: 40, 7: 45, 8: 60, 9: 75 } }
+            { type: "mobDamageFactor", global: true, value: { 0: 10, 1: 15, 2: 20, 3: 25, 4: 30, 5: 35, 6: 40, 7: 45, 8: 60, 9: 75 } }
         ]
     },
     { name: "Bitcoin", stack: true, entity: 1, reload: 1.0, health: 15, damage: 40, armor: 2 },
@@ -37,8 +37,8 @@ const petals = [
     { name: "Dollar", stack: true, entity: 1, reload: 1.0, health: 10, damage: 30, armor: 0 },
     { name: "Elemental", stack: true, entity: 1, reload: 0.5, health: 30, damage: 135, armor: 3, specials: [{ type: "Heal", regen: 4 }, { type: "Shield", regen: 2.5 }, { type: "Poison", duration: 5, damage: 10, stack: true }, { type: "Fire", duration: 3, damage: 7, stack: true }, { type: "Magic", regen: 4 }] },
     { name: "Fang", stack: true, entity: 1, reload: 1.0, health: 10, damage: 15, armor: 0, special: { type: "Heal", onDamage: 8.5 } },
-    { name: "Fission", stack: true },
-    { name: "Fusion", stack: true },
+    { name: "Fission", stack: true, tierRestricted: true },
+    { name: "Fusion", stack: true, tierRestricted: true },
     { name: "Root", stack: false },
     { name: "Glass", stack: true, entity: 1, reload: 1.0, health: 69420, damage: 120, armor: 69420, special: { type: "damageSeconds" } },
     { name: "Golden Cactus", stack: false, entity: 1, reload: 2.5, health: 5, damage: 50, armor: 0, specials: [{ type: "petalHealthBuff", global: true, value: { 0: 1, 1: 2, 2: 3, 3: 5, 4: 8, 5: 13, 6: 21, 7: 34, 8: 55, 9: 89 } }] },
@@ -51,6 +51,7 @@ const petals = [
     { name: "Latrine", isSpill: true, stack: true, entity: 1, reload: 2, secondReload: 1, specials: [{ type: "Poison", duration: 3, damage: 5, stack: true }] },
     { name: "Hot Water", isSpill: true, stack: true, entity: 1, reload: 3, secondReload: 1, damage: 15, specials: [{ type: "Fire", duration: 3, damage: 35, stack: false }] },
     { name: "Leaf", stack: true, entity: 1, reload: 1.0, health: 12, damage: 15, armor: 0, special: { type: "Heal", regen: 2 } },
+    { name: "Chromosome", stack: true, entity: 1, reload: 1.0, health: 5, damage: 10, armor: 0, special: { type: "petalHeal", global:true, regen: 50 } },
     { name: "Magic Leaf", stack: true, entity: 1, reload: 1.0, health: 12, damage: 15, armor: 0, special: { type: "Magic", regen: 4 } },
     { name: "Magic Yuan", stack: true, entity: 1, reload: 0.75, health: 15, damage: 35, armor: 0, special: { type: "Magic", cost: 0.4 } },
     { name: "Magic Topaz", stack: true, entity: 1, reload: 0.75, health: 6, damage: 6, armor: 0, special: { type: "Magic", drain: 2, petArmor: 3.5 } },

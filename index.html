@@ -76,13 +76,28 @@
             </div>
 
     <div class="panel">
-        <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-            <label for="variable-column-select" style="font-weight: bold;">Colonne variable :</label>
-            <select id="variable-column-select" onchange="ui.refresh()" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; background: #fff;">
-                <option value="special">Special Effects</option>
-                <option value="entities">Entities Qty</option>
-                <option value="ticks">Survival Ticks</option>
-            </select>
+        <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <label for="variable-column-select" style="font-weight: bold;">Colonne variable :</label>
+                <select id="variable-column-select" onchange="ui.refresh()" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; background: #fff;">
+                    <option value="special">Special Effects</option>
+                    <option value="entities">Entities Qty</option>
+                    <option value="ticks">Survival Ticks</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 15px; background: #f8f8f8; padding: 8px 15px; border-radius: 6px; border: 1px solid #ddd;">
+                <strong style="font-size: 0.95em; color: #444;">Filtres d'affichage :</strong>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; color: #c0392b;">
+                    <input type="checkbox" id="filter-dps" checked onchange="ui.refresh()"> ⚔️ DPS
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; color: #2980b9;">
+                    <input type="checkbox" id="filter-support" checked onchange="ui.refresh()"> 🛡️ Support
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; color: #d35400;">
+                    <input type="checkbox" id="filter-egg" checked onchange="ui.refresh()"> 🥚 Egg
+                </label>
+            </div>
         </div>
         <table>
             <thead>
@@ -183,8 +198,11 @@
     <script src="petal.js"></script>
     <script src="eggs.js"></script>
     <script src="mob.js"></script>
+    <script src="engine_utils.js"></script>
+    <script src="engine_combat.js"></script>
     <script src="engine.js"></script>
     <script src="optimizer.js"></script>
     <script src="ui.js"></script>
+    <script src="ui_modals.js"></script>
 </body>
 </html>
