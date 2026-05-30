@@ -39,16 +39,28 @@ const engineUtils = {
     },
 
     // Formule centralisée de survie (Ticks, Invincibilité, vie infinie)
-    calcSurvival: (bHealth, bArmor, targetMob, mods) => {
-        if (!targetMob) return { ticks: "-", isInfinite: true, lifeDuration: 0, mDmg: 0 };
-        const mDmg = Math.max(0, (targetMob.damage * Math.max(0, 1 - mods.mobDamageReduction)) - bArmor);
-        const netDmg = mDmg - (mods.petalHeal / 10);
-        if (netDmg > 0) {
-            const ticks = mDmg >= bHealth ? 1 : Math.ceil(bHealth / netDmg);
-            return { ticks, isInfinite: false, lifeDuration: ticks * 0.1, mDmg };
-        }
-        return { ticks: "∞", isInfinite: true, lifeDuration: 0, mDmg };
-    },
+// Formule centralisée de survie (Ticks, Invincibilité, vie infinie)
+calcSurvival: (bHealth, bArmor, targetMob, mods) => {
+    if (!targetMob) return { ticks: "-", isInfinite: true, lifeDuration: 0, mDmg: 0 };
+    
+    // 1. Dégâts subis à l'impact
+    const mDmg = Math.max(0, (targetMob.damage * Math.max(0, 1 - mods.mobDamageReduction)) - bArmor);
+    
+    // 2. Si le coup de base est supérieur ou égal à la vie, c'est la mort subite (peu importe la regen)
+    if (mDmg >= bHealth) {
+        return { ticks: 1, isInfinite: false, lifeDuration: 0.1, mDmg };
+    }
+    
+    // 3. Sinon, on regarde si la collision sur la durée tue la pétale
+    const netDmg = mDmg - (mods.petalHeal / 10);
+    if (netDmg > 0) {
+        const ticks = Math.ceil(bHealth / netDmg);
+        return { ticks, isInfinite: false, lifeDuration: ticks * 0.1, mDmg };
+    }
+    
+    // 4. La regen bat les dégâts
+    return { ticks: "∞", isInfinite: true, lifeDuration: 0, mDmg };
+},
 
     // Application propre des dégâts finaux (Coconut) ou constants
     applyDPS: (perf, pDmg, surv, cycleDur, specials) => {

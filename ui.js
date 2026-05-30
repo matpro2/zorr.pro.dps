@@ -218,7 +218,22 @@ const ui = {
             const dStats = engine.getDisplayStats(p, stats);
             const isSupport = !p.isEgg && !p.isSpill && (p.damage == null || p.health == null);
             
+            // Calcul du DPS Potentiel
+            const fakeStats = { ...stats, rawSupports: [...stats.rawSupports, { type: "petalHeal", value: 999999999, qty: 1, sourceTier: 0, target: null }] };
+            let maxPerf = engine.calculatePerformance(p, ui.activeMob, fakeStats);
+            if (perf.baseDps > maxPerf.baseDps) maxPerf = perf;
+            
             let varContent = varColVal === 'special' ? ui.getSpecDesc(p) : (varColVal === 'entities' ? (p.currentEntities || 1) : perf.ticks);
+
+            let displayDps = "SUPPORT";
+            if (!isSupport) {
+                if (perf.ticks === "∞" || perf.baseDps >= maxPerf.baseDps) {
+                    displayDps = ui.format(perf.baseDps);
+                } else {
+                    // Affichage sobre en texte noir
+                    displayDps = `${ui.format(perf.baseDps)} (Max: ${ui.format(maxPerf.baseDps)})`;
+                }
+            }
 
             tbody.insertAdjacentHTML('beforeend', `
                 <tr style="background-color: ${engine.tierColors[p.tier] || 'transparent'};">
@@ -228,8 +243,8 @@ const ui = {
                     <td>${ui.format(dStats.armor)}</td>
                     <td>${ui.format(dStats.damage)}</td>
                     <td><strong>${ui.format(dStats.reload, true)}</strong></td>
-                    <td>${varContent}</td>
-                    <td><strong>${isSupport ? "SUPPORT" : (perf.baseDps || 0).toFixed(2)}</strong></td>
+                    <td><strong>${varContent}</strong></td>
+                    <td><strong>${displayDps}</strong></td>
                     <td>
                         <button onclick="ui.equip(${i})">Equip</button>
                         <button class="btn-delete" style="margin-left: 5px;" onclick="ui.removeActiveItem(${i})">🗑️</button>
@@ -318,7 +333,22 @@ const ui = {
     },
     sortByDPS: () => { 
         const stats = engine.getGlobalStats(engine.getEffectivePetals(ui.equippedPetals));
-        ui.activeItems.sort((a,b) => engine.calculatePerformance(b, ui.activeMob, stats).baseDps - engine.calculatePerformance(a, ui.activeMob, stats).baseDps); 
+        
+        // CORRECTIF : On simule des stats avec soin infini pour trier selon le VRAI potentiel
+        const fakeStats = { ...stats, rawSupports: [...stats.rawSupports, { type: "petalHeal", value: 999999999, qty: 1, sourceTier: 0, target: null }] };
+        
+        ui.activeItems.sort((a,b) => {
+            let perfA = engine.calculatePerformance(a, ui.activeMob, stats);
+            let maxA = engine.calculatePerformance(a, ui.activeMob, fakeStats);
+            let valA = Math.max(perfA.baseDps, maxA.baseDps);
+
+            let perfB = engine.calculatePerformance(b, ui.activeMob, stats);
+            let maxB = engine.calculatePerformance(b, ui.activeMob, fakeStats);
+            let valB = Math.max(perfB.baseDps, maxB.baseDps);
+
+            return valB - valA;
+        }); 
+        
         ui.renderTable(stats); ui.saveToLocal(); 
     },
     sortTable: (key) => { ui.activeItems.sort((a,b) => (a[key] == null ? 1 : (b[key] == null ? -1 : (a[key] > b[key] ? 1 : -1)))); ui.refresh(); }

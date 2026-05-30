@@ -102,44 +102,58 @@ const uiModals = {
         uiModals.close('mob-lightbox');
     },
 
-    openOptimizer: () => {
+openOptimizer: () => {
         document.getElementById('optimizer-lightbox').style.display = 'block';
         const list = document.getElementById('optimizer-selection-list');
         list.innerHTML = "";
         
         if (ui.activeItems.length === 0) {
-            list.innerHTML = "<li><em>Votre inventaire est vide. Ajoutez des pétales dans le tableau principal d'abord.</em></li>";
+            list.innerHTML = "<li><em>Your inventory is empty. Add petals first.</em></li>";
             return;
         }
 
-        ui.activeItems.forEach((p, i) => {
-            const owned = p.ownedQuantity || 1;
-            list.insertAdjacentHTML('beforeend', `
-                <li style="justify-content: flex-start;">
-                    <label style="display:flex; align-items:center; cursor:pointer; width:100%;">
-                        <input type="checkbox" class="opti-checkbox" value="${i}" checked style="margin-right:10px; width: 18px; height: 18px;">
-                        <span><strong>${p.name}</strong> (T${p.tier}) - Quantité max: ${owned}</span>
-                    </label>
-                </li>
-            `);
-        });
+        list.innerHTML = `
+            <li style="flex-direction: column; align-items: flex-start;">
+                <label for="optimizer-method" style="font-weight: bold; margin-bottom: 10px;">Optimization Method:</label>
+                <select id="optimizer-method" style="width: 100%; padding: 8px; border-radius: 5px; font-size: 1.1em;">
+                    <option value="Basic - DMG/Reload">Basic - DMG/Reload</option>
+                    <option value="Basic - PermaDMG">Basic - PermaDMG (Infinite Survival)</option>
+                </select>
+            </li>
+        `;
     },
 
     runOptimizer: () => {
         const slots = parseInt(document.getElementById('optimizer-slots').value) || 5;
-        const checkboxes = document.querySelectorAll('.opti-checkbox:checked');
-        const selectedItems = Array.from(checkboxes).map(cb => ui.activeItems[cb.value]);
+        const methodSelect = document.getElementById('optimizer-method');
+        const selectedMethod = methodSelect ? methodSelect.value : "Basic - DMG/Reload";
+        const selectedItems = ui.activeItems;
         
-        if (selectedItems.length === 0) return alert("Sélectionnez au moins une pétale à optimiser !");
+        if (selectedItems.length === 0) return alert("Your inventory is empty!");
         
         uiModals.close('optimizer-lightbox');
         
         setTimeout(() => {
-            const bestBuild = optimizer.findBestBuild(selectedItems, slots, ui.activeMob);
-            if (bestBuild) {
-                ui.equippedPetals = bestBuild;
+            const result = optimizer.findBestBuild(selectedItems, slots, ui.activeMob, selectedMethod);
+            
+            if (result && result.equippedBuild) {
+                ui.equippedPetals = result.equippedBuild;
                 ui.refresh();
-                alert("✅ Build optimisé trouvé et équipé !");
+                
+                window.lastOptiLog = result.reasoningLog;
+                console.log(`[Optimizer - ${selectedMethod}] Log available in console.`);
+
+                const wantLog = confirm(`✅ Optimized build found and equipped!\nMethod: ${selectedMethod}\n\nWould you like to download the detailed JSON log?`);
+                
+                if (wantLog) {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(result.reasoningLog, null, 2));
+                    const downloadAnchor = document.createElement('a');
+                    downloadAnchor.setAttribute("href", dataStr);
+                    downloadAnchor.setAttribute("download", `optimization_log_${new Date().getTime()}.json`);
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                }
             }
         }, 50);
     }

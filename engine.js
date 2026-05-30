@@ -38,7 +38,17 @@ const engine = {
 
                     if (n1 === (p2.originalName || p2.name) && n1 === (p3.originalName || p3.name) && p1.tier === p2.tier && p2.tier === p3.tier && !["Fusion", "Fission", "Mimic"].includes(n1)) { 
                         let bDef = petals.find(x => x.name === n1) || (typeof eggs !== 'undefined' ? eggs.find(x => x.name === n1) : null) || p1;
-                        effective[i] = engineUtils.scalePetal(bDef, p1.tier + 1, p.name, p.tier, i);
+                        
+                        // CORRECTIF: La pétale reste à son Tier d'origine (p1.tier au lieu de p1.tier + 1)
+                        effective[i] = engineUtils.scalePetal(bDef, p1.tier, p.name, p.tier, i);
+                        
+                        // On triple manuellement les statistiques de base pour refléter la combinaison des 3 pétales
+                        if (effective[i].health != null) effective[i].health *= 3;
+                        if (effective[i].damage != null) effective[i].damage *= 3;
+                        if (effective[i].armor != null) effective[i].armor *= 3;
+                        if (effective[i].specials) effective[i].specials.forEach(e => { if (e.damage != null) e.damage *= 3; });
+                        if (effective[i].special && effective[i].special.damage != null) effective[i].special.damage *= 3;
+
                         ings.forEach(ing => itemsToHide.add(ing.index));
                         continue;
                     }

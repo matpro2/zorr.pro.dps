@@ -55,7 +55,7 @@ const petals = [
     { name: "Magic Leaf", stack: true, entity: 1, reload: 1.0, health: 12, damage: 15, armor: 0, special: { type: "Magic", regen: 4 } },
     { name: "Magic Yuan", stack: true, entity: 1, reload: 0.75, health: 15, damage: 35, armor: 0, special: { type: "Magic", cost: 0.4 } },
     { name: "Magic Topaz", stack: true, entity: 1, reload: 0.75, health: 6, damage: 6, armor: 0, special: { type: "Magic", drain: 2, petArmor: 3.5 } },
-    { name: "Mimic", stack: true },
+    { name: "Mimic", stack: true, tierRestricted:false },
     { name: "Opal", stack: false, specials: [{ type: "Critical", global: true, tierRestricted: true, target: "Petal", stats: "Damage", value: { 0: {multiplier: 1.5, chance: 8.33}, 1: {multiplier: 1.69, chance: 9.09}, 2: {multiplier: 1.88, chance: 10}, 3: {multiplier: 2.06, chance: 11.11}, 4: {multiplier: 2.25, chance: 12.5}, 5: {multiplier: 2.44, chance: 14.29}, 6: {multiplier: 2.63, chance: 16.67}, 7: {multiplier: 2.81, chance: 20}, 8: {multiplier: 3, chance: 25}, 9: {multiplier: 3.19, chance: 33.33} } }] },
     { name: "Plasma", stack: true, entity: 1, reload: 3, health: 5, damage: 5, armor: 0, specials: [{ type: "Poison", duration: 5, damage: 100, stack: false }, { type: "Lightning", bounce: { 0: 3, 1: 3, 2: 4, 3: 4, 4: 5, 5: 5, 6: 6, 7: 6, 8: 7, 9: 7 }, damage: 40, multiHit: true }, { type: "Fire", duration: 3, damage: 100, stack: false }] },
     { name: "Rock", stack: true, entity: 1, reload: 2.0, health: 250, damage: 30, armor: 0 },
