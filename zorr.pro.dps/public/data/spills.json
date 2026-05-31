@@ -3,30 +3,23 @@
     "name": "Latrine",
     "type": "spill",
     "stack": true,
-    "tierRestricted": false,
     "entity": 1,
-    "health": null,
-    "damage": null,
-    "armor": null,
     "reload": 2.0,
     "secondReload": 1.0,
     "effects": [
-      { "type": "Poison", "duration": 3, "damage": 5, "stack": true }
+      { "type": "Poison", "duration": 3, "value": 5, "stack": true }
     ]
   },
   "Hot Water": {
     "name": "Hot Water",
     "type": "spill",
     "stack": true,
-    "tierRestricted": false,
     "entity": 1,
-    "health": null,
     "damage": 15,
-    "armor": null,
     "reload": 3.0,
     "secondReload": 1.0,
     "effects": [
-      { "type": "Fire", "duration": 3, "damage": 35, "stack": false }
+      { "type": "Fire", "duration": 3, "value": 35, "stack": false }
     ]
   }
 }

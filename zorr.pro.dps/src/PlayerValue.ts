@@ -61,9 +61,9 @@ export const PlayerValue = {
   },
 
   target: {
-    armor: -10,
+    damageMulti: 1,
+    armor: 0,
     armorMulti: 1,
-    damageFactor: 1,
   },
 
   status: {
@@ -75,6 +75,8 @@ export const PlayerValue = {
   },
 
   mana: {
+    generation: 0,
+    drain: 0,
     capacityMulti: 1,
   },
 };

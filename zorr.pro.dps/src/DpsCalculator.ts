@@ -1,4 +1,4 @@
-import { getEntity } from "./GetEntity";
+import { getObject } from "./GetObject";
 import { PlayerValue } from "./PlayerValue";
 
 export interface ICombatEntity {
@@ -26,8 +26,8 @@ export class DpsCalculator {
         targetTier: number
     ): IDpsResult {
 
-        const attacker = getEntity(attackerName, attackerTier) as ICombatEntity | null;
-        const target = getEntity(targetName, targetTier) as ICombatEntity | null;
+        const attacker = getObject(attackerName, attackerTier) as ICombatEntity | null;
+        const target = getObject(targetName, targetTier) as ICombatEntity | null;
 
         if (!attacker || !target || !attacker.damage) {
             return {
