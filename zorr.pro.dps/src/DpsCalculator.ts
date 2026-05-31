@@ -1,29 +1,80 @@
-import { CollisionHandler, ICombatEntity } from './CollisionHandler';
+import { getEntity } from "./GetEntity";
+import { PlayerValue } from "./PlayerValue";
 
-export interface IDpsEntity extends ICombatEntity {
-    reload: number;
+export interface ICombatEntity {
+    name: string;
+    health: number;
+    damage: number;
+    armor: number;
+    reload?: number;
+    healPerSecond?: number;
+}
+
+export interface IDpsResult {
+    dps: number;
+    survivedTicks: number;
 }
 
 export class DpsCalculator {
-    public static calculateDps(attacker: IDpsEntity, target: ICombatEntity): number {
-        if (!attacker.damage) return 0;
+    private static readonly TICK_RATE = 0.06;
+    private static readonly INFINITE_TICKS = 1e99;
 
-        const ticks = CollisionHandler.getSurvivalTicks(attacker, target);
-        const effectiveDamage = Math.max(0, attacker.damage - target.armor);
-        const reloadTime = attacker.reload > 0 ? attacker.reload : 1; 
+    public static calculateDps(
+        attackerName: string,
+        attackerTier: number,
+        targetName: string,
+        targetTier: number
+    ): IDpsResult {
 
-        if (ticks === Infinity) {
-            return effectiveDamage / reloadTime;
-        } 
-        else if (ticks === 1) {
-            return effectiveDamage / reloadTime;
-        } 
-        else {
-            const totalDamageDealt = effectiveDamage * ticks;
-            const survivalTime = ticks * 0.06;
-            const totalCycleTime = reloadTime + survivalTime;
-            
-            return totalDamageDealt / totalCycleTime;
+        const attacker = getEntity(attackerName, attackerTier) as ICombatEntity | null;
+        const target = getEntity(targetName, targetTier) as ICombatEntity | null;
+
+        if (!attacker || !target || !attacker.damage) {
+            return {
+                dps: 0,
+                survivedTicks: 0
+            };
         }
+
+        const hps = PlayerValue.petal.heal || 0;
+
+        const finalTargetDamage = Math.max(
+            0,
+            target.damage - attacker.armor
+        );
+
+        const damagePerTick =
+            finalTargetDamage -
+            hps * this.TICK_RATE;
+
+        const effectiveDamage = Math.max(
+            0,
+            attacker.damage - target.armor
+        );
+
+        const reloadTime =
+            attacker.reload && attacker.reload > 0
+                ? attacker.reload
+                : 1;
+
+        let ticks: number;
+
+        if (damagePerTick <= 0) {
+            ticks = this.INFINITE_TICKS;
+        } else {
+            ticks = Math.ceil(
+                attacker.health / damagePerTick
+            );
+        }
+
+        const totalDamage = effectiveDamage * ticks;
+        const totalTime =
+            reloadTime +
+            ticks * this.TICK_RATE;
+
+        return {
+            dps: totalDamage / totalTime,
+            survivedTicks: ticks
+        };
     }
 }

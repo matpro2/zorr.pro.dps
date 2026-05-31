@@ -1,102 +1,74 @@
-import { StatCalculator } from './StatCalculator';
-import { CollisionHandler } from './CollisionHandler';
-import { DpsCalculator } from './DpsCalculator';
+import petals from "../public/data/petals.json";
+import { PlayerValue } from "./PlayerValue";
+import { getPetalStats } from "./GetEntity";
 
-let allPetals: any = {};
-let allMobs: any = {};
+function flatten(obj: any, prefix = ""): string[] {
+    const result: string[] = [];
 
-async function init() {
-    try {
-        const [pRes, uRes, sRes, eRes, mRes] = await Promise.all([
-            fetch('/data/petals.json'),
-            fetch('/data/utilities.json'),
-            fetch('/data/spills.json'),
-            fetch('/data/eggs.json'),
-            fetch('/data/mobs.json')
-        ]);
+    for (const [key, value] of Object.entries(obj)) {
+        const path = prefix ? `${prefix}.${key}` : key;
 
-        const p = await pRes.json();
-        const u = await uRes.json();
-        const s = await sRes.json();
-        const e = await eRes.json();
-        
-        allMobs = await mRes.json();
-        allPetals = { ...p, ...u, ...s, ...e };
-
-        const sel1 = document.getElementById('ent1-name') as HTMLSelectElement;
-        const sel2 = document.getElementById('ent2-name') as HTMLSelectElement;
-
-        Object.keys(allPetals).forEach(k => sel1.add(new Option(`[Pétale] ${k}`, k)));
-        Object.keys(allMobs).forEach(k => {
-            sel1.add(new Option(`[Mob] ${k}`, k));
-            sel2.add(new Option(k, k));
-        });
-
-        document.getElementById('loading')!.style.display = 'none';
-        document.getElementById('app')!.style.display = 'block';
-    } catch (error) {
-        console.error(error);
+        if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+            result.push(...flatten(value, path));
+        } else if (typeof value === "number") {
+            result.push(path);
+        }
     }
+
+    return result;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const btnStart = document.getElementById('btn-start');
+document.addEventListener("DOMContentLoaded", () => {
+    const petalSelect = document.getElementById("petal-name") as HTMLSelectElement;
+    const valuesContainer = document.getElementById("values")!;
+    const result = document.getElementById("result")!;
 
-    if (btnStart) {
-        btnStart.addEventListener('click', () => {
-            const name1 = (document.getElementById('ent1-name') as HTMLSelectElement).value;
-            const tier1 = parseInt((document.getElementById('ent1-tier') as HTMLInputElement).value);
-            
-            const name2 = (document.getElementById('ent2-name') as HTMLSelectElement).value;
-            const tier2 = parseInt((document.getElementById('ent2-tier') as HTMLInputElement).value);
+    Object.keys(petals).sort().forEach(name => {
+        petalSelect.add(new Option(name, name));
+    });
 
-            let fighter1;
+    const fields = flatten(PlayerValue);
 
-            if (allPetals[name1]) {
-                const stats = StatCalculator.computeFinalStats(allPetals[name1], tier1);
-                fighter1 = {
-                    name: `${name1} (T${tier1})`,
-                    health: stats.health || 1,
-                    damage: stats.damage || 0,
-                    armor: stats.armor || 0,
-                    reload: stats.reload || 1,
-                    healPerSecond: 0
-                };
-            } else {
-                const scale = Math.pow(3, tier1);
-                fighter1 = {
-                    name: `${name1} (T${tier1})`,
-                    health: allMobs[name1].health * scale,
-                    damage: allMobs[name1].damage * scale,
-                    armor: allMobs[name1].armor * scale,
-                    reload: 1,
-                    healPerSecond: 0
-                };
+    for (const field of fields) {
+        let value: any = PlayerValue;
+
+        for (const part of field.split(".")) {
+            value = value[part];
+        }
+
+        const label = document.createElement("label");
+        label.textContent = field;
+
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = "0.01";
+        input.value = String(value);
+
+        input.oninput = () => {
+            let target: any = PlayerValue;
+            const parts = field.split(".");
+
+            for (let i = 0; i < parts.length - 1; i++) {
+                target = target[parts[i]];
             }
 
-            const scale2 = Math.pow(3, tier2);
-            const fighter2 = {
-                name: `${name2} (T${tier2})`,
-                health: allMobs[name2].health * scale2,
-                damage: allMobs[name2].damage * scale2,
-                armor: allMobs[name2].armor * scale2,
-                healPerSecond: 0
-            };
+            target[parts[parts.length - 1]] = Number(input.value);
+        };
 
-            const ticks = CollisionHandler.getSurvivalTicks(fighter1, fighter2);
-            const dps = DpsCalculator.calculateDps(fighter1, fighter2);
-
-            console.clear();
-            console.log("⚔️ COMBATTANT 1 :", fighter1);
-            console.log("🛡️ COMBATTANT 2 :", fighter2);
-            console.table({
-                [fighter1.name]: {
-                    "Ticks Survie": ticks === Infinity ? "Alive" : ticks,
-                    "DPS": Number(dps.toFixed(2))
-                }
-            });
-        });
+        valuesContainer.appendChild(label);
+        valuesContainer.appendChild(input);
     }
 
-    init();
+    document.getElementById("btn-test")!.addEventListener("click", () => {
+        const petal = getPetalStats(
+            petalSelect.value,
+            Number((document.getElementById("petal-tier") as HTMLInputElement).value)
+        );
+
+        console.clear();
+        console.log("PlayerValue", structuredClone(PlayerValue));
+        console.log("Final Petal", petal);
+
+        result.textContent = JSON.stringify(petal, null, 2);
+    });
 });

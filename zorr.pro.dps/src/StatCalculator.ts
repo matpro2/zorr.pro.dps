@@ -1,10 +1,11 @@
 export interface IPetalData {
-    name: string;
-    type: "default" | "utility" | "egg" | "spill";
+    name?: string;
+    type?: "default" | "utility" | "egg" | "spill";
     health?: number;
     damage?: number;
     armor?: number;
     reload?: number;
+    healPerSecond?: number;
 }
 
 export interface IGlobalModifiers {
@@ -15,51 +16,50 @@ export interface IGlobalModifiers {
 }
 
 export interface IFinalStats {
-    health: number | null;
-    damage: number | null;
-    armor: number | null;
-    reload: number | null;
+    health: number;
+    damage: number;
+    armor: number;
+    reload: number;
+    healPerSecond: number;
+}
+
+export interface ICombatEntity {
+    name: string;
+    tier: number;
 }
 
 export class StatCalculator {
-    
+    private static readonly TICK_RATE = 0.06;
+
     private static getTierMultiplier(tier: number): number {
         return Math.pow(3, tier);
     }
 
     public static computeFinalStats(
-        petal: IPetalData, 
-        tier: number, 
+        petal: "name",
+        tier: number,
         mods: IGlobalModifiers = { damageMultiplier: 1, healthMultiplier: 1, reloadMultiplier: 1, flatArmor: 0 }
     ): IFinalStats {
-        
-        if (petal.type === "utility") {
-            return { health: null, damage: null, armor: null, reload: null };
-        }
-
-        const tierScale = this.getTierMultiplier(tier);
-        
-        const finalDamage = petal.damage != null 
-            ? (petal.damage * tierScale) * mods.damageMultiplier 
-            : null;
-
-        const finalHealth = petal.health != null 
-            ? (petal.health * tierScale) * mods.healthMultiplier 
-            : null;
-
-        const finalArmor = petal.armor != null 
-            ? (petal.armor * tierScale) + mods.flatArmor 
-            : null;
-
-        const finalReload = petal.reload != null 
-            ? petal.reload / mods.reloadMultiplier 
-            : null;
+        const scale = this.getTierMultiplier(tier);
 
         return {
-            health: finalHealth,
-            damage: finalDamage,
-            armor: finalArmor,
-            reload: finalReload
+            health: (petal.health ?? 0) * scale * mods.healthMultiplier,
+            damage: (petal.damage ?? 0) * scale * mods.damageMultiplier,
+            armor: (petal.armor ?? 0) * scale + mods.flatArmor,
+            reload: petal.reload != null ? petal.reload / mods.reloadMultiplier : 0,
+            healPerSecond: petal.healPerSecond ?? 0
         };
+    }
+
+    public static getStats(entity: ICombatEntity): IFinalStats {
+        const petal = PetalDatabase.get(entity.name);
+        return this.computeFinalStats(petal, entity.tier);
+    }
+
+    public static calculateDamagePerTick(entity: ICombatEntity, target: ICombatEntity): number {
+        const attacker = this.getStats(entity);
+        const defender = this.getStats(target);
+
+        return Math.max(0, attacker.damage - defender.armor) - defender.healPerSecond * this.TICK_RATE;
     }
 }
