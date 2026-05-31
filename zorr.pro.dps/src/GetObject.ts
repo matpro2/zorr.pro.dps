@@ -1,8 +1,8 @@
-import petals from "../public/data/petals.json";
-import mobs from "../public/data/mobs.json";
-import spills from "../public/data/spills.json";
-import eggs from "../public/data/eggs.json";
-import utilities from "../public/data/utilities.json";
+import petals from "../src/data/petals.json";
+import mobs from "../src/data/mobs.json";
+import spills from "../src/data/spills.json";
+import eggs from "../src/data/eggs.json";
+import utilities from "../src/data/utilities.json";
 
 import { PlayerValue } from "./PlayerValue";
 
@@ -23,22 +23,17 @@ function resolveTiers(data: any, tier: number, keyName?: string): any {
   if (Array.isArray(data)) {
     if (data.length === 0) return data;
 
-    // Si on est dans le tableau "effects", on veut TOUJOURS garder le tableau complet
     if (keyName === "effects") {
       return data.map(item => resolveTiers(item, tier));
     }
 
-    // Pour TOUS les autres tableaux ("value", "entity", "reload"...), 
-    // on extrait l'élément au bon tier, même si cet élément est un objet (comme pour Opal).
     const safeTierIndex = Math.min(tier, data.length - 1);
     
-    // On rappelle resolveTiers au cas où l'élément extrait contiendrait lui-même des choses à résoudre
     return resolveTiers(data[safeTierIndex], tier);
   }
 
   const resolvedObject: any = {};
   for (const key in data) {
-    // On passe le nom de la clé (ex: "effects", "value") au cycle suivant
     resolvedObject[key] = resolveTiers(data[key], tier, key);
   }
   return resolvedObject;
