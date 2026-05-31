@@ -38,27 +38,33 @@ const engineUtils = {
         return { hMult, sMult: Math.pow(3, petTier) };
     },
 
-    // Formule centralisée de survie (Ticks, Invincibilité, vie infinie)
-// Formule centralisée de survie (Ticks, Invincibilité, vie infinie)
 calcSurvival: (bHealth, bArmor, targetMob, mods) => {
     if (!targetMob) return { ticks: "-", isInfinite: true, lifeDuration: 0, mDmg: 0 };
+    
+    // NOUVEAU : Simulation de la fréquence des serveurs Zorr.pro
+    // On prend le pire scénario (60ms) pour garantir une survie absolue face aux pics de collisions
+    const tickTimeSeconds = 0.06; 
     
     // 1. Dégâts subis à l'impact
     const mDmg = Math.max(0, (targetMob.damage * Math.max(0, 1 - mods.mobDamageReduction)) - bArmor);
     
-    // 2. Si le coup de base est supérieur ou égal à la vie, c'est la mort subite (peu importe la regen)
+    // 2. Règle du One-Shot (La pétale vit exactement le temps d'un tick serveur)
     if (mDmg >= bHealth) {
-        return { ticks: 1, isInfinite: false, lifeDuration: 0.1, mDmg };
+        return { ticks: 1, isInfinite: false, lifeDuration: tickTimeSeconds, mDmg };
     }
     
-    // 3. Sinon, on regarde si la collision sur la durée tue la pétale
-    const netDmg = mDmg - (mods.petalHeal / 10);
+    // 3. Le Soin Indépendant (Calcul basé sur le temps réel, plus de diviseur magique)
+    // À 60ms, la pétale ne reçoit que 6% de son soin par seconde entre deux impacts
+    const healPerTick = mods.petalHeal * tickTimeSeconds;
+    
+    const netDmg = mDmg - healPerTick;
     if (netDmg > 0) {
+        // La pétale va mourir. On calcule combien de ticks elle tient.
         const ticks = Math.ceil(bHealth / netDmg);
-        return { ticks, isInfinite: false, lifeDuration: ticks * 0.1, mDmg };
+        return { ticks, isInfinite: false, lifeDuration: ticks * tickTimeSeconds, mDmg };
     }
     
-    // 4. La regen bat les dégâts
+    // 4. Immortalité prouvée (Le soin couvre les dégâts MÊME à 60ms de ping)
     return { ticks: "∞", isInfinite: true, lifeDuration: 0, mDmg };
 },
 

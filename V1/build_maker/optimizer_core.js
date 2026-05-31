@@ -2,7 +2,7 @@ const optimizer = {
     currentMethodIsBasic: false,
 
     // L'ARBITRE ABSOLU : Confiance totale au moteur de jeu
-checkInfinity: (rawArr, targetMob) => {
+    checkInfinity: (rawArr, targetMob) => {
         if (optimizer.currentMethodIsBasic && rawArr.some(p => p.name === "Stick") && !rawArr.some(p => p.name === "Joystick")) {
             return { isInf: false, hasPhysicalDps: false };
         }
@@ -61,7 +61,7 @@ checkInfinity: (rawArr, targetMob) => {
         return totalDps;
     },
 
-    // LE CALCULATEUR DE POTENTIEL (NOUVEAU)
+    // LE CALCULATEUR DE POTENTIEL
     calculatePotentialDps: (arrangedCombo, targetMob) => {
         if (optimizer.currentMethodIsBasic && arrangedCombo.some(p => p.name === "Stick") && !arrangedCombo.some(p => p.name === "Joystick")) return 0;
         
@@ -118,7 +118,6 @@ checkInfinity: (rawArr, targetMob) => {
         const addComposite = (type, slots, rawArr, costObj) => {
             composites.push({ 
                 id: compIdCounter++, type, slots, raw: rawArr, cost: costObj, 
-                // UTILISATION DE LA NOUVELLE FONCTION ICI
                 standaloneDps: optimizer.calculatePotentialDps(rawArr, targetMob) 
             });
         };
@@ -131,6 +130,35 @@ checkInfinity: (rawArr, targetMob) => {
             addComposite("Synergy", 2, [rootBlock.item, dizzyBlock.item], { [rootBlock.item.name + "_" + rootBlock.item.tier]: 1, [dizzyBlock.item.name + "_" + dizzyBlock.item.tier]: 1 });
         }
         
+        // CORRECTIF 1 : Synergie Joystick + Sticks (Jusqu'à 10 Sticks)
+        let joystickBlocks = bases.filter(b => b.item.name === "Joystick");
+        let stickBlocks = bases.filter(b => b.item.name === "Stick");
+        joystickBlocks.forEach(j => {
+            stickBlocks.forEach(s => {
+                let maxSticks = Math.min(10, s.max);
+                for (let i = 1; i <= maxSticks; i++) {
+                    let rawArr = [j.item];
+                    let costObj = { [j.item.name + "_" + j.item.tier]: 1 };
+                    for (let k = 0; k < i; k++) rawArr.push(s.item);
+                    costObj[s.item.name + "_" + s.item.tier] = i;
+                    addComposite("Synergy", 1 + i, rawArr, costObj);
+                }
+            });
+        });
+
+        // CORRECTIF 2 : Synergie Base + 1 SEUL Mimic
+        mimics.forEach(m => {
+            bases.forEach(b => {
+                if (!b.item.isSpill && !b.item.isEgg && b.item.name !== "Stick") {
+                    let rawArr = [b.item, m.item];
+                    addComposite("Synergy", 2, rawArr, { 
+                        [b.item.name + "_" + b.item.tier]: 1,
+                        [m.item.name + "_" + m.item.tier]: 1
+                    });
+                }
+            });
+        });
+
         // Les Packs de Supports (Le Cheval de Troie légal)
         bases.forEach(b => {
             let isSupport = (b.item.specials || (b.item.special ? [b.item.special] : [])).some(e => e.global);
