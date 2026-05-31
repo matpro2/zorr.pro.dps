@@ -1,8 +1,8 @@
-import petals from "../public/data/petals.json";
-import mobs from "../public/data/mobs.json";
-import spills from "../public/data/spills.json";
-import eggs from "../public/data/eggs.json";
-import utilities from "../public/data/utilities.json";
+import petals from "../src/data/petals.json";
+import mobs from "../src/data/mobs.json";
+import spills from "../src/data/spills.json";
+import eggs from "../src/data/eggs.json";
+import utilities from "../src/data/utilities.json";
 
 import { PlayerValue } from "./PlayerValue";
 import { getObject } from "./GetObject";

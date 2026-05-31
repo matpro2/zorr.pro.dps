@@ -10,8 +10,8 @@ export interface ICombatEntity {
     armor?: number;
     reload?: number;
     secondReload?: number;
-    mobSpawned?: string;
-    mobTier?: number;
+    petName?: string; // Remplacé "mobSpawned" par "petName"
+    petTier?: number; // Remplacé "mobTier" par "petTier"
     entity?: number;
 }
 
@@ -35,15 +35,20 @@ export class DpsCalculator {
         const targetArmor = target.armor || 0;
         const targetDamage = target.damage || 0;
         
-        // On récupère le nombre d'entités (1 par défaut si non spécifié)
         const entityCount = attacker.entity || 1;
 
         // --- LOGIQUE POUR LES OEUFS (EGGS) ---
         if (attacker.type === "egg") {
-            const petName = attacker.mobSpawned;
-            const petTier = attacker.mobTier || 0;
+            const petName = attacker.petName; // Utilisation de la bonne propriété
+            const petTier = attacker.petTier || 0; // Utilisation de la bonne propriété
             
-            const pet = getObject(petName!, petTier) as ICombatEntity | null;
+            // Sécurité absolue : si l'œuf n'a pas de nom de pet, on stoppe sans crasher
+            if (!petName) {
+                console.warn(`L'œuf "${attacker.name}" n'a pas de propriété "petName".`);
+                return { dps: 0, survivedTicks: 0 };
+            }
+
+            const pet = getObject(petName, petTier) as ICombatEntity | null;
             if (!pet) return { dps: 0, survivedTicks: 0 };
 
             const petDamage = pet.damage || 0;
