@@ -69,7 +69,9 @@ export class DpsCalculator {
         const hps = (PlayerValue as any)[objectType]?.heal || 0;
         const attackerHealth = attacker.health || 1; 
 
-        const finalAttackerDamage = Math.max(0, (attacker.damage || 0) - (target.armor || 0));
+        const effectiveTargetArmor = attacker.type === "spill" ? 0 : (target.armor || 0);
+
+        const finalAttackerDamage = Math.max(0, (attacker.damage || 0) - effectiveTargetArmor);
         const finalTargetDamage = Math.max(0, (target.damage || 0) - (attacker.armor || 0));
 
         const attackerDamagePerTick = finalTargetDamage - (hps * this.TICK_RATE);
@@ -115,8 +117,12 @@ export class DpsCalculator {
         const survivalTick = result.attackerSurvivalTicks;
         const finalAttackerDamage = result.finalAttackerDamage;
 
-        let totalTime = reloadtime + (DpsCalculator.TICK_RATE * survivalTick);
-        
+        let totalTime = reloadtime;
+
+        if (attacker.type !== "spill") {
+            totalTime += (DpsCalculator.TICK_RATE * survivalTick);
+        }
+
         if (attacker.type === "radiation") {
             totalTime = 0.3333;
         }
@@ -135,10 +141,12 @@ export class DpsCalculator {
         let totalEffectDamage = 0;
 
         if (attacker.effects && attacker.effects.length > 0) {
+            const effectiveTargetArmor = attacker.type === "spill" ? 0 : (target.armor || 0);
+
             const effectResult = DpsCalculator.calculateEffectDamage(
                 attacker.effects, 
                 survivalTick, 
-                target.armor || 0,
+                effectiveTargetArmor,
                 totalTime
             );
 

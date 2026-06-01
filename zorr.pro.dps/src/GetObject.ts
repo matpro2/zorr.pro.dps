@@ -40,6 +40,16 @@ function resolveTiers(data: any, tier: number, keyName?: string): any {
   return resolvedObject;
 }
 
+// NOUVELLE FONCTION : Calcule le multiplicateur spécial de PV pour les mobs et familiers
+function getMobHpMultiplier(tier: number): number {
+    const factors = [3.75, 3.6, 4, 7.5, 6, 15, 12];
+    let hMult = 1;
+    for (let i = 0; i < tier; i++) {
+        hMult *= (factors[i] || 1);
+    }
+    return hMult;
+}
+
 export function getObject(name: string, tier: number) {
   const key = Object.keys(allData).find(p => p.toLowerCase() === name.toLowerCase());
 
@@ -52,11 +62,21 @@ export function getObject(name: string, tier: number) {
 
   const tierMulti = 3 ** tier;
 
+  // --- MODIFICATION ICI ---
   if (typeof object.health === "number") {
-    const applyTierMulti = Array.isArray(rawObject.health) ? 1 : tierMulti;
+    let applyTierMulti = 1;
+
+    if (!Array.isArray(rawObject.health)) {
+        if (role === "target" || role === "pet") {
+            applyTierMulti = getMobHpMultiplier(tier);
+        } else {
+            applyTierMulti = tierMulti;
+        }
+    }
+    
     object.health *= applyTierMulti;
     
-    if (role === "petal" || role === "pet") {
+    if (role === "petal") {
         object.health *= PlayerValue.petal.healthMulti;
     }
   }
