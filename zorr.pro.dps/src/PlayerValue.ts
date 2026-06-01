@@ -1,4 +1,4 @@
-import { getItemById } from "./inventory";
+import { getEffectiveBuild } from "./inventory";
 import { getObject } from "./GetObject";
 
 const getInitialState = () => ({
@@ -15,6 +15,8 @@ const getInitialState = () => ({
     secondReloadSkipRate: 0,
     manaCostFactor: 1,
     luck: 0,
+    
+    hasJoystick: { active: false, tier: 0 } 
   },
   player: {
     heal: 0,
@@ -42,7 +44,7 @@ const getInitialState = () => ({
     fullRegenRate: 0,
     dupeRate: 0,
   },
-  target: {
+  mob: {
     damageMulti: 1,
     armor: 0,
     armorMulti: 1,
@@ -67,17 +69,38 @@ export const PlayerValue = {
     Object.assign(this, getInitialState());
   },
 
-  updateFromSlots(equippedSlots: (number | null)[]) {
+  updateFromSlots() {
     this.reset();
     const baseState = getInitialState();
 
-    for (const slotId of equippedSlots) {
-      if (slotId === null) continue;
+    // 1. On lit le build qui a déjà résolu les Mimics
+    const effectiveBuild = getEffectiveBuild();
 
-      const item = getItemById(slotId);
+    // 2. Détection du Joystick maximum dans le build
+    for (const item of effectiveBuild) {
+      if (!item) continue;
+      
+      const itemName = item.transformed ? item.transformed.name : item.name;
+      const itemTier = item.transformed ? item.transformed.tier : item.tier;
+
+      if (itemName.toLowerCase() === "joystick") {
+        this.petal.hasJoystick.active = true;
+        this.petal.hasJoystick.tier = Math.max(this.petal.hasJoystick.tier, itemTier);
+      }
+    }
+
+    for (const item of effectiveBuild) {
       if (!item) continue;
 
-      const obj = getObject(item.name, item.tier);
+      let finalName = item.transformed ? item.transformed.name : item.name;
+      let finalTier = item.transformed ? item.transformed.tier : item.tier;
+
+      // Le Stick se transforme s'il est de tier inférieur ou égal, et il garde son PROPRE tier !
+      if (this.petal.hasJoystick.active && finalName.toLowerCase() === "stick" && finalTier <= this.petal.hasJoystick.tier) {
+        finalName = "joystick";
+      }
+
+      const obj = getObject(finalName, finalTier);
       if (!obj || !obj.effects) continue;
 
       for (const effect of obj.effects) {

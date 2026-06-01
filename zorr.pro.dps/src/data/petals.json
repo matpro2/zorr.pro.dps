@@ -411,7 +411,7 @@
     "reload": 2.0,
     "secondReload": null,
     "effects": [
-      { "type": "reloadFactor", "global": true, "value": [-5, -6.8, -8.6, -10.4, -12.2, -14, -15.8, -17.6, -19.4, -21.2] },
+      { "type": "reloadFactor", "value": [-5, -6.8, -8.6, -10.4, -12.2, -14, -15.8, -17.6, -19.4, -21.2] },
       { "type": "Fire", "duration": 3, "value": 150, "stack": false }
     ]
   }

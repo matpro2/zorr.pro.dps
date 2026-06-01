@@ -40,9 +40,8 @@ function resolveTiers(data: any, tier: number, keyName?: string): any {
   return resolvedObject;
 }
 
-// NOUVELLE FONCTION : Calcule le multiplicateur spécial de PV pour les mobs et familiers
 function getMobHpMultiplier(tier: number): number {
-    const factors = [3.75, 3.6, 4, 7.5, 6, 15, 12];
+    const factors = [3.75, 3.6, 4, 7.5, 6, 15, 12, 15];
     let hMult = 1;
     for (let i = 0; i < tier; i++) {
         hMult *= (factors[i] || 1);
@@ -58,16 +57,14 @@ export function getObject(name: string, tier: number) {
   const rawObject = allData[key];
   const object = resolveTiers(rawObject, tier);
 
-  const role = object.object === "mob" ? "target" : (object.object || "none");
 
   const tierMulti = 3 ** tier;
 
-  // --- MODIFICATION ICI ---
   if (typeof object.health === "number") {
     let applyTierMulti = 1;
 
     if (!Array.isArray(rawObject.health)) {
-        if (role === "target" || role === "pet") {
+        if (object.object === "mob" || object.object === "pet") {
             applyTierMulti = getMobHpMultiplier(tier);
         } else {
             applyTierMulti = tierMulti;
@@ -76,7 +73,7 @@ export function getObject(name: string, tier: number) {
     
     object.health *= applyTierMulti;
     
-    if (role === "petal") {
+    if (object.object === "petal") {
         object.health *= PlayerValue.petal.healthMulti;
     }
   }
@@ -85,10 +82,12 @@ export function getObject(name: string, tier: number) {
     const applyTierMulti = Array.isArray(rawObject.damage) ? 1 : tierMulti;
     object.damage *= applyTierMulti;
     
-    if (role === "petal") {
-        object.damage *= PlayerValue.petal.damageMulti * PlayerValue.target.damageMulti;
-    } else if (role === "pet") {
-        object.damage *= PlayerValue.pet.damageMulti * PlayerValue.target.damageMulti;
+    if (object.object === "petal") {
+        object.damage *= PlayerValue.petal.damageMulti;
+    } else if (object.object === "pet") {
+        object.damage *= PlayerValue.pet.damageMulti;
+    } else if (object.object === "mob") {
+        object.damage *= PlayerValue.mob.damageMulti;
     }
   }
   
@@ -97,20 +96,20 @@ export function getObject(name: string, tier: number) {
     
     object.armor *= applyTierMulti;
 
-    if (role === "petal") {
+    if (object.object === "petal") {
         object.armor = (object.armor + PlayerValue.petal.armor) * PlayerValue.petal.armorMulti;
-    } else if (role === "pet") {
+    } else if (object.object === "pet") {
         object.armor = (object.armor + PlayerValue.pet.armor);
-    } else if (role === "target") {
-        object.armor = (object.armor + PlayerValue.target.armor) * PlayerValue.target.armorMulti;
+    } else if (object.object === "mob") {
+        object.armor = (object.armor + PlayerValue.mob.armor) * PlayerValue.mob.armorMulti;
     }
   }
 
-  if (typeof object.reload === "number" && (role === "petal" || role === "pet")) {
+  if (typeof object.reload === "number" && (object.object === "petal" || object.object === "pet")) {
     object.reload /= Math.max(0.01, PlayerValue.petal.reloadFactor);
   }
 
-  if (typeof object.secondReload === "number" && (role === "petal" || role === "pet")) {
+  if (typeof object.secondReload === "number" && (object.object === "petal" || object.object === "pet")) {
     object.secondReload /= Math.max(0.01, PlayerValue.petal.secondReloadFactor);
   }
 
@@ -125,7 +124,7 @@ export function getObject(name: string, tier: number) {
          }
       }
 
-      if (typeof effect.duration === "number" && (role === "petal" || role === "pet")) {
+      if (typeof effect.duration === "number" && (object.object === "petal" || object.object === "pet")) {
         switch (effect.type) {
           case "Poison":
             effect.duration += PlayerValue.status.poisonDuration;
