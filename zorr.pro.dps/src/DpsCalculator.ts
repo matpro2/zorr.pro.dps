@@ -28,7 +28,7 @@ export class DpsCalculator {
     private static readonly TICK_RATE = 0.06;
     private static readonly INFINITE_TICKS = 1e99;
 
-    private static calculateEffectDamage(effects: any[] | undefined, survivalTicks: number, targetArmor: number) {
+    private static calculateEffectDamage(effects: any[] | undefined, survivalTicks: number, targetArmor: number, totalTime: number) {
         let poison = 0;
         let fire = 0;
         let lightning = 0;
@@ -41,10 +41,12 @@ export class DpsCalculator {
                 let dmg = 0;
                 
                 if (effect.stack) {
-                    const maxSimultaneousStacks = (effect.duration || 1) / this.TICK_RATE;
-                    dmg = (maxSimultaneousStacks * effect.value) * survivalTicks; 
+                    const totalDamagePerStack = effect.value * (effect.duration || 1);
+                    dmg = totalDamagePerStack * survivalTicks;
                 } else {
-                    dmg = effect.value * survivalTicks; 
+                    const totalPoisonedTime = (survivalTicks * DpsCalculator.TICK_RATE) + (effect.duration || 1);
+                    const cappedTime = Math.min(totalTime, totalPoisonedTime);
+                    dmg = effect.value * cappedTime;
                 }
                 
                 if (effect.type === "Poison") poison += dmg;
@@ -55,7 +57,7 @@ export class DpsCalculator {
                 lightning += (effect.value * bounces) * survivalTicks; 
             }
             else if (effect.type === "finalDamage") {
-                finalDamage += Math.max(0, effect.value - targetArmor) * survivalTicks;
+                finalDamage += Math.max(0, effect.value - targetArmor);
             }
         }
         return { poison, fire, lightning, finalDamage };
@@ -78,6 +80,8 @@ export class DpsCalculator {
         
         if (attacker.type === "spill") {
             attackerSurvivalTicks = Math.ceil((attacker.duration || 0) / this.TICK_RATE); 
+        } else if (attacker.type === "radiation") {
+            attackerSurvivalTicks = 1;
         }
         
         return { finalAttackerDamage, attackerSurvivalTicks };
@@ -111,7 +115,12 @@ export class DpsCalculator {
         const survivalTick = result.attackerSurvivalTicks;
         const finalAttackerDamage = result.finalAttackerDamage;
 
-        const totalTime = reloadtime + (DpsCalculator.TICK_RATE * survivalTick);
+        let totalTime = reloadtime + (DpsCalculator.TICK_RATE * survivalTick);
+        
+        if (attacker.type === "radiation") {
+            totalTime = 0.3333;
+        }
+
         const dpsCategory: any[] = [];
 
         const totalPhysicalDamage = survivalTick * finalAttackerDamage;
@@ -129,7 +138,8 @@ export class DpsCalculator {
             const effectResult = DpsCalculator.calculateEffectDamage(
                 attacker.effects, 
                 survivalTick, 
-                target.armor || 0 
+                target.armor || 0,
+                totalTime
             );
 
             for (const [key, value] of Object.entries(effectResult)) {

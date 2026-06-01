@@ -29,5 +29,15 @@
       { "type": "Poison", "duration": 5, "value": 200, "stack": false },
       { "type": "Fire", "duration": 3, "value": 150, "stack": false }
     ]
+  },
+  "Pyrite": {
+    "name": "Pyrite",
+    "object": "petal",
+    "type": "radiation",
+    "stack": true,
+    "entity": 1,
+    "effects": [
+      { "type": "Fire", "duration": 6, "value": 36, "stack": true }
+    ]
   }
 }
