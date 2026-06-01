@@ -11,7 +11,7 @@ import { PlayerValue } from "./PlayerValue";
 import { 
     addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, 
     getProcessedInventory, getEquippedSlots, getEquippedCount, getItemById, MAX_SLOTS,
-    getEffectiveBuild // AJOUT : On importe la fonction qui calcule le positionnement des Mimics
+    getEffectiveBuild
 } from "./inventory";
 import { TIER_COLORS } from "./constants";
 
@@ -50,11 +50,9 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderSlots() {
         slotsContainer.innerHTML = "";
         
-        // On récupère directement le build transformé (Mimic déjà résolu)
         const effectiveBuild = getEffectiveBuild();
         let totalDps = 0; 
         
-        // On récupère le statut de synergie ET le tier du joystick depuis PlayerValue
         const hasJoystickActive = (PlayerValue as any).petal?.hasJoystick?.active || false;
         const joystickTier = (PlayerValue as any).petal?.hasJoystick?.tier || 0;
 
@@ -64,40 +62,61 @@ document.addEventListener("DOMContentLoaded", () => {
             slotDiv.className = "equipped-item";
 
             if (item) {
-                // On lit les propriétés transformées (si elles existent, suite au passage du Mimic)
                 let effectiveName = item.transformed ? item.transformed.name : item.name;
-                let effectiveTier = item.transformed ? item.transformed.tier : item.tier;
+                let displayTier = item.transformed ? item.transformed.displayTier : item.tier;
+                let statTier = item.transformed ? item.transformed.statTier : item.tier;
+                let entityMulti = item.transformed?.entityMultiplier || 1;
+                const isInactive = item.inactive || false;
 
-                const isMimic = item.transformed?.synergy === "mimic";
+                const isMimic = item.transformed?.synergy?.includes("mimic") || false;
+                const isFission = item.transformed?.synergy?.includes("fission") || false;
+                const isFusion = item.transformed?.synergy?.includes("fusion") || false;
                 let isJoystick = false;
 
-                // Application de la synergie visuelle (Joystick) sur l'objet effectif
-                // Règle : le nom devient joystick si on est un stick avec un tier inférieur ou égal
-                if (hasJoystickActive && effectiveName.toLowerCase() === "stick" && effectiveTier <= joystickTier) {
+                if (hasJoystickActive && effectiveName.toLowerCase() === "stick" && displayTier <= joystickTier) {
                     effectiveName = "joystick";
                     isJoystick = true;
                 }
 
-                // Calculs avec effectiveTier
-                const result = DpsCalculator.calculateDps(effectiveName, effectiveTier, targetSelect.value, Number(targetTier.value));
-                totalDps += result.dps;
+                const result = DpsCalculator.calculateDps(effectiveName, statTier, targetSelect.value, Number(targetTier.value));
                 
-                const obj = getObject(effectiveName, effectiveTier);
+                // Si l'objet est inactif (sacrifié en ingrédient), ses DPS tombent à 0
+                if (isInactive) {
+                    result.dps = 0;
+                    if (result.dpsCategory) result.dpsCategory = [];
+                } else {
+                    result.dps *= entityMulti;
+                    if (result.dpsCategory && result.dpsCategory.length > 0) {
+                        result.dpsCategory.forEach((cat: any) => cat.dps *= entityMulti);
+                    }
+                    totalDps += result.dps;
+                }
+                
+                const obj = getObject(effectiveName, statTier);
                 const itemReload = obj ? ((obj.reload || 0) + (obj.secondReload || 0)) : 0;
                 const itemHealth = obj ? obj.health : item.health;
                 const itemDamage = obj ? obj.damage : item.damage;
                 const itemArmor = obj ? obj.armor : item.armor;
 
-                // On garde la couleur de fond de l'objet d'origine (Mimic ou Stick) pour la clarté visuelle
                 const tierColor = TIER_COLORS[item.tier] || "#fafafa";
                 slotDiv.style.backgroundColor = tierColor;
                 slotDiv.style.color = "#000";
                 
-                // Bordures dynamiques
-                if (isMimic || isJoystick) {
-                    const borderColor = isMimic ? "#9b59b6" : "#f39c12"; // Violet pour Mimic, Doré pour Joystick
+                // Styles de bordure et de transparence
+                if (isInactive) {
+                    slotDiv.style.opacity = "0.5";
+                    slotDiv.style.filter = "grayscale(80%)";
+                    slotDiv.style.border = "2px dashed #7f8c8d";
+                } else if (isFusion || isMimic || isJoystick || isFission) {
+                    let borderColor = "#ccc";
+                    if (isFusion) borderColor = "#3498db";
+                    else if (isMimic) borderColor = "#9b59b6";   
+                    else if (isFission) borderColor = "#ff9ff3"; 
+                    
+                    if (isJoystick) borderColor = "#f39c12";    
+
                     slotDiv.style.border = `2px solid ${borderColor}`; 
-                    slotDiv.style.boxShadow = `inset 0 0 10px ${borderColor}40`; // Hex 40 = ~25% d'opacité
+                    slotDiv.style.boxShadow = `inset 0 0 10px ${borderColor}40`;
                 }
                 
                 let dpsBreakdown = "";
@@ -106,16 +125,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     dpsBreakdown = `<div style="margin-top: 4px; padding-top: 4px; border-top: 1px dotted rgba(0,0,0,0.2); color: #c0392b;">${breakdownText}</div>`;
                 }
 
-                // Badges adaptatifs selon les synergies superposées
+                let countBadge = entityMulti > 1 && !isInactive ? ` <span style="color: #ff9ff3; font-weight: 900; margin-left: 4px;">x${entityMulti}</span>` : "";
+                
+                let tierText = statTier !== displayTier 
+                    ? `T${displayTier} <span style="color: #e74c3c; font-weight: bold;">(Stats T${statTier})</span>` 
+                    : `T${displayTier}`;
+
                 let badgeHtml = "";
-                if (isMimic && isJoystick) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 2px 6px; border-radius: 4px;">Mimic ➔ Joystick (T${effectiveTier})</span>`;
+                if (isInactive) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #bdc3c7; padding: 2px 6px; border-radius: 4px;">${effectiveName} (${tierText})</span>`;
+                } else if (isFusion && isJoystick) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 2px 6px; border-radius: 4px;">Fusion ➔ Joystick (${tierText})${countBadge}</span>`;
+                } else if (isMimic && isJoystick) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 2px 6px; border-radius: 4px;">Mimic ➔ Joystick (${tierText})${countBadge}</span>`;
+                } else if (isFusion) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #3498db; padding: 2px 6px; border-radius: 4px;">Fusion ➔ ${effectiveName} (${tierText})${countBadge}</span>`;
                 } else if (isMimic) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #e056fd; padding: 2px 6px; border-radius: 4px;">Mimic ➔ ${effectiveName} (T${effectiveTier})</span>`;
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #e056fd; padding: 2px 6px; border-radius: 4px;">Mimic ➔ ${effectiveName} (${tierText})${countBadge}</span>`;
                 } else if (isJoystick) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 2px 6px; border-radius: 4px;">Stick ➔ Joystick (T${effectiveTier})</span>`;
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 2px 6px; border-radius: 4px;">Stick ➔ Joystick (${tierText})${countBadge}</span>`;
                 } else {
-                    badgeHtml = `<span style="background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px;">${item.name} (T${item.tier})</span>`;
+                    badgeHtml = `<span style="background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px;">${item.name} (${tierText})${countBadge}</span>`;
                 }
 
                 slotDiv.innerHTML = `

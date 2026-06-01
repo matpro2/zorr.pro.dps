@@ -73,34 +73,33 @@ export const PlayerValue = {
     this.reset();
     const baseState = getInitialState();
 
-    // 1. On lit le build qui a déjà résolu les Mimics
     const effectiveBuild = getEffectiveBuild();
 
-    // 2. Détection du Joystick maximum dans le build
+    // 1. Détection du Joystick (Ignore les ingrédients inactifs)
     for (const item of effectiveBuild) {
-      if (!item) continue;
+      if (!item || item.inactive) continue; 
       
       const itemName = item.transformed ? item.transformed.name : item.name;
-      const itemTier = item.transformed ? item.transformed.tier : item.tier;
+      const itemDisplayTier = item.transformed ? item.transformed.displayTier : item.tier;
 
       if (itemName.toLowerCase() === "joystick") {
         this.petal.hasJoystick.active = true;
-        this.petal.hasJoystick.tier = Math.max(this.petal.hasJoystick.tier, itemTier);
+        this.petal.hasJoystick.tier = Math.max(this.petal.hasJoystick.tier, itemDisplayTier);
       }
     }
 
     for (const item of effectiveBuild) {
-      if (!item) continue;
+      if (!item || item.inactive) continue;
 
       let finalName = item.transformed ? item.transformed.name : item.name;
-      let finalTier = item.transformed ? item.transformed.tier : item.tier;
+      let finalDisplayTier = item.transformed ? item.transformed.displayTier : item.tier;
+      let finalStatTier = item.transformed ? item.transformed.statTier : item.tier;
 
-      // Le Stick se transforme s'il est de tier inférieur ou égal, et il garde son PROPRE tier !
-      if (this.petal.hasJoystick.active && finalName.toLowerCase() === "stick" && finalTier <= this.petal.hasJoystick.tier) {
+      if (this.petal.hasJoystick.active && finalName.toLowerCase() === "stick" && finalDisplayTier <= this.petal.hasJoystick.tier) {
         finalName = "joystick";
       }
 
-      const obj = getObject(finalName, finalTier);
+      const obj = getObject(finalName, finalStatTier);
       if (!obj || !obj.effects) continue;
 
       for (const effect of obj.effects) {
@@ -112,7 +111,7 @@ export const PlayerValue = {
           if (typeof effectValue === "object" && effectValue !== null && typeof effectValue.chance === "number" && typeof effectValue.multiplier === "number") {
             effectValue = effectValue.chance * (effectValue.multiplier - 1);
           }
-
+          
           if (parts.length === 2) {
             const [category, stat] = parts;
             if ((this as any)[category] && typeof (this as any)[category][stat] !== "undefined") {

@@ -17,12 +17,15 @@ export interface IInventoryItem {
 
 export interface ITransformedState {
     name: string;
-    tier: number;
+    displayTier: number; 
+    statTier: number;    
     synergy: string;
+    entityMultiplier?: number; 
 }
 
 export interface IEffectiveItem extends IInventoryItem {
     transformed?: ITransformedState;
+    inactive?: boolean; // NOUVEAU : Indique si l'objet est consommé (ex: ingrédient de fusion)
 }
 
 let inventory: IInventoryItem[] = [];
@@ -61,17 +64,18 @@ export function getItemById(id: number): IInventoryItem | undefined {
     return inventory.find(i => i.id === id);
 }
 
-// Génère un build virtuel où les règles de position (Mimic) sont appliquées
 export function getEffectiveBuild(): (IEffectiveItem | null)[] {
     const build: (IEffectiveItem | null)[] = equippedSlots.map(slotId => {
         if (slotId === null) return null;
         const item = getItemById(slotId);
-        // Retourne une copie pour ne pas corrompre la sauvegarde originale
         return item ? { ...item } : null; 
     });
 
     const getEffectiveName = (item: IEffectiveItem) => item.transformed ? item.transformed.name : item.name;
+    const getDisplayTier = (item: IEffectiveItem) => item.transformed ? item.transformed.displayTier : item.tier;
+    const getStatTier = (item: IEffectiveItem) => item.transformed ? item.transformed.statTier : item.tier;
 
+    // Passe 1 : Mimic
     for (let i = 0; i < build.length - 1; i++) {
         const current = build[i];
         if (current && getEffectiveName(current).toLowerCase() === "mimic") {
@@ -79,9 +83,72 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
             if (next && getEffectiveName(next).toLowerCase() !== "mimic") {
                 current.transformed = {
                     name: getEffectiveName(next),
-                    tier: current.tier, // Le mimic garde son propre tier !
-                    synergy: "mimic"
+                    displayTier: current.tier,
+                    statTier: current.tier, 
+                    synergy: "mimic",
+                    entityMultiplier: 1
                 };
+            }
+        }
+    }
+
+    // Passe 2 : Fission 
+    for (let i = 0; i < build.length - 1; i++) {
+        const current = build[i];
+        if (current && getEffectiveName(current).toLowerCase() === "fission") {
+            const next = build[i + 1];
+            if (next) {
+                const currentMulti = current.transformed?.entityMultiplier || 1;
+                const nextName = getEffectiveName(next);
+                const nextDisplayTier = getDisplayTier(next);
+                const nextStatTier = getStatTier(next);
+                const nextMulti = next.transformed?.entityMultiplier || 1;
+                const prevSynergy = next.transformed?.synergy || "";
+                
+                next.transformed = {
+                    name: nextName,
+                    displayTier: nextDisplayTier,
+                    statTier: Math.max(0, nextStatTier - 1), 
+                    synergy: prevSynergy ? prevSynergy + ", fission" : "fission",
+                    entityMultiplier: nextMulti * (3 * currentMulti) 
+                };
+            }
+        }
+    }
+
+    // Passe 3 : Fusion avec consommation d'ingrédients
+    for (let i = 0; i < build.length - 3; i++) {
+        const current = build[i];
+        // On s'assure que la fusion n'est pas elle-même un ingrédient consommé
+        if (current && !current.inactive && getEffectiveName(current).toLowerCase() === "fusion") {
+            const n1 = build[i + 1];
+            const n2 = build[i + 2];
+            const n3 = build[i + 3];
+
+            // On vérifie que les 3 ingrédients existent et ne sont pas déjà inactifs
+            if (n1 && !n1.inactive && n2 && !n2.inactive && n3 && !n3.inactive) {
+                const name1 = getEffectiveName(n1);
+                const name2 = getEffectiveName(n2);
+                const name3 = getEffectiveName(n3);
+                
+                const dt1 = getDisplayTier(n1);
+                const dt2 = getDisplayTier(n2);
+                const dt3 = getDisplayTier(n3);
+
+                if (name1 === name2 && name2 === name3 && dt1 === dt2 && dt2 === dt3) {
+                    current.transformed = {
+                        name: name1,
+                        displayTier: current.tier, 
+                        statTier: current.tier + 1, 
+                        synergy: "fusion",
+                        entityMultiplier: current.transformed?.entityMultiplier || 1
+                    };
+                    
+                    // On désactive les 3 pétales sacrifiées !
+                    n1.inactive = true;
+                    n2.inactive = true;
+                    n3.inactive = true;
+                }
             }
         }
     }
@@ -89,21 +156,20 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
     return build;
 }
 
-// Gère l'affichage du tableau d'inventaire
 export function getProcessedInventory(targetName: string, targetTier: number, hasJoystick: boolean = false, joystickTier: number = 0): IInventoryItem[] {
     inventory.forEach(item => {
         let effectiveName = item.name;
-        let effectiveTier = item.tier; // On garde toujours le tier d'origine
+        let statTier = item.tier;
         
         if (hasJoystick && item.name.toLowerCase() === "stick" && item.tier <= joystickTier) {
             effectiveName = "joystick";
         }
 
-        const result = DpsCalculator.calculateDps(effectiveName, effectiveTier, targetName, targetTier);
+        const result = DpsCalculator.calculateDps(effectiveName, statTier, targetName, targetTier);
         item.dps = result.dps; 
         item.dpsCategory = result.dpsCategory;
 
-        const itemObj = getObject(effectiveName, effectiveTier);
+        const itemObj = getObject(effectiveName, statTier);
         if (itemObj) {
             item.itemType = itemObj.type || "default"; 
             item.reload = (itemObj.reload || 0) + (itemObj.secondReload || 0);
