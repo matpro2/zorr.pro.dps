@@ -7,6 +7,7 @@ export interface IInventoryItem {
     tier: number;
     quantity: number; 
     dps?: number;
+    dpsCategory?: any[];
     health?: number;
     damage?: number;
     armor?: number;
@@ -54,6 +55,7 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
     inventory.forEach(item => {
         const result = DpsCalculator.calculateDps(item.name, item.tier, targetName, targetTier);
         item.dps = result.dps; 
+        item.dpsCategory = result.dpsCategory;
 
         const itemObj = getObject(item.name, item.tier);
         if (itemObj) {

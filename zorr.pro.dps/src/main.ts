@@ -67,6 +67,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     slotDiv.style.backgroundColor = tierColor;
                     slotDiv.style.color = "#000";
                     
+                    let dpsBreakdown = "";
+                    if (result.dpsCategory && result.dpsCategory.length > 0) {
+                        const breakdownText = result.dpsCategory.map((cat: any) => `<strong>${cat.type}:</strong> ${formatNum(cat.dps)}`).join(' | ');
+                        dpsBreakdown = `<div style="margin-top: 4px; padding-top: 4px; border-top: 1px dotted rgba(0,0,0,0.2); color: #c0392b;">${breakdownText}</div>`;
+                    }
+
                     slotDiv.innerHTML = `
                         <div class="item-main-row">
                             <span style="background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px;">${item.name} (T${item.tier})</span>
@@ -74,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                         <div class="dps-details" style="color: #111; border-top-color: rgba(0,0,0,0.3); font-weight: 500;">
                             Health: ${formatNum(item.health)} | Damage: ${formatNum(item.damage)} | Armor: ${formatNum(item.armor)} | Reload: ${formatNum(itemReload)}s
+                            ${dpsBreakdown}
                         </div>
                     `;
                     slotDiv.addEventListener("click", () => {
@@ -128,7 +135,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let inventoryItems = getProcessedInventory(currentTargetName, currentTargetTier);
         
-        // --- NOUVEAU SYSTÈME DE FILTRE INTELLIGENT ---
         if (filterTypeSelect && filterTypeSelect.value !== "all") {
             inventoryItems = inventoryItems.filter(item => {
                 const obj = getObject(item.name, item.tier);
@@ -136,11 +142,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 switch (filterTypeSelect.value) {
                     case "default":
-                        // Toute pétale faisant des dégâts réels
                         return (item.dps || 0) > 0;
                     
                     case "special":
-                        // Les pétales qui ont un effet Poison, Fire ou Lightning
                         if (!obj.effects) return false;
                         return obj.effects.some((e: any) => {
                             if (!e.type) return false;
@@ -149,16 +153,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         });
 
                     case "utility":
-                        // Les pétales utilitaires (effets qui modifient des PlayerValues contenant un point ".")
                         if (!obj.effects) return false;
                         return obj.effects.some((e: any) => e.type && e.type.includes("."));
 
                     case "egg":
-                        // Les œufs
                         return obj.type === "egg";
 
                     case "spill":
-                        // Les spills
                         return obj.type === "spill";
 
                     default:

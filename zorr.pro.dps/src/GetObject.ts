@@ -3,6 +3,7 @@ import mobs from "../src/data/mobs.json";
 import spills from "../src/data/spills.json";
 import eggs from "../src/data/eggs.json";
 import utilities from "../src/data/utilities.json";
+import radiation from "../src/data/radiation.json";
 
 import { PlayerValue } from "./PlayerValue";
 
@@ -11,7 +12,8 @@ const allData: Record<string, any> = {
   ...mobs,
   ...spills,
   ...eggs,
-  ...utilities
+  ...utilities,
+  ...radiation
 };
 
 function resolveTiers(data: any, tier: number, keyName?: string): any {
@@ -46,29 +48,49 @@ export function getObject(name: string, tier: number) {
   const rawObject = allData[key];
   const object = resolveTiers(rawObject, tier);
 
+  const role = object.object === "mob" ? "target" : (object.object || "none");
+
   const tierMulti = 3 ** tier;
 
   if (typeof object.health === "number") {
     const applyTierMulti = Array.isArray(rawObject.health) ? 1 : tierMulti;
-    object.health *= applyTierMulti * PlayerValue.petal.healthMulti;
+    object.health *= applyTierMulti;
+    
+    if (role === "petal" || role === "pet") {
+        object.health *= PlayerValue.petal.healthMulti;
+    }
   }
   
   if (typeof object.damage === "number") {
     const applyTierMulti = Array.isArray(rawObject.damage) ? 1 : tierMulti;
-    object.damage *= applyTierMulti * PlayerValue.petal.damageMulti;
+    object.damage *= applyTierMulti;
+    
+    if (role === "petal") {
+        object.damage *= PlayerValue.petal.damageMulti * PlayerValue.target.damageMulti;
+    } else if (role === "pet") {
+        object.damage *= PlayerValue.pet.damageMulti * PlayerValue.target.damageMulti;
+    }
   }
   
   if (typeof object.armor === "number") {
     const applyTierMulti = Array.isArray(rawObject.armor) ? 1 : tierMulti;
-    object.armor = (object.armor + PlayerValue.petal.armor) * PlayerValue.petal.armorMulti * applyTierMulti;
+    
+    object.armor *= applyTierMulti;
+
+    if (role === "petal") {
+        object.armor = (object.armor + PlayerValue.petal.armor) * PlayerValue.petal.armorMulti;
+    } else if (role === "pet") {
+        object.armor = (object.armor + PlayerValue.pet.armor);
+    } else if (role === "target") {
+        object.armor = (object.armor + PlayerValue.target.armor) * PlayerValue.target.armorMulti;
+    }
   }
 
-  // --- CALCUL DU RELOAD FINAL ---
-  if (typeof object.reload === "number") {
+  if (typeof object.reload === "number" && (role === "petal" || role === "pet")) {
     object.reload /= Math.max(0.01, PlayerValue.petal.reloadFactor);
   }
 
-  if (typeof object.secondReload === "number") {
+  if (typeof object.secondReload === "number" && (role === "petal" || role === "pet")) {
     object.secondReload /= Math.max(0.01, PlayerValue.petal.secondReloadFactor);
   }
 
@@ -83,7 +105,7 @@ export function getObject(name: string, tier: number) {
          }
       }
 
-      if (typeof effect.duration === "number") {
+      if (typeof effect.duration === "number" && (role === "petal" || role === "pet")) {
         switch (effect.type) {
           case "Poison":
             effect.duration += PlayerValue.status.poisonDuration;
@@ -93,6 +115,24 @@ export function getObject(name: string, tier: number) {
             break;
         }
       }
+    }
+  }
+
+  if (typeof object.damage === "number" && Array.isArray(object.effects)) {
+    let critChance = 0;
+    let critMultiplier = 1;
+
+    for (const effect of object.effects) {
+        if (effect.type === "Critical" && effect.value) {
+            critChance = (effect.value.chance || 0) / 100;
+            critMultiplier = effect.value.multiplier || 1;
+            break; 
+        }
+    }
+
+    if (critChance > 0) {
+        const expectedCritMultiplier = (1 - critChance) + (critChance * critMultiplier);
+        object.damage *= expectedCritMultiplier;
     }
   }
 

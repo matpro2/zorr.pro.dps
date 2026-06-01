@@ -1,0 +1,33 @@
+{
+  "Uranium": {
+    "name": "Uranium",
+    "object": "petal",
+    "type": "radiation",
+    "stack": true,
+    "entity": 1,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 400, "stack": false }
+    ]
+  },
+  "Plutonium": {
+    "name": "Plutonium",
+    "object": "petal",
+    "type": "radiation",
+    "stack": true,
+    "entity": 1,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 250, "stack": false }
+    ]
+  },
+  "Corium": {
+    "name": "Corium",
+    "object": "petal",
+    "type": "radiation",
+    "stack": true,
+    "entity": 1,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 200, "stack": false },
+      { "type": "Fire", "duration": 3, "value": 150, "stack": false }
+    ]
+  }
+}

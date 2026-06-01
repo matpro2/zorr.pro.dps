@@ -1,6 +1,7 @@
 {
   "Latrine": {
     "name": "Latrine",
+    "object": "petal",
     "type": "spill",
     "stack": true,
     "entity": 1,
@@ -11,8 +12,37 @@
       { "type": "Poison", "duration": 3, "value": 5, "stack": true }
     ]
   },
+  "Lava": {
+    "name": "Lava",
+    "object": "petal",
+    "type": "spill",
+    "stack": true,
+    "entity": 1,
+    "damage": 5,
+    "reload": 2.0,
+    "secondReload": 1.0,
+    "duration": 5,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 65, "stack": false }
+    ]
+  },
+  "Acid": {
+    "name": "Lava",
+    "object": "petal",
+    "type": "spill",
+    "stack": true,
+    "entity": 1,
+    "damage": 5,
+    "reload": 2.0,
+    "secondReload": 1.0,
+    "duration": 5,
+    "effects": [
+      { "type": "Poison", "duration": 3, "value": 80, "stack": false }
+    ]
+  },
   "Hot Water": {
     "name": "Hot Water",
+    "object": "petal",
     "type": "spill",
     "stack": true,
     "entity": 1,
@@ -22,6 +52,33 @@
     "duration": 5,
     "effects": [
       { "type": "Fire", "duration": 3, "value": 35, "stack": false }
+    ]
+  },
+    "Oil": {
+    "name": "Oil",
+    "object": "petal",
+    "type": "spill",
+    "stack": true,
+    "entity": 1,
+    "damage": 5,
+    "reload": 2.0,
+    "secondReload": 1.0,
+    "duration": 5,
+    "effects": [
+      { "type": "Poison", "duration": 0.5, "value": 200, "stack": false }
+    ]
+  },
+  "Blood": {
+    "name": "Blood",
+    "object": "petal",
+    "type": "spill",
+    "stack": false,
+    "entity": 1,
+    "reload": 3.0,
+    "secondReload": 1.0,
+    "duration": 5,
+    "effects": [
+      { "type": "target.armor", "value": -5}
     ]
   }
 }

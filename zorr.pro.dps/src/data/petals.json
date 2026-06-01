@@ -1,6 +1,7 @@
 {
   "Coconut": {
     "name": "Coconut",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -16,6 +17,7 @@
   },
   "Joystick": {
     "name": "Joystick",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -31,6 +33,7 @@
   },
   "Basic": {
     "name": "Basic",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -44,6 +47,7 @@
   },
     "Corn": {
     "name": "Corn",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -57,6 +61,7 @@
   },
   "Bitcoin": {
     "name": "Bitcoin",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -70,6 +75,7 @@
   },
   "Bone": {
     "name": "Bone",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -83,6 +89,7 @@
   },
   "Comb": {
     "name": "Comb",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -99,6 +106,7 @@
   },
   "DVD": {
     "name": "DVD",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -114,6 +122,7 @@
   },
   "Microplastics": {
     "name": "Microplastics",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -129,6 +138,7 @@
   },
     "Bubonic Plague": {
     "name": "Bubonic Plague",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -142,8 +152,9 @@
       { "type": "Poison", "duration": 30, "value": 30, "stack": true }
     ]
   },
-      "Elemental": {
+    "Elemental": {
     "name": "Elemental",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -163,6 +174,7 @@
   },
   "Dice": {
     "name": "Dice",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -178,6 +190,7 @@
   },
   "Dollar": {
     "name": "Dollar",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -191,6 +204,7 @@
   },
   "Fang": {
     "name": "Fang",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -206,6 +220,7 @@
   },
   "Glass": {
     "name": "Glass",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -221,6 +236,7 @@
   },
   "Heavy": {
     "name": "Heavy",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -234,6 +250,7 @@
   },
   "Iris": {
     "name": "Iris",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -249,6 +266,7 @@
   },
   "Magic Yuan": {
     "name": "Magic Yuan",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -264,6 +282,7 @@
   },
   "Plasma": {
     "name": "Plasma",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -281,6 +300,7 @@
   },
   "Rock": {
     "name": "Rock",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -294,6 +314,7 @@
   },
   "Rose": {
     "name": "Rose",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -309,6 +330,7 @@
   },
   "Sad": {
     "name": "Sad",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -322,6 +344,7 @@
   },
   "Sand": {
     "name": "Sand",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -335,6 +358,7 @@
   },
   "Trident": {
     "name": "Trident",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -348,6 +372,7 @@
   },
   "Wing": {
     "name": "Wing",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -361,6 +386,7 @@
   },
   "Yuan": {
     "name": "Yuan",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -374,6 +400,7 @@
   },
   "Zodiac": {
     "name": "Zodiac",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,

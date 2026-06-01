@@ -1,6 +1,7 @@
 {
   "DNA": {
     "name": "DNA",
+    "object": "petal",
     "type": "utility",
     "stack": false,
     "tierRestricted": false,
@@ -10,6 +11,7 @@
   },
   "Dizzy": {
     "name": "Dizzy",
+    "object": "petal",
     "type": "utility",
     "stack": false,
     "tierRestricted": false,
@@ -19,6 +21,7 @@
   },
   "Fission": {
     "name": "Fission",
+    "object": "petal",
     "type": "utility",
     "stack": true,
     "tierRestricted": true,
@@ -26,6 +29,7 @@
   },
   "Fusion": {
     "name": "Fusion",
+    "object": "petal",
     "type": "utility",
     "stack": true,
     "tierRestricted": true,
@@ -33,6 +37,7 @@
   },
   "Root": {
     "name": "Root",
+    "object": "petal",
     "type": "utility",
     "stack": false,
     "tierRestricted": false,
@@ -40,6 +45,7 @@
   },
   "Quartz": {
     "name": "Quartz",
+    "object": "petal",
     "type": "utility",
     "stack": false,
     "tierRestricted": false,
@@ -49,6 +55,7 @@
   },
   "Horn": {
     "name": "Horn",
+    "object": "petal",
     "type": "utility",
     "stack": false,
     "tierRestricted": false,
@@ -58,6 +65,7 @@
   },
   "Mimic": {
     "name": "Mimic",
+    "object": "petal",
     "type": "utility",
     "stack": true,
     "tierRestricted": false,
@@ -65,6 +73,7 @@
   },
     "Neurotoxin": {
     "name": "Neurotoxin",
+    "object": "petal",
     "type": "default",
     "stack": false,
     "tierRestricted": false,
@@ -80,6 +89,7 @@
   },
     "Clover": {
     "name": "Clover",
+    "object": "petal",
     "type": "utility",
     "stack": true,
     "tierRestricted": false,
@@ -95,6 +105,7 @@
   },
     "Golden Cactus": {
     "name": "Golden Cactus",
+    "object": "petal",
     "type": "default",
     "stack": false,
     "tierRestricted": false,
@@ -110,6 +121,7 @@
   },
     "Golden Palm Leaf": {
     "name": "Golden Palm Leaf",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -125,6 +137,7 @@
   },
   "Golden Leaf": {
     "name": "Golden Leaf",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -140,6 +153,7 @@
   },
     "Leaf": {
     "name": "Leaf",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -155,6 +169,7 @@
   },
     "Chromosome": {
     "name": "Chromosome",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -170,6 +185,7 @@
   },
     "Magic Leaf": {
     "name": "Magic Leaf",
+    "object": "petal",
     "type": "default",
     "stack": true,
     "tierRestricted": false,
@@ -185,6 +201,7 @@
   },
   "Opal": {
     "name": "Opal",
+    "object": "petal",
     "type": "utility",
     "stack": false,
     "tierRestricted": true,
@@ -192,8 +209,10 @@
     "health": 5,
     "damage": 10,
     "armor": 2.5,
+    "reload": 2.0,
     "effects": [
       {
+        "object": "petal",
         "type": "petal.damageMulti",
         "global": true,
         "tierRestricted": true,
