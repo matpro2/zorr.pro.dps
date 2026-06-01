@@ -71,7 +71,16 @@ export class DpsCalculator {
 
         const effectiveTargetArmor = attacker.type === "spill" ? 0 : (target.armor || 0);
 
-        const finalAttackerDamage = Math.max(0, (attacker.damage || 0) - effectiveTargetArmor);
+        let attackerDamage = attacker.damage || 0;
+        
+        if (attacker.effects) {
+            const armorMultiEffect = attacker.effects.find(e => e.type === "targetArmorMulti");
+            if (armorMultiEffect) {
+                attackerDamage = attackerDamage * armorMultiEffect.value * (target.armor || 0);
+            }
+        }
+
+        const finalAttackerDamage = Math.max(0, attackerDamage - effectiveTargetArmor);
         const finalTargetDamage = Math.max(0, (target.damage || 0) - (attacker.armor || 0));
 
         const attackerDamagePerTick = finalTargetDamage - (hps * this.TICK_RATE);

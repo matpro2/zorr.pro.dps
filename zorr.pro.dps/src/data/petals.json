@@ -15,6 +15,22 @@
       { "type": "finalDamage", "value": 2500}
     ]
   },
+    "Antler": {
+    "name": "Antler",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 1,
+    "damage": 1,
+    "armor": 0,
+    "reload": 8.0,
+    "secondReload": null,
+    "effects": [
+      { "type": "targetArmorMulti", "value": 0.25, "scale": false }
+    ]
+  },
   "Joystick": {
     "name": "Joystick",
     "object": "petal",

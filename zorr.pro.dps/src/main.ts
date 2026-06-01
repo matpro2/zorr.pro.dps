@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
         slotsContainer.innerHTML = "";
         
         const effectiveBuild = getEffectiveBuild();
+        console.log(effectiveBuild)
         let totalDps = 0; 
         
         const hasJoystickActive = (PlayerValue as any).petal?.hasJoystick?.active || false;
@@ -206,7 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const joystickTier = (PlayerValue as any).petal?.hasJoystick?.tier || 0;
         
         let inventoryItems = getProcessedInventory(currentTargetName, currentTargetTier, hasJoystickActive, joystickTier);
-        
         if (filterTypeSelect && filterTypeSelect.value !== "all") {
             inventoryItems = inventoryItems.filter(item => {
                 const obj = getObject(item.name, item.tier);
