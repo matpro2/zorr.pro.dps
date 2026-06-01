@@ -25,7 +25,8 @@ export interface ITransformedState {
 
 export interface IEffectiveItem extends IInventoryItem {
     transformed?: ITransformedState;
-    inactive?: boolean; // NOUVEAU : Indique si l'objet est consommé (ex: ingrédient de fusion)
+    inactive?: boolean; 
+    inactiveReason?: string; // NOUVEAU : Permet de différencier "fusion" de "amount"
 }
 
 let inventory: IInventoryItem[] = [];
@@ -116,16 +117,14 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // Passe 3 : Fusion avec consommation d'ingrédients
+    // Passe 3 : Fusion
     for (let i = 0; i < build.length - 3; i++) {
         const current = build[i];
-        // On s'assure que la fusion n'est pas elle-même un ingrédient consommé
         if (current && !current.inactive && getEffectiveName(current).toLowerCase() === "fusion") {
             const n1 = build[i + 1];
             const n2 = build[i + 2];
             const n3 = build[i + 3];
 
-            // On vérifie que les 3 ingrédients existent et ne sont pas déjà inactifs
             if (n1 && !n1.inactive && n2 && !n2.inactive && n3 && !n3.inactive) {
                 const name1 = getEffectiveName(n1);
                 const name2 = getEffectiveName(n2);
@@ -144,10 +143,43 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
                         entityMultiplier: current.transformed?.entityMultiplier || 1
                     };
                     
-                    // On désactive les 3 pétales sacrifiées !
                     n1.inactive = true;
+                    n1.inactiveReason = "fusion";
                     n2.inactive = true;
+                    n2.inactiveReason = "fusion";
                     n3.inactive = true;
+                    n3.inactiveReason = "fusion";
+                }
+            }
+        }
+    }
+
+    for (let i = 0; i < build.length; i++) {
+        const current = build[i];
+        if (!current || current.inactive) continue;
+
+        const name = getEffectiveName(current);
+        const statTier = getStatTier(current);
+        const displayTier = getDisplayTier(current);
+
+        const obj = getObject(name, statTier);
+        if (obj && obj.effects) {
+            const amountReqEffect = obj.effects.find((e: any) => e.type === "amountRequirement");
+            
+            if (amountReqEffect) {
+                const requiredAmount = amountReqEffect.value;
+                
+                let count = 0;
+                for (let j = 0; j < build.length; j++) {
+                    const other = build[j];
+                    if (other && !other.inactive && getEffectiveName(other) === name && getDisplayTier(other) === displayTier) {
+                        count++;
+                    }
+                }
+
+                if (count < requiredAmount) {
+                    current.inactive = true;
+                    current.inactiveReason = "amount";
                 }
             }
         }

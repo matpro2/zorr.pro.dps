@@ -15,6 +15,22 @@
       { "type": "finalDamage", "value": 2500}
     ]
   },
+    "Nut": {
+    "name": "Nut",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 300,
+    "damage": 120,
+    "armor": -3,
+    "reload": 1.5,
+    "secondReload": null,
+    "effects": [
+      { "type": "amountRequirement", "value": 3, "scale": false }
+    ]
+  },
     "Antler": {
     "name": "Antler",
     "object": "petal",
