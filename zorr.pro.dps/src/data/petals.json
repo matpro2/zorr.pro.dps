@@ -6,12 +6,12 @@
     "tierRestricted": false,
     "entity": 1,
     "health": 10000,
-    "damage": 2500,
+    "damage": 1,
     "armor": 0,
     "reload": 5.0,
     "secondReload": null,
     "effects": [
-      { "type": "finalDamage" }
+      { "type": "finalDamage", "value": 2500}
     ]
   },
   "Joystick": {
@@ -39,6 +39,19 @@
     "damage": 10,
     "armor": 0,
     "reload": 1.0,
+    "secondReload": null,
+    "effects": []
+  },
+    "Corn": {
+    "name": "Corn",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 10000,
+    "damage": 10,
+    "armor": 0,
+    "reload": 10.0,
     "secondReload": null,
     "effects": []
   },
@@ -99,6 +112,55 @@
       { "type": "Fire", "duration": 3, "value": 20, "stack": true }
     ]
   },
+  "Microplastics": {
+    "name": "Microplastics",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 500,
+    "damage": 10,
+    "armor": 5,
+    "reload": 1.0,
+    "secondReload": null,
+    "effects": [
+      { "type": "Poison", "duration": 3, "value": 20, "stack": true }
+    ]
+  },
+    "Bubonic Plague": {
+    "name": "Bubonic Plague",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 75,
+    "damage": 15,
+    "armor": 0,
+    "reload": 5.0,
+    "secondReload": null,
+    "effects": [
+      { "type": "Poison", "duration": 30, "value": 30, "stack": true }
+    ]
+  },
+      "Elemental": {
+    "name": "Elemental",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 30,
+    "damage": 135,
+    "armor": 3,
+    "reload": 0.5,
+    "secondReload": null,
+    "effects": [
+      { "type": "player.heal", "value": 4 },
+      { "type": "player.shield", "value": 2.5 },
+      { "type": "Poison", "duration": 5, "value": 10, "stack": true },
+      { "type": "Fire", "duration": 3, "value": 7, "stack": true },
+      { "type": "mana.generation", "value": 4 }
+    ]
+  },
   "Dice": {
     "name": "Dice",
     "type": "default",
@@ -111,7 +173,7 @@
     "reload": 1.0,
     "secondReload": null,
     "effects": [
-      { "type": "Critical", "value": { "chance": 8, "multiplier": 69 } }
+      { "type": "Critical", "value": { "chance": 8, "multiplier": 69 }, "scale": false }
     ]
   },
   "Dollar": {

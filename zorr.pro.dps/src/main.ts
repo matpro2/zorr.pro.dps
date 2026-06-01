@@ -1,14 +1,18 @@
-import petals from "../src/data/petals.json";
-import mobs from "../src/data/mobs.json";
-import spills from "../src/data/spills.json";
-import eggs from "../src/data/eggs.json";
-import utilities from "../src/data/utilities.json";
+import petals from "./data/petals.json";
+import mobs from "./data/mobs.json";
+import spills from "./data/spills.json";
+import eggs from "./data/eggs.json";
+import utilities from "./data/utilities.json";
 
-import { PlayerValue } from "./PlayerValue";
 import { getObject } from "./GetObject";
 import { DpsCalculator } from "./DpsCalculator";
+import { PlayerValue } from "./PlayerValue";
+import { 
+    addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, 
+    getProcessedInventory, getEquippedSlots, getEquippedCount, getItemById, MAX_SLOTS 
+} from "./inventory";
+import { TIER_COLORS } from "./constants";
 
-// On combine toutes les données pour récupérer tous les noms disponibles
 const allData: Record<string, any> = {
     ...petals,
     ...mobs,
@@ -17,104 +21,303 @@ const allData: Record<string, any> = {
     ...utilities
 };
 
-function flatten(obj: any, prefix = ""): string[] {
-    const result: string[] = [];
-
-    for (const [key, value] of Object.entries(obj)) {
-        const path = prefix ? `${prefix}.${key}` : key;
-
-        if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-            result.push(...flatten(value, path));
-        } else if (typeof value === "number") {
-            result.push(path);
-        }
-    }
-
-    return result;
-}
+const formatNum = (num: number | undefined) => {
+    return num !== undefined ? Number(num.toFixed(2)) : "-";
+};
 
 document.addEventListener("DOMContentLoaded", () => {
-    const petalSelect = document.getElementById("petal-name") as HTMLSelectElement;
-    const attackerSelect = document.getElementById("attacker-name") as HTMLSelectElement;
-    const targetSelect = document.getElementById("target-name") as HTMLSelectElement;
-    const valuesContainer = document.getElementById("values")!;
+    const itemSelect = document.getElementById("item-select") as HTMLSelectElement;
+    const itemTier = document.getElementById("item-tier") as HTMLInputElement;
+    const itemQty = document.getElementById("item-qty") as HTMLInputElement;
+    const btnAdd = document.getElementById("btn-add") as HTMLButtonElement;
+    
+    const targetSelect = document.getElementById("target-select") as HTMLSelectElement;
+    const targetTier = document.getElementById("target-tier") as HTMLInputElement;
+    const targetStatsDiv = document.getElementById("target-stats") as HTMLDivElement;
 
-    // On récupère toutes les clés (noms) de tous les objets combinés et on les trie
-    const objectNames = Object.keys(allData).sort();
+    const tbody = document.getElementById("inventory-tbody") as HTMLTableSectionElement;
+    const slotsContainer = document.getElementById("slots-container") as HTMLDivElement;
+    const playerStatsContainer = document.getElementById("player-stats-container") as HTMLDivElement;
+    
+    const filterTypeSelect = document.getElementById("filter-type") as HTMLSelectElement;
 
-    // On remplit les listes déroulantes avec tous les objets du jeu
-    objectNames.forEach(name => {
-        petalSelect.add(new Option(name, name));
-        attackerSelect.add(new Option(name, name));
-        targetSelect.add(new Option(name, name));
-    });
+    Object.keys(allData).sort().forEach(name => itemSelect.add(new Option(name, name)));
+    Object.keys(mobs).sort().forEach(name => targetSelect.add(new Option(name, name)));
 
-    const fields = flatten(PlayerValue);
+    function renderSlots() {
+        slotsContainer.innerHTML = "";
+        const slots = getEquippedSlots();
+        let totalDps = 0; 
 
-    for (const field of fields) {
-        let value: any = PlayerValue;
+        for (let i = 0; i < MAX_SLOTS; i++) {
+            const slotId = slots[i];
+            const slotDiv = document.createElement("div");
+            slotDiv.className = "equipped-item";
 
-        for (const part of field.split(".")) {
-            value = value[part];
+            if (slotId !== null) {
+                const item = getItemById(slotId);
+                if (item) {
+                    const result = DpsCalculator.calculateDps(item.name, item.tier, targetSelect.value, Number(targetTier.value));
+                    totalDps += result.dps;
+                    
+                    const obj = getObject(item.name, item.tier);
+                    const itemReload = obj ? ((obj.reload || 0) + (obj.secondReload || 0)) : 0;
+                    
+                    const tierColor = TIER_COLORS[item.tier] || "#fafafa";
+                    slotDiv.style.backgroundColor = tierColor;
+                    slotDiv.style.color = "#000";
+                    
+                    slotDiv.innerHTML = `
+                        <div class="item-main-row">
+                            <span style="background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px;">${item.name} (T${item.tier})</span>
+                            <span style="background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 4px;">${formatNum(result.dps)} DPS</span>
+                        </div>
+                        <div class="dps-details" style="color: #111; border-top-color: rgba(0,0,0,0.3); font-weight: 500;">
+                            Health: ${formatNum(item.health)} | Damage: ${formatNum(item.damage)} | Armor: ${formatNum(item.armor)} | Reload: ${formatNum(itemReload)}s
+                        </div>
+                    `;
+                    slotDiv.addEventListener("click", () => {
+                        unequipSlot(i);
+                        refreshAll();
+                    });
+                } else {
+                    unequipSlot(i);
+                    slotDiv.style.borderStyle = "dashed";
+                    slotDiv.style.backgroundColor = "#fafafa";
+                    slotDiv.innerHTML = `<div class="item-main-row" style="color: #aaa; justify-content: center;">Empty Slot</div>`;
+                }
+            } else {
+                slotDiv.style.borderStyle = "dashed";
+                slotDiv.style.cursor = "default";
+                slotDiv.style.backgroundColor = "#fafafa";
+                slotDiv.innerHTML = `<div class="item-main-row" style="color: #aaa; justify-content: center;">Empty Slot</div>`;
+            }
+            slotsContainer.appendChild(slotDiv);
         }
 
-        const label = document.createElement("label");
-        label.textContent = field;
-
-        const input = document.createElement("input");
-        input.type = "number";
-        input.step = "0.01";
-        input.value = String(value);
-
-        input.addEventListener("input", () => {
-            let target: any = PlayerValue;
-            const parts = field.split(".");
-
-            for (let i = 0; i < parts.length - 1; i++) {
-                target = target[parts[i]];
-            }
-
-            target[parts[parts.length - 1]] = Number(input.value);
-        });
-
-        valuesContainer.appendChild(label);
-        valuesContainer.appendChild(input);
+        const totalDiv = document.createElement("div");
+        totalDiv.id = "total-dps-display";
+        totalDiv.innerHTML = `Total DPS: <strong>${formatNum(totalDps)}</strong>`;
+        slotsContainer.appendChild(totalDiv);
     }
 
-    document.getElementById("btn-test")!.addEventListener("click", () => {
-        const objectName = petalSelect.value;
-        const objectTier = Number((document.getElementById("petal-tier") as HTMLInputElement).value);
+    function renderInventory() {
+        const currentTargetName = targetSelect.value;
+        const currentTargetTier = Number(targetTier.value);
+
+        const targetObj = getObject(currentTargetName, currentTargetTier);
+        if (targetObj) {
+            const tierColor = TIER_COLORS[currentTargetTier] || "#f8f8f8";
+            targetStatsDiv.style.backgroundColor = tierColor;
+            targetStatsDiv.style.color = "#000";
+            targetStatsDiv.style.borderLeftColor = "rgba(0,0,0,0.5)";
+
+            targetStatsDiv.innerHTML = `
+                <div style="background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px;">
+                    <strong>${targetObj.name || currentTargetName} (T${currentTargetTier})</strong>
+                </div><br>
+                <span style="font-weight: 500;">
+                    H: ${formatNum(targetObj.health)} | D: ${formatNum(targetObj.damage)} | A: ${formatNum(targetObj.armor)}
+                </span>
+            `;
+        } else {
+            targetStatsDiv.style.backgroundColor = "#f8f8f8";
+            targetStatsDiv.style.color = "#222";
+            targetStatsDiv.innerHTML = `Impossible de charger la cible.`;
+        }
+
+        let inventoryItems = getProcessedInventory(currentTargetName, currentTargetTier);
         
-        const testObject = getObject(objectName, objectTier);
+        // --- NOUVEAU SYSTÈME DE FILTRE INTELLIGENT ---
+        if (filterTypeSelect && filterTypeSelect.value !== "all") {
+            inventoryItems = inventoryItems.filter(item => {
+                const obj = getObject(item.name, item.tier);
+                if (!obj) return false;
 
-        console.group("OBJECT TEST");
-        console.log("PlayerValue", structuredClone(PlayerValue));
-        console.log("Object", testObject);
-        console.groupEnd();
+                switch (filterTypeSelect.value) {
+                    case "default":
+                        // Toute pétale faisant des dégâts réels
+                        return (item.dps || 0) > 0;
+                    
+                    case "special":
+                        // Les pétales qui ont un effet Poison, Fire ou Lightning
+                        if (!obj.effects) return false;
+                        return obj.effects.some((e: any) => {
+                            if (!e.type) return false;
+                            const t = e.type.toLowerCase();
+                            return t === "poison" || t === "fire" || t === "lightning";
+                        });
+
+                    case "utility":
+                        // Les pétales utilitaires (effets qui modifient des PlayerValues contenant un point ".")
+                        if (!obj.effects) return false;
+                        return obj.effects.some((e: any) => e.type && e.type.includes("."));
+
+                    case "egg":
+                        // Les œufs
+                        return obj.type === "egg";
+
+                    case "spill":
+                        // Les spills
+                        return obj.type === "spill";
+
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        tbody.innerHTML = ""; 
+
+        if (inventoryItems.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #777;">Inventaire vide ou aucun objet ne correspond au filtre.</td></tr>`;
+            return;
+        }
+
+        const slots = getEquippedSlots();
+        const hasEmptySlot = slots.includes(null);
+
+        inventoryItems.forEach(item => {
+            const tr = document.createElement("tr");
+            
+            const tierColor = TIER_COLORS[item.tier] || "transparent";
+            tr.style.backgroundColor = tierColor;
+            tr.style.color = "#000"; 
+            tr.style.fontWeight = "500"; 
+
+            const equipped = getEquippedCount(item.id);
+            const available = item.quantity - equipped;
+
+            const tdName = document.createElement("td");
+            tdName.textContent = item.name;
+
+            const tdTier = document.createElement("td");
+            tdTier.textContent = item.tier.toString();
+
+            const tdQty = document.createElement("td");
+            tdQty.innerHTML = `<strong>${equipped} / ${item.quantity}</strong>`;
+
+            const tdHealth = document.createElement("td");
+            tdHealth.textContent = formatNum(item.health);
+
+            const tdArmor = document.createElement("td");
+            tdArmor.textContent = formatNum(item.armor);
+
+            const tdDamage = document.createElement("td");
+            tdDamage.textContent = formatNum(item.damage);
+
+            const tdReload = document.createElement("td");
+            tdReload.textContent = formatNum(item.reload) + "s";
+
+            const tdDps = document.createElement("td");
+            tdDps.innerHTML = `<strong>${formatNum(item.dps)}</strong>`;
+
+            const tdActions = document.createElement("td");
+            const actionContainer = document.createElement("div");
+            actionContainer.style.display = "flex";
+            actionContainer.style.gap = "5px";
+
+            const equipBtn = document.createElement("button");
+            equipBtn.textContent = "Equip";
+            equipBtn.style.flex = "1";
+            if (available <= 0 || !hasEmptySlot) equipBtn.disabled = true;
+            equipBtn.addEventListener("click", () => {
+                equipItem(item.id);
+                refreshAll();
+            });
+
+            const removeOneBtn = document.createElement("button");
+            removeOneBtn.textContent = "-1";
+            removeOneBtn.addEventListener("click", () => {
+                removeOneItem(item.id);
+                refreshAll();
+            });
+
+            const removeAllBtn = document.createElement("button");
+            removeAllBtn.textContent = "Del";
+            removeAllBtn.addEventListener("click", () => {
+                removeAllItems(item.id);
+                refreshAll();
+            });
+
+            actionContainer.appendChild(equipBtn);
+            actionContainer.appendChild(removeOneBtn);
+            actionContainer.appendChild(removeAllBtn);
+            tdActions.appendChild(actionContainer);
+
+            tr.append(tdName, tdTier, tdQty, tdHealth, tdArmor, tdDamage, tdReload, tdDps, tdActions);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderPlayerStats(baseState: any) {
+        if (!playerStatsContainer) return;
+        let html = "";
+
+        for (const category of Object.keys(baseState)) {
+            const baseCat = baseState[category];
+            const currCat = (PlayerValue as any)[category];
+            
+            if (typeof baseCat === "object" && baseCat !== null) {
+                for (const stat of Object.keys(baseCat)) {
+                    if (typeof baseCat[stat] === "object" && baseCat[stat] !== null) {
+                        for (const sub of Object.keys(baseCat[stat])) {
+                            if (currCat[stat][sub] !== baseCat[stat][sub]) {
+                                let val = currCat[stat][sub];
+                                if (typeof val === "number") val = Number(val.toFixed(3));
+
+                                let prefix = "";
+                                if (baseCat[stat][sub] === 1) prefix = "x";
+
+                                html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0;">
+                                            <span>${category}.${stat}.${sub}</span>
+                                            <strong style="color: #27ae60;">${prefix}${val}</strong>
+                                         </div>`;
+                            }
+                        }
+                    } else {
+                        if (currCat[stat] !== baseCat[stat]) {
+                            let val = currCat[stat];
+                            if (typeof val === "number") val = Number(val.toFixed(3));
+                            
+                            let prefix = "";
+                            if (baseCat[stat] === 1) prefix = "x";
+                            
+                            html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0;">
+                                        <span>${category}.${stat}</span>
+                                        <strong style="color: #27ae60;">${prefix}${val}</strong>
+                                     </div>`;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (html === "") {
+            playerStatsContainer.innerHTML = `<em style="color: #aaa;">Aucune stat modifiée</em>`;
+        } else {
+            playerStatsContainer.innerHTML = html;
+        }
+    }
+
+    function refreshAll() {
+        PlayerValue.reset();
+        const baseState = JSON.parse(JSON.stringify(PlayerValue));
+        PlayerValue.updateFromSlots(getEquippedSlots());
+
+        renderSlots();
+        renderInventory();
+        renderPlayerStats(baseState); 
+    }
+
+    btnAdd.addEventListener("click", () => {
+        addItem(itemSelect.value, Number(itemTier.value), Number(itemQty.value));
+        refreshAll();
     });
 
-    document.getElementById("btn-combat")!.addEventListener("click", () => {
-        const attackerName = attackerSelect.value;
-        const attackerTier = Number((document.getElementById("attacker-tier") as HTMLInputElement).value);
+    filterTypeSelect.addEventListener("change", refreshAll);
+    targetSelect.addEventListener("change", refreshAll);
+    targetTier.addEventListener("input", refreshAll);
 
-        const targetName = targetSelect.value;
-        const targetTier = Number((document.getElementById("target-tier") as HTMLInputElement).value);
-
-        const attacker = getObject(attackerName, attackerTier);
-        const target = getObject(targetName, targetTier);
-
-        const result = DpsCalculator.calculateDps(
-            attackerName,
-            attackerTier,
-            targetName,
-            targetTier
-        );
-
-        console.group("COMBAT TEST");
-        console.log("PlayerValue", structuredClone(PlayerValue));
-        console.log("Attacker", attacker);
-        console.log("Target", target);
-        console.log("Result", result);
-        console.groupEnd();
-    });
+    refreshAll();
 });

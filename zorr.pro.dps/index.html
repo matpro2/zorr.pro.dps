@@ -3,184 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Petal Debugger</title>
-
+    <title>zorr.pro.dps - Inventaire</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Inter, Arial, sans-serif;
-            background: #18181b;
-            color: #e4e4e7;
-        }
-
-        h1 {
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-
-        h2 {
-            margin-top: 0;
-            margin-bottom: 15px;
-        }
-
-        .container {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 20px;
-        }
-
-        .left-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .card {
-            background: #27272a;
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid #3f3f46;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 4px;
-            color: #a1a1aa;
-            font-size: 14px;
-        }
-
-        input,
-        select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 12px;
-            border-radius: 6px;
-            border: 1px solid #3f3f46;
-            background: #18181b;
-            color: white;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            background: #2563eb;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        #values {
-            display: grid;
-            grid-template-columns: 1fr 100px;
-            gap: 6px 12px;
-            max-height: 700px;
-            overflow-y: auto;
-            padding-right: 8px;
-        }
-
-        #values label {
-            margin: auto 0;
-            font-size: 13px;
-        }
-
-        #values input {
-            margin: 0;
-            width: 100%;
-        }
-
-        .result {
-            margin-top: 15px;
-            background: #09090b;
-            border: 1px solid #3f3f46;
-            border-radius: 8px;
-            padding: 12px;
-            min-height: 300px;
-            overflow: auto;
-            white-space: pre-wrap;
-            font-family: Consolas, monospace;
-            font-size: 13px;
-        }
-
-        @media (max-width: 1000px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-
-            #values {
-                max-height: none;
-            }
-        }
+        body { font-family: sans-serif; margin: 20px; color: #222; background: #fff; }
+        button { cursor: pointer; padding: 6px 12px; border: 1px solid #ccc; background: #f9f9f9; border-radius: 4px; font-size: 0.9em; }
+        button:hover:not(:disabled) { background: #e0e0e0; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        input[type="number"] { width: 60px; padding: 4px; }
+        select { padding: 5px; }
+        
+        .layout { display: flex; gap: 15px; flex-wrap: wrap; }
+        .panel { flex: 1; min-width: 250px; padding: 15px; border: 1px solid #ccc; background: #fff; }
+        .slots-container { flex: 2; min-width: 400px; }
+        .input-group { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #eee; font-weight: bold; }
+        
+        .equipped-item { border: 1px solid #999; margin-bottom: 8px; padding: 8px; background: #fafafa; cursor: pointer; transition: 0.2s; }
+        .equipped-item:hover { border-color: #e74c3c; background: #fff5f5; }
+        .item-main-row { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .dps-details { font-size: 0.85em; border-top: 1px dashed #999; margin-top: 6px; padding-top: 6px; color: #555; }
+        #total-dps-display { text-align: right; font-size: 1.2em; font-weight: bold; margin-top: 15px; }
+        #target-stats { padding: 10px; background: #f8f8f8; border-left: 4px solid #666; line-height: 1.6; margin-top: 10px; }
     </style>
 </head>
-
 <body>
 
-    <h1>Petal Debugger</h1>
+    <h1 style="margin-top: 0;">zorr.pro.dps</h1>
 
-    <div class="container">
-
-        <div class="left-panel">
-
-            <div class="card">
-                <h2>Petal Stats</h2>
-
-                <label>Petal</label>
-                <select id="petal-name"></select>
-
-                <label>Tier</label>
-                <input id="petal-tier" type="number" value="0" min="0">
-
-                <button id="btn-test">
-                    Test Petal
-                </button>
+    <div class="layout">
+        <div class="panel slots-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">Equipped Slots</h2>
+                <span style="font-size: 0.85em; color: #777;">Cliquez sur un objet pour le retirer</span>
             </div>
-
-            <div class="card">
-                <h2>Combat Simulator</h2>
-
-                <label>Attacker</label>
-                <select id="attacker-name"></select>
-
-                <label>Attacker Tier</label>
-                <input id="attacker-tier" type="number" value="0" min="0">
-
-                <label>Target</label>
-                <select id="target-name"></select>
-
-                <label>Target Tier</label>
-                <input id="target-tier" type="number" value="0" min="0">
-
-                <button id="btn-combat">
-                    Run Combat
-                </button>
-            </div>
-
+            
+            <div id="slots-container"></div>
         </div>
 
-        <div class="card">
-            <h2>Player Values</h2>
+        <div style="display: flex; flex-direction: column; gap: 15px; flex: 1; min-width: 300px;">
+            <div class="panel">
+                <h2 style="margin-top: 0;">Target Mob</h2>
+                <div class="input-group">
+                    <select id="target-select" style="flex: 1;"></select>
+                    <label>Tier:</label>
+                    <input id="target-tier" type="number" value="0" min="0">
+                </div>
+                <div id="target-stats"></div>
+            </div>
 
-            <div id="values"></div>
+            <div class="panel">
+                <h2 style="margin-top: 0;">Player Stats</h2>
+                <div id="player-stats-container" style="font-size: 0.9em; line-height: 1.5;"></div>
+            </div>
 
-            <h2 style="margin-top: 25px;">Output</h2>
-
-            <pre id="result" class="result"></pre>
+            <div class="panel">
+                <h2 style="margin-top: 0;">Add to Inventory</h2>
+                <div class="input-group">
+                    <select id="item-select" style="flex: 1;"></select>
+                </div>
+                <div class="input-group">
+                    <label>Tier:</label>
+                    <input id="item-tier" type="number" value="0" min="0">
+                    <label style="margin-left: auto;">Quantité:</label>
+                    <input id="item-qty" type="number" value="1" min="1">
+                </div>
+                <button id="btn-add" style="width: 100%; margin-top: 10px; background: #27ae60; color: white; font-weight: bold; border: none; padding: 8px;">
+                    + Ajouter
+                </button>
+            </div>
         </div>
+    </div>
 
+    <div class="panel" style="margin-top: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin-top: 0;">Inventory</h2>
+            
+            <div class="input-group" style="margin: 0;">
+                <label style="font-weight: bold;">Filter by Type:</label>
+                <select id="filter-type">
+                    <option value="all">All Types</option>
+                    <option value="default">Default (DPS > 0)</option>
+                    <option value="special">Special (Poison/Fire/Lightning)</option>
+                    <option value="utility">Utility (Player Stats)</option>
+                    <option value="egg">Egg</option>
+                    <option value="spill">Spill</option>
+                </select>
+            </div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Tier</th>
+                    <th>Eqp / Owned</th>
+                    <th>Health</th>
+                    <th>Armor</th>
+                    <th>Damage</th>
+                    <th>Reload</th>
+                    <th>Effective DPS</th>
+                    <th style="width: 180px;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="inventory-tbody"></tbody>
+        </table>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
-
 </body>
 </html>

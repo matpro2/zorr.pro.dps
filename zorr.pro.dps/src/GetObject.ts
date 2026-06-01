@@ -14,7 +14,6 @@ const allData: Record<string, any> = {
   ...utilities
 };
 
-// On ajoute un paramètre optionnel "keyName" pour savoir quelle clé on analyse
 function resolveTiers(data: any, tier: number, keyName?: string): any {
   if (data === null || typeof data !== "object") {
     return data;
@@ -47,7 +46,7 @@ export function getObject(name: string, tier: number) {
   const rawObject = allData[key];
   const object = resolveTiers(rawObject, tier);
 
-  const tierMulti = tier ** 3;
+  const tierMulti = 3 ** tier;
 
   if (typeof object.health === "number") {
     const applyTierMulti = Array.isArray(rawObject.health) ? 1 : tierMulti;
@@ -64,13 +63,22 @@ export function getObject(name: string, tier: number) {
     object.armor = (object.armor + PlayerValue.petal.armor) * PlayerValue.petal.armorMulti * applyTierMulti;
   }
 
+  // --- CALCUL DU RELOAD FINAL ---
+  if (typeof object.reload === "number") {
+    object.reload /= Math.max(0.01, PlayerValue.petal.reloadFactor);
+  }
+
+  if (typeof object.secondReload === "number") {
+    object.secondReload /= Math.max(0.01, PlayerValue.petal.secondReloadFactor);
+  }
+
   if (Array.isArray(object.effects) && Array.isArray(rawObject.effects)) {
     for (let i = 0; i < object.effects.length; i++) {
       const effect = object.effects[i];
       const rawEffect = rawObject.effects[i];
       
       if (typeof effect.value === "number") {
-         if (!Array.isArray(rawEffect.value)) {
+         if (!Array.isArray(rawEffect.value) && rawEffect.scale !== false) {
            effect.value *= tierMulti;
          }
       }
