@@ -58,7 +58,8 @@ function getApplicableStat(globalValue: number, tieredArray: { tier: number, val
                 if (isFactor) {
                     finalValue *= Math.max(0.01, 1 + (mod.value / 100));
                 } else if (isMultiplier) {
-                    finalValue += mod.value;
+                    // CORRECTION : On multiplie directement la valeur (ex: finalValue *= 1.1)
+                    finalValue *= mod.value;
                 } else {
                     finalValue += mod.value;
                 }

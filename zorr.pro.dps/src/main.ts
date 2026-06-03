@@ -265,7 +265,7 @@ inventoryItems.forEach(item => {
             let val = diff.value;
             let displayVal = typeof val === "number" ? formatNumber(val) : val;
             let prefix = (typeof val === "number" && val > 0 && diff.isTiered) ? "+" : "";
-            let suffix = (diff.baseValue === 1 || diff.stat.includes("Factor")) ? "%" : "";
+            let suffix = ""
             
             if (!diff.isTiered && diff.baseValue === 1) prefix = "x";
 

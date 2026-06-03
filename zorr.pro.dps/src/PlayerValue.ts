@@ -89,7 +89,6 @@ updateFromSlots() {
 
     const effectiveBuild = getEffectiveBuild();
 
-    // 1. Détection UI (Pour afficher le bandeau dans GameController)
     for (const item of effectiveBuild) {
       if (!item || item.inactive) continue; 
       const itemName = item.transformed ? item.transformed.name : item.name;
@@ -116,8 +115,9 @@ updateFromSlots() {
 
           let effectValue = effect.value;
           
+          // CORRECTION OPAL : Transformation de l'objet de critique en un multiplicateur mathématique direct (ex: 1.04)
           if (typeof effectValue === "object" && effectValue !== null && typeof effectValue.chance === "number" && typeof effectValue.multiplier === "number") {
-            effectValue = effectValue.chance * (effectValue.multiplier - 1);
+            effectValue = 1 + ((effectValue.chance / 100) * (effectValue.multiplier - 1));
           }
           
           if (parts.length === 2) {
@@ -130,12 +130,12 @@ updateFromSlots() {
                  if (targetArray) {
                     targetArray.push({ tier: finalStatTier, value: effectValue });
                  }
-                 console.log(PlayerValue)
               } else {
                   if (stat.includes("Factor")) {
                     (this as any)[category][stat] *= Math.max(0.01, 1 + (effectValue / 100));
                   } else if (baseValue === 1) {
-                    (this as any)[category][stat] += effectValue / 100;
+                    // CORRECTION : Multiplication directe pour les multiplicateurs
+                    (this as any)[category][stat] *= effectValue;
                   } else {
                     (this as any)[category][stat] += effectValue;
                   }
@@ -155,7 +155,8 @@ updateFromSlots() {
                   if (stat.includes("Factor")) {
                     (this as any)[category][sub][stat] *= Math.max(0.01, 1 + (effectValue / 100));
                   } else if (baseValue === 1) {
-                    (this as any)[category][sub][stat] += effectValue / 100;
+                    // CORRECTION : Multiplication directe pour les multiplicateurs des sous-catégories
+                    (this as any)[category][sub][stat] *= effectValue;
                   } else {
                     (this as any)[category][sub][stat] += effectValue;
                   }
