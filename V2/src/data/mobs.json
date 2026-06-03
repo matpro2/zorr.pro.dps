@@ -42,32 +42,44 @@
     "armor": 0.2
   },
   "Jellyfish": {
-    "name": "Jellyfish",
+    "name": "Jellyfish", 
     "object": "mob",
     "health": 125,
     "damage": 25,
-    "armor": 0.1
+    "armor": 0.1,
+    "effects": [
+      { "type": "Lightning", "bounce": 1, "value": 1, "multiHit": false }
+    ]
   },
   "Velociraptor": {
     "name": "Velociraptor",
     "object": "mob",
     "health": 1050,
     "damage": 80,
-    "armor": 3.5
+    "armor": 3.5,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 30, "stack": false }
+    ]
   },
   "Rat": {
     "name": "Rat",
     "object": "mob",
     "health": 550,
     "damage": 75,
-    "armor": 0.5
+    "armor": 0.5,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 150, "stack": false }
+    ]
   },
   "Roach": {
     "name": "Roach",
     "object": "mob",
     "health": 350,
     "damage": 60,
-    "armor": 0.75
+    "armor": 0.75,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 60, "stack": false }
+    ]
   },
   "Sandstorm": {
     "name": "Sandstorm",
@@ -75,6 +87,16 @@
     "health": 125,
     "damage": 40,
     "armor": 0.1
+  },
+  "Tyrannosaurus": {
+    "name": "Tyrannosaurus",
+    "object": "mob",
+    "health": 2100,
+    "damage": 175,
+    "armor": 7.5,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 85, "stack": false }
+    ]
   },
   "Hel Centipede": {
     "name": "Hel Centipede",
@@ -88,14 +110,113 @@
     "object": "mob",
     "health": 100,
     "damage": 50,
-    "armor": 0.4
+    "armor": 0.4,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 1.25, "stack": false }
+    ]
   },
   "Spider Yoba": {
     "name": "Spider Yoba",
     "object": "mob",
     "health": 400,
     "damage": 30,
-    "armor": 0.2
+    "armor": 0.2,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 30, "stack": false },
+      { "type": "Fire", "duration": 3, "value": 30, "stack": false }
+    ]
+  },
+  "Toxic Dragon": {
+    "name": "Toxic Dragon",
+    "object": "mob",
+    "health": 150,
+    "damage": 40,
+    "armor": 0.5,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 2, "stack": false }
+    ]
+  },
+  "Zatan": {
+    "name": "Zatan",
+    "object": "mob",
+    "health": 3200,
+    "damage": 150,
+    "armor": 0.67
+  },
+  "Digger": {
+    "name": "Digger",
+    "object": "mob",
+    "health": 190,
+    "damage": 150,
+    "armor": 0.5
+  },
+  "Hel Beekeeper": {
+    "name": "Hel Beekeeper",
+    "object": "mob",
+    "health": 95,
+    "damage": 240,
+    "armor": 0.65,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 50, "stack": false }
+    ]
+  },
+  "Beekeeper": {
+    "name": "Beekeeper",
+    "object": "mob",
+    "health": 62.5,
+    "damage": 225,
+    "armor": 0.5
+  },
+  "Alien": {
+    "name": "Alien",
+    "object": "mob",
+    "health": 420,
+    "damage": 42,
+    "armor": 0.2,
+    "effects": [
+      { "type": "Telepathic", "value": 45}
+    ]
+  },
+  "Angel": {
+    "name": "Alien",
+    "object": "mob",
+    "health": 999,
+    "damage": 25,
+    "armor": 0.5,
+    "effects": [
+      { "type": "Telepathic", "value": 120}
+    ]
+  },
+  "White Blood Cell": {
+    "name": "Alien",
+    "object": "mob",
+    "health": 125,
+    "damage": 30,
+    "armor": 0.1,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 30, "stack": false }
+    ]
+  },
+  "Lamprey Eel": {
+    "name": "Lamprey Eel",
+    "object": "mob",
+    "health": 100,
+    "damage": 10,
+    "armor": 0.1
+  },
+  "Nigersaurus": {
+    "name": "Nigersaurus",
+    "object": "mob",
+    "health": 600,
+    "damage": 200,
+    "armor": 6
+  },
+  "Una Bomber": {
+    "name": "Una Bomber",
+    "object": "mob",
+    "health": 500,
+    "damage": 65,
+    "armor": 0.5
   },
   "Ghost": {
     "name": "Ghost",
@@ -104,5 +225,27 @@
     "health": 150,
     "damage": 0.1,
     "armor": 0
+  },
+  "Grave Digger": {
+    "name": "Grave Digger",
+    "object": "mob",
+    "spectrum": true,
+    "health": 300,
+    "damage": 15,
+    "armor": 1
+  },
+  "Alien Digger": {
+    "name": "Alien Digger",
+    "object": "mob",
+    "health": 400,
+    "damage": 200,
+    "armor": 0.5
+  },
+  "Momy": {
+    "name": "Momy",
+    "object": "mob",
+    "health": 2000,
+    "damage": 75,
+    "armor": 0.5
   }
 }
