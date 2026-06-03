@@ -49,6 +49,25 @@ function getMobHpMultiplier(tier: number): number {
     return hMult;
 }
 
+function getApplicableStat(globalValue: number, tieredArray: { tier: number, value: number }[] | undefined, currentTier: number, isMultiplier: boolean = false, isFactor: boolean = false): number {
+    let finalValue = globalValue;
+    
+    if (tieredArray && tieredArray.length > 0) {
+        for (const mod of tieredArray) {
+            if (mod.tier >= currentTier) {
+                if (isFactor) {
+                    finalValue *= Math.max(0.01, 1 + (mod.value / 100));
+                } else if (isMultiplier) {
+                    finalValue += mod.value;
+                } else {
+                    finalValue += mod.value;
+                }
+            }
+        }
+    }
+    return finalValue;
+}
+
 export function getObject(name: string, tier: number) {
   const key = Object.keys(allData).find(p => p.toLowerCase() === name.toLowerCase());
 
@@ -56,7 +75,6 @@ export function getObject(name: string, tier: number) {
 
   const rawObject = allData[key];
   const object = resolveTiers(rawObject, tier);
-
 
   const tierMulti = 3 ** tier;
 
@@ -74,7 +92,8 @@ export function getObject(name: string, tier: number) {
     object.health *= applyTierMulti;
     
     if (object.object === "petal") {
-        object.health *= PlayerValue.petal.healthMulti;
+        const finalHealthMulti = getApplicableStat(PlayerValue.petal.healthMulti, PlayerValue.petal.healthMultiTiered, tier, true);
+        object.health *= finalHealthMulti;
     }
   }
   
@@ -83,11 +102,13 @@ export function getObject(name: string, tier: number) {
     object.damage *= applyTierMulti;
     
     if (object.object === "petal") {
-        object.damage *= PlayerValue.petal.damageMulti;
+        const finalDamageMulti = getApplicableStat(PlayerValue.petal.damageMulti, PlayerValue.petal.damageMultiTiered, tier, true);
+        object.damage *= finalDamageMulti;
     } else if (object.object === "pet") {
-        object.damage *= PlayerValue.pet.damageMulti;
+        const finalDamageMulti = getApplicableStat(PlayerValue.pet.damageMulti, PlayerValue.pet.damageMultiTiered, tier, true);
+        object.damage *= finalDamageMulti;
     } else if (object.object === "mob") {
-        object.damage *= PlayerValue.mob.damageMulti;
+        object.damage *= PlayerValue.mob.damageMulti; 
     }
   }
   
@@ -97,7 +118,9 @@ export function getObject(name: string, tier: number) {
     object.armor *= applyTierMulti;
 
     if (object.object === "petal") {
-        object.armor = (object.armor + PlayerValue.petal.armor) * PlayerValue.petal.armorMulti;
+        const finalArmor = getApplicableStat(PlayerValue.petal.armor, PlayerValue.petal.armorTiered, tier);
+        const finalArmorMulti = getApplicableStat(PlayerValue.petal.armorMulti, PlayerValue.petal.armorMultiTiered, tier, true);
+        object.armor = (object.armor + finalArmor) * finalArmorMulti;
     } else if (object.object === "pet") {
         object.armor = (object.armor + PlayerValue.pet.armor);
     } else if (object.object === "mob") {
@@ -106,11 +129,13 @@ export function getObject(name: string, tier: number) {
   }
 
   if (typeof object.reload === "number" && (object.object === "petal" || object.object === "pet")) {
-    object.reload /= Math.max(0.01, PlayerValue.petal.reloadFactor);
+    const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, PlayerValue.petal.reloadFactorTiered, tier, false, true);
+    object.reload /= Math.max(0.01, finalReloadFactor);
   }
 
   if (typeof object.secondReload === "number" && (object.object === "petal" || object.object === "pet")) {
-    object.secondReload /= Math.max(0.01, PlayerValue.petal.secondReloadFactor);
+    const finalSecondReloadFactor = getApplicableStat(PlayerValue.petal.secondReloadFactor, PlayerValue.petal.secondReloadFactorTiered, tier, false, true);
+    object.secondReload /= Math.max(0.01, finalSecondReloadFactor);
   }
 
   if (Array.isArray(object.effects) && Array.isArray(rawObject.effects)) {

@@ -1,34 +1,11 @@
-import petals from "./data/petals.json";
-import mobs from "./data/mobs.json";
-import spills from "./data/spills.json";
-import eggs from "./data/eggs.json";
-import utilities from "./data/utilities.json";
-import radiation from "./data/radiation.json";
+// main.ts
 
-import { getObject } from "./GetObject";
-import { DpsCalculator } from "./DpsCalculator";
-import { PlayerValue } from "./PlayerValue";
-import { 
-    addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, 
-    getProcessedInventory, getEquippedSlots, getEquippedCount, getItemById, MAX_SLOTS,
-    getEffectiveBuild
-} from "./inventory";
+import { GameController } from "./GameController";
 import { TIER_COLORS } from "./constants";
-
-const allData: Record<string, any> = {
-    ...petals,
-    ...mobs,
-    ...spills,
-    ...eggs,
-    ...utilities,
-    ...radiation
-};
-
-const formatNum = (num: number | undefined) => {
-    return num !== undefined ? Number(num.toFixed(2)) : "-";
-};
+import { formatNumber } from "./formatNumber"; 
 
 document.addEventListener("DOMContentLoaded", () => {
+    // --- RÉCUPÉRATION DES ÉLÉMENTS DOM ---
     const itemSelect = document.getElementById("item-select") as HTMLSelectElement;
     const itemTier = document.getElementById("item-tier") as HTMLInputElement;
     const itemQty = document.getElementById("item-qty") as HTMLInputElement;
@@ -41,148 +18,148 @@ document.addEventListener("DOMContentLoaded", () => {
     const tbody = document.getElementById("inventory-tbody") as HTMLTableSectionElement;
     const slotsContainer = document.getElementById("slots-container") as HTMLDivElement;
     const playerStatsContainer = document.getElementById("player-stats-container") as HTMLDivElement;
-    
+    const totalDpsDisplay = document.getElementById("total-dps-display") as HTMLDivElement;
     const filterTypeSelect = document.getElementById("filter-type") as HTMLSelectElement;
 
-    Object.keys(allData).sort().forEach(name => itemSelect.add(new Option(name, name)));
-    Object.keys(mobs).sort().forEach(name => targetSelect.add(new Option(name, name)));
+    // --- INITIALISATION DES LISTES ---
+    GameController.getAllItemNames().forEach(name => itemSelect.add(new Option(name, name)));
+    GameController.getAllMobNames().forEach(name => targetSelect.add(new Option(name, name)));
 
+    // --- FONCTIONS DE RENDU (UI UNIQUEMENT) ---
+    
     function renderSlots() {
         slotsContainer.innerHTML = "";
         
-        const effectiveBuild = getEffectiveBuild();
-        console.log(effectiveBuild)
-        let totalDps = 0; 
+        // On demande au Backend toutes les données prêtes à être affichées
+        const data = GameController.getSlotsData(targetSelect.value, Number(targetTier.value));
         
-        const hasJoystickActive = (PlayerValue as any).petal?.hasJoystick?.active || false;
-        const joystickTier = (PlayerValue as any).petal?.hasJoystick?.tier || 0;
-
-        for (let i = 0; i < MAX_SLOTS; i++) {
-            const item = effectiveBuild[i];
+        data.slots.forEach(slot => {
             const slotDiv = document.createElement("div");
             slotDiv.className = "equipped-item";
 
-            if (item) {
-                let effectiveName = item.transformed ? item.transformed.name : item.name;
-                let displayTier = item.transformed ? item.transformed.displayTier : item.tier;
-                let statTier = item.transformed ? item.transformed.statTier : item.tier;
-                let entityMulti = item.transformed?.entityMultiplier || 1;
-                const isInactive = item.inactive || false;
-
-                const isMimic = item.transformed?.synergy?.includes("mimic") || false;
-                const isFission = item.transformed?.synergy?.includes("fission") || false;
-                const isFusion = item.transformed?.synergy?.includes("fusion") || false;
-                let isJoystick = false;
-
-                if (hasJoystickActive && effectiveName.toLowerCase() === "stick" && displayTier <= joystickTier) {
-                    effectiveName = "joystick";
-                    isJoystick = true;
-                }
-
-                const result = DpsCalculator.calculateDps(effectiveName, statTier, targetSelect.value, Number(targetTier.value));
-                
-                // Si l'objet est inactif (sacrifié en ingrédient), ses DPS tombent à 0
-                if (isInactive) {
-                    result.dps = 0;
-                    if (result.dpsCategory) result.dpsCategory = [];
-                } else {
-                    result.dps *= entityMulti;
-                    if (result.dpsCategory && result.dpsCategory.length > 0) {
-                        result.dpsCategory.forEach((cat: any) => cat.dps *= entityMulti);
-                    }
-                    totalDps += result.dps;
-                }
-                
-                const obj = getObject(effectiveName, statTier);
-                const itemReload = obj ? ((obj.reload || 0) + (obj.secondReload || 0)) : 0;
-                const itemHealth = obj ? obj.health : item.health;
-                const itemDamage = obj ? obj.damage : item.damage;
-                const itemArmor = obj ? obj.armor : item.armor;
-
-                const tierColor = TIER_COLORS[item.tier] || "#fafafa";
+            if (!slot.isEmpty) {
+                const tierColor = TIER_COLORS[slot.item.tier] || "#fafafa";
                 slotDiv.style.backgroundColor = tierColor;
-                slotDiv.style.color = "#000";
                 
-                // Styles de bordure et de transparence
-                if (isInactive) {
+                // Détermination des couleurs de bordure
+                let borderColor = "#999"; 
+                if (slot.isInactive) {
                     slotDiv.style.opacity = "0.5";
                     slotDiv.style.filter = "grayscale(80%)";
-                    slotDiv.style.border = "2px dashed #7f8c8d";
-                } else if (isFusion || isMimic || isJoystick || isFission) {
-                    let borderColor = "#ccc";
-                    if (isFusion) borderColor = "#3498db";
-                    else if (isMimic) borderColor = "#9b59b6";   
-                    else if (isFission) borderColor = "#ff9ff3"; 
-                    
-                    if (isJoystick) borderColor = "#f39c12";    
+                    slotDiv.style.borderStyle = "dashed";
+                } else if (slot.isFusion || slot.isMimic || slot.isJoystick || slot.isFission) {
+                    if (slot.isFusion) borderColor = "#3498db";
+                    else if (slot.isMimic) borderColor = "#9b59b6";   
+                    else if (slot.isFission) borderColor = "#ff9ff3"; 
+                    if (slot.isJoystick) borderColor = "#f39c12";    
 
-                    slotDiv.style.border = `2px solid ${borderColor}`; 
-                    slotDiv.style.boxShadow = `inset 0 0 10px ${borderColor}40`;
+                    slotDiv.style.borderColor = borderColor;
+                    slotDiv.style.boxShadow = `inset 0 0 10px ${borderColor}50`;
                 }
-                
+
+                // Formatage des statistiques dynamiques pour le Tooltip
+                const statParts: string[] = [];
+                if (slot.itemHealth !== 0 && slot.itemHealth !== undefined) statParts.push(`<div><strong>Health:</strong> ${formatNumber(slot.itemHealth)}</div>`);
+                if (slot.itemDamage !== 0 && slot.itemDamage !== undefined) statParts.push(`<div><strong>Damage:</strong> ${formatNumber(slot.itemDamage)}</div>`);
+                if (slot.itemArmor !== 0 && slot.itemArmor !== undefined) statParts.push(`<div><strong>Armor:</strong> ${formatNumber(slot.itemArmor)}</div>`);
+                if (slot.itemReload !== 0 && slot.itemReload !== undefined) statParts.push(`<div><strong>Reload:</strong> ${formatNumber(slot.itemReload)}s</div>`);
+
+                if (slot.obj && slot.obj.effects) {
+                    for (const effect of slot.obj.effects) {
+                        if (effect.value !== undefined && effect.value !== 0) {
+                            let displayVal = "";
+                            if (typeof effect.value === "object" && effect.value !== null) {
+                                displayVal = `${effect.value.chance}% (x${effect.value.multiplier})`;
+                            } else {
+                                displayVal = typeof effect.value === "number" ? formatNumber(effect.value) : String(effect.value);
+                            }
+                            let effectName = effect.type.split('.').pop() || effect.type;
+                            effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
+                            statParts.push(`<div><strong style="color: #8e44ad;">${effectName}:</strong> ${displayVal}</div>`);
+                        }
+                    }
+                }
+
+                let statsHtml = statParts.length > 0 
+                    ? `<div style="display: grid; grid-template-columns: auto auto; column-gap: 15px; row-gap: 4px; margin-bottom: 5px;">${statParts.join('')}</div>`
+                    : `<div style="margin-bottom: 5px; color: #7f8c8d; font-style: italic;">Aucune stat brute</div>`;
+
                 let dpsBreakdown = "";
-                if (result.dpsCategory && result.dpsCategory.length > 0) {
-                    const breakdownText = result.dpsCategory.map((cat: any) => `<strong>${cat.type}:</strong> ${formatNum(cat.dps)}`).join(' | ');
-                    dpsBreakdown = `<div style="margin-top: 4px; padding-top: 4px; border-top: 1px dotted rgba(0,0,0,0.2); color: #c0392b;">${breakdownText}</div>`;
+                if (slot.result.dpsCategory && slot.result.dpsCategory.length > 0) {
+                    const breakdownText = slot.result.dpsCategory.map((cat: any) => `<div style="display:flex; justify-content:space-between; margin-bottom: 2px;"><span>${cat.type}:</span> <strong>${formatNumber(cat.dps)}</strong></div>`).join('');
+                    dpsBreakdown = `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dotted rgba(0,0,0,0.3); color: #c0392b;">${breakdownText}</div>`;
                 }
 
-                let countBadge = entityMulti > 1 && !isInactive ? ` <span style="color: #ff9ff3; font-weight: 900; margin-left: 4px;">x${entityMulti}</span>` : "";
-                
-                let tierText = statTier !== displayTier 
-                    ? `T${displayTier} <span style="color: #e74c3c; font-weight: bold;">(Stats T${statTier})</span>` 
-                    : `T${displayTier}`;
+                // Formatage des textes visuels
+                let countBadge = slot.entityMulti > 1 && !slot.isInactive ? `<div style="font-size: 10px; color: #e84393; font-weight: bold; margin-top: 2px;">x${slot.entityMulti}</div>` : "";
+                let tierText = slot.statTier !== slot.displayTier ? `T${slot.displayTier} <span style="color: #e74c3c;">(Stats T${slot.statTier})</span>` : `T${slot.displayTier}`;
 
                 let badgeHtml = "";
-                if (isInactive) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #bdc3c7; padding: 2px 6px; border-radius: 4px;">${effectiveName} (${tierText})</span>`;
-                } else if (isFusion && isJoystick) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 2px 6px; border-radius: 4px;">Fusion ➔ Joystick (${tierText})${countBadge}</span>`;
-                } else if (isMimic && isJoystick) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 2px 6px; border-radius: 4px;">Mimic ➔ Joystick (${tierText})${countBadge}</span>`;
-                } else if (isFusion) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #3498db; padding: 2px 6px; border-radius: 4px;">Fusion ➔ ${effectiveName} (${tierText})${countBadge}</span>`;
-                } else if (isMimic) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #e056fd; padding: 2px 6px; border-radius: 4px;">Mimic ➔ ${effectiveName} (${tierText})${countBadge}</span>`;
-                } else if (isJoystick) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 2px 6px; border-radius: 4px;">Stick ➔ Joystick (${tierText})${countBadge}</span>`;
+                if (slot.isInactive) {
+                    const reasonText = slot.inactiveReason === "fusion" ? "Ingrédient" : "Qté Insuffisante";
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #bdc3c7; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">${slot.effectiveName} (${tierText})<br>${reasonText}</span>`;
+                } else if (slot.isFusion && slot.isJoystick) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Fusion ➔ Joystick (${tierText})</span>`;
+                } else if (slot.isMimic && slot.isJoystick) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Mimic ➔ Joystick (${tierText})</span>`;
+                } else if (slot.isFusion) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #3498db; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Fusion ➔ ${slot.effectiveName} (${tierText})</span>`;
+                } else if (slot.isMimic) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #e056fd; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Mimic ➔ ${slot.effectiveName} (${tierText})</span>`;
+                } else if (slot.isJoystick) {
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Stick ➔ Joystick (${tierText})</span>`;
                 } else {
-                    badgeHtml = `<span style="background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px;">${item.name} (${tierText})${countBadge}</span>`;
+                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">${slot.item.name} (${tierText})</span>`;
                 }
 
+                // Insertion HTML finale
                 slotDiv.innerHTML = `
-                    <div class="item-main-row">
-                        ${badgeHtml}
-                        <span style="background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 4px;">${formatNum(result.dps)} DPS</span>
+                    <div class="item-name-tiny" title="${slot.effectiveName}">${slot.effectiveName}</div>
+                    <div class="tooltip-container">
+                        <span class="tooltip-icon">i</span>
+                        <div class="tooltip-content">
+                            <div style="text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px;">
+                                ${badgeHtml}
+                            </div>
+                            ${statsHtml} 
+                            ${dpsBreakdown}
+                        </div>
                     </div>
-                    <div class="dps-details" style="color: #111; border-top-color: rgba(0,0,0,0.3); font-weight: 500;">
-                        Health: ${formatNum(itemHealth)} | Damage: ${formatNum(itemDamage)} | Armor: ${formatNum(itemArmor)} | Reload: ${formatNum(itemReload)}s
-                        ${dpsBreakdown}
+                    ${countBadge}
+                    <div class="item-dps-tiny" style="color: ${slot.result.dps > 0 ? '#2c3e50' : '#7f8c8d'};">
+                        ${formatNumber(slot.result.dps)}
                     </div>
                 `;
-                slotDiv.addEventListener("click", () => {
-                    unequipSlot(i);
-                    refreshAll();
-                });
+
+                const tooltipContainer = slotDiv.querySelector('.tooltip-container');
+                if (tooltipContainer) tooltipContainer.addEventListener("click", (e) => e.stopPropagation());
+                slotDiv.addEventListener("click", () => { GameController.unequipSlot(slot.index); refreshAll(); });
+
             } else {
-                unequipSlot(i);
+                // Rendu d'un slot vide
+                slotDiv.addEventListener("click", () => { GameController.unequipSlot(slot.index); refreshAll(); });
                 slotDiv.style.borderStyle = "dashed";
-                slotDiv.style.backgroundColor = "#fafafa";
-                slotDiv.innerHTML = `<div class="item-main-row" style="color: #aaa; justify-content: center;">Empty Slot</div>`;
+                slotDiv.style.borderColor = "#ccc";
+                slotDiv.style.backgroundColor = "transparent";
+                slotDiv.innerHTML = `
+                    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; color: #aaa;">
+                        <span style="font-size: 16px; font-weight: bold;">+</span>
+                    </div>`;
             }
             slotsContainer.appendChild(slotDiv);
-        }
+        });
 
-        const totalDiv = document.createElement("div");
-        totalDiv.id = "total-dps-display";
-        totalDiv.innerHTML = `Total DPS: <strong>${formatNum(totalDps)}</strong>`;
-        slotsContainer.appendChild(totalDiv);
+        if (totalDpsDisplay) {
+            totalDpsDisplay.innerHTML = `Total DPS: ${formatNumber(data.totalDps)}`;
+        }
     }
 
     function renderInventory() {
         const currentTargetName = targetSelect.value;
         const currentTargetTier = Number(targetTier.value);
 
-        const targetObj = getObject(currentTargetName, currentTargetTier);
+        // UI : Cible
+        const targetObj = GameController.getTargetData(currentTargetName, currentTargetTier);
         if (targetObj) {
             const tierColor = TIER_COLORS[currentTargetTier] || "#f8f8f8";
             targetStatsDiv.style.backgroundColor = tierColor;
@@ -194,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <strong>${targetObj.name || currentTargetName} (T${currentTargetTier})</strong>
                 </div><br>
                 <span style="font-weight: 500;">
-                    H: ${formatNum(targetObj.health)} | D: ${formatNum(targetObj.damage)} | A: ${formatNum(targetObj.armor)}
+                    H: ${formatNumber(targetObj.health)} | D: ${formatNumber(targetObj.damage)} | A: ${formatNumber(targetObj.armor)}
                 </span>
             `;
         } else {
@@ -203,38 +180,8 @@ document.addEventListener("DOMContentLoaded", () => {
             targetStatsDiv.innerHTML = `Impossible de charger la cible.`;
         }
 
-        const hasJoystickActive = (PlayerValue as any).petal?.hasJoystick?.active || false;
-        const joystickTier = (PlayerValue as any).petal?.hasJoystick?.tier || 0;
-        
-        let inventoryItems = getProcessedInventory(currentTargetName, currentTargetTier, hasJoystickActive, joystickTier);
-        if (filterTypeSelect && filterTypeSelect.value !== "all") {
-            inventoryItems = inventoryItems.filter(item => {
-                const obj = getObject(item.name, item.tier);
-                if (!obj) return false;
-
-                switch (filterTypeSelect.value) {
-                    case "default":
-                        return (item.dps || 0) > 0;
-                    case "special":
-                        if (!obj.effects) return false;
-                        return obj.effects.some((e: any) => {
-                            if (!e.type) return false;
-                            const t = e.type.toLowerCase();
-                            return t === "poison" || t === "fire" || t === "lightning";
-                        });
-                    case "utility":
-                        if (!obj.effects) return false;
-                        return obj.effects.some((e: any) => e.type && e.type.includes("."));
-                    case "egg":
-                        return obj.type === "egg";
-                    case "spill":
-                        return obj.type === "spill";
-                    default:
-                        return true;
-                }
-            });
-        }
-
+        // UI : Tableau d'inventaire
+        const inventoryItems = GameController.getInventoryData(currentTargetName, currentTargetTier, filterTypeSelect.value);
         tbody.innerHTML = ""; 
 
         if (inventoryItems.length === 0) {
@@ -242,21 +189,19 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const slots = getEquippedSlots();
+        const slots = GameController.getEquippedSlots();
         const hasEmptySlot = slots.includes(null);
 
-        inventoryItems.forEach(item => {
+inventoryItems.forEach(item => {
             const tr = document.createElement("tr");
-            
-            const tierColor = TIER_COLORS[item.tier] || "transparent";
-            tr.style.backgroundColor = tierColor;
+            tr.style.backgroundColor = TIER_COLORS[item.tier] || "transparent";
             tr.style.color = "#000"; 
             tr.style.fontWeight = "500"; 
 
-            const equipped = getEquippedCount(item.id);
+            const equipped = GameController.getEquippedCount(item.id);
             const available = item.quantity - equipped;
-
-            const isTransformed = hasJoystickActive && item.name.toLowerCase() === "stick" && item.tier <= joystickTier;
+   
+            const isTransformed = item.isJoystickSynergy || false;
 
             const tdName = document.createElement("td");
             if (isTransformed) {
@@ -267,24 +212,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const tdTier = document.createElement("td");
             tdTier.textContent = item.tier.toString();
-
             const tdQty = document.createElement("td");
             tdQty.innerHTML = `<strong>${equipped} / ${item.quantity}</strong>`;
-
             const tdHealth = document.createElement("td");
-            tdHealth.textContent = formatNum(item.health);
-
+            tdHealth.textContent = formatNumber(item.health);
             const tdArmor = document.createElement("td");
-            tdArmor.textContent = formatNum(item.armor);
-
+            tdArmor.textContent = formatNumber(item.armor);
             const tdDamage = document.createElement("td");
-            tdDamage.textContent = formatNum(item.damage);
-
+            tdDamage.textContent = formatNumber(item.damage);
             const tdReload = document.createElement("td");
-            tdReload.textContent = formatNum(item.reload) + "s";
-
+            tdReload.textContent = formatNumber(item.reload) + "s";
             const tdDps = document.createElement("td");
-            tdDps.innerHTML = `<strong>${formatNum(item.dps)}</strong>`;
+            tdDps.innerHTML = `<strong>${formatNumber(item.dps)}</strong>`;
 
             const tdActions = document.createElement("td");
             const actionContainer = document.createElement("div");
@@ -295,24 +234,15 @@ document.addEventListener("DOMContentLoaded", () => {
             equipBtn.textContent = "Equip";
             equipBtn.style.flex = "1";
             if (available <= 0 || !hasEmptySlot) equipBtn.disabled = true;
-            equipBtn.addEventListener("click", () => {
-                equipItem(item.id);
-                refreshAll();
-            });
+            equipBtn.addEventListener("click", () => { GameController.equipItem(item.id); refreshAll(); });
 
             const removeOneBtn = document.createElement("button");
             removeOneBtn.textContent = "-1";
-            removeOneBtn.addEventListener("click", () => {
-                removeOneItem(item.id);
-                refreshAll();
-            });
+            removeOneBtn.addEventListener("click", () => { GameController.removeOneItem(item.id); refreshAll(); });
 
             const removeAllBtn = document.createElement("button");
             removeAllBtn.textContent = "Del";
-            removeAllBtn.addEventListener("click", () => {
-                removeAllItems(item.id);
-                refreshAll();
-            });
+            removeAllBtn.addEventListener("click", () => { GameController.removeAllItems(item.id); refreshAll(); });
 
             actionContainer.appendChild(equipBtn);
             actionContainer.appendChild(removeOneBtn);
@@ -327,49 +257,29 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderPlayerStats(baseState: any) {
         if (!playerStatsContainer) return;
         let html = "";
+        
+        // On récupère les données de différence prêtes à l'emploi depuis le Backend !
+        const diffData = GameController.getPlayerStatsDiff(baseState);
 
-        for (const category of Object.keys(baseState)) {
-            const baseCat = baseState[category];
-            const currCat = (PlayerValue as any)[category];
+        diffData.diffs.forEach(diff => {
+            let val = diff.value;
+            let displayVal = typeof val === "number" ? formatNumber(val) : val;
+            let prefix = (typeof val === "number" && val > 0 && diff.isTiered) ? "+" : "";
+            let suffix = (diff.baseValue === 1 || diff.stat.includes("Factor")) ? "%" : "";
             
-            if (typeof baseCat === "object" && baseCat !== null) {
-                for (const stat of Object.keys(baseCat)) {
-                    if (stat === "hasJoystick") continue;
+            if (!diff.isTiered && diff.baseValue === 1) prefix = "x";
 
-                    if (typeof baseCat[stat] === "object" && baseCat[stat] !== null) {
-                        for (const sub of Object.keys(baseCat[stat])) {
-                            if (currCat[stat][sub] !== baseCat[stat][sub]) {
-                                let val = currCat[stat][sub];
-                                if (typeof val === "number") val = Number(val.toFixed(3));
+            let nameHtml = diff.tierReq !== undefined 
+                ? `<span>${diff.category}.${diff.stat} <span style="color: #e74c3c; font-size: 0.85em; font-weight: bold;">[T${diff.tierReq}+]</span></span>`
+                : `<span>${diff.category}.${diff.stat}</span>`;
 
-                                let prefix = "";
-                                if (baseCat[stat][sub] === 1) prefix = "x";
+            html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0;">
+                        ${nameHtml}
+                        <strong style="color: #27ae60;">${prefix}${displayVal}${suffix}</strong>
+                     </div>`;
+        });
 
-                                html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0;">
-                                            <span>${category}.${stat}.${sub}</span>
-                                            <strong style="color: #27ae60;">${prefix}${val}</strong>
-                                         </div>`;
-                            }
-                        }
-                    } else {
-                        if (currCat[stat] !== baseCat[stat]) {
-                            let val = currCat[stat];
-                            if (typeof val === "number") val = Number(val.toFixed(3));
-                            
-                            let prefix = "";
-                            if (baseCat[stat] === 1) prefix = "x";
-                            
-                            html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0;">
-                                        <span>${category}.${stat}</span>
-                                        <strong style="color: #27ae60;">${prefix}${val}</strong>
-                                     </div>`;
-                        }
-                    }
-                }
-            }
-        }
-
-        if ((PlayerValue as any).petal?.hasJoystick?.active) {
+        if (diffData.hasJoystick) {
             html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0; background-color: #fff9e6;">
                         <span style="color: #d35400; font-weight: bold;">Synergie Active</span>
                         <strong style="color: #d35400;">Joystick</strong>
@@ -383,19 +293,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // --- LE MOTEUR PRINCIPAL DE L'UI ---
     function refreshAll() {
-        PlayerValue.reset();
-        const baseState = JSON.parse(JSON.stringify(PlayerValue));
-        
-        PlayerValue.updateFromSlots();
+        const baseState = GameController.refreshPlayerStats();
 
+        // Ré-affiche toute l'interface basée sur ces nouvelles données
         renderSlots();
         renderInventory();
         renderPlayerStats(baseState); 
     }
 
+    // --- LISTENERS ---
     btnAdd.addEventListener("click", () => {
-        addItem(itemSelect.value, Number(itemTier.value), Number(itemQty.value));
+        GameController.addItem(itemSelect.value, Number(itemTier.value), Number(itemQty.value));
         refreshAll();
     });
 
@@ -403,5 +313,6 @@ document.addEventListener("DOMContentLoaded", () => {
     targetSelect.addEventListener("change", refreshAll);
     targetTier.addEventListener("input", refreshAll);
 
+    // Initialisation
     refreshAll();
 });

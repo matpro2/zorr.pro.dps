@@ -4,17 +4,29 @@ import { getObject } from "./GetObject";
 const getInitialState = () => ({
   petal: {
     damageMulti: 1,
+    damageMultiTiered: [] as { tier: number, value: number }[],
     healthMulti: 1,
+    healthMultiTiered: [] as { tier: number, value: number }[],
     armor: 0,
+    armorTiered: [] as { tier: number, value: number }[],
     armorMulti: 1,
+    armorMultiTiered: [] as { tier: number, value: number }[],
     heal: 0,
+    healTiered: [] as { tier: number, value: number }[],
     shield: 0,
+    shieldTiered: [] as { tier: number, value: number }[],
     reloadFactor: 1,
+    reloadFactorTiered: [] as { tier: number, value: number }[],
     secondReloadFactor: 1,
+    secondReloadFactorTiered: [] as { tier: number, value: number }[],
     reloadSkipRate: 0,
+    reloadSkipRateTiered: [] as { tier: number, value: number }[],
     secondReloadSkipRate: 0,
+    secondReloadSkipRateTiered: [] as { tier: number, value: number }[],
     manaCostFactor: 1,
+    manaCostFactorTiered: [] as { tier: number, value: number }[],
     luck: 0,
+    luckTiered: [] as { tier: number, value: number }[],
     
     hasJoystick: { active: false, tier: 0 } 
   },
@@ -35,10 +47,12 @@ const getInitialState = () => ({
   },
   pet: {
     damageMulti: 1,
+    damageMultiTiered: [] as { tier: number, value: number }[],
     heal: 0,
     shield: 0,
     armor: 0,
     mutation: 0,
+    mutationTiered: [] as { tier: number, value: number }[],
     variantMutation: 0,
     paranormalRate: 0,
     fullRegenRate: 0,
@@ -69,16 +83,15 @@ export const PlayerValue = {
     Object.assign(this, getInitialState());
   },
 
-  updateFromSlots() {
+updateFromSlots() {
     this.reset();
     const baseState = getInitialState();
 
     const effectiveBuild = getEffectiveBuild();
 
-    // 1. Détection du Joystick (Ignore les ingrédients inactifs)
+    // 1. Détection UI (Pour afficher le bandeau dans GameController)
     for (const item of effectiveBuild) {
       if (!item || item.inactive) continue; 
-      
       const itemName = item.transformed ? item.transformed.name : item.name;
       const itemDisplayTier = item.transformed ? item.transformed.displayTier : item.tier;
 
@@ -91,13 +104,8 @@ export const PlayerValue = {
     for (const item of effectiveBuild) {
       if (!item || item.inactive) continue;
 
-      let finalName = item.transformed ? item.transformed.name : item.name;
-      let finalDisplayTier = item.transformed ? item.transformed.displayTier : item.tier;
-      let finalStatTier = item.transformed ? item.transformed.statTier : item.tier;
-
-      if (this.petal.hasJoystick.active && finalName.toLowerCase() === "stick" && finalDisplayTier <= this.petal.hasJoystick.tier) {
-        finalName = "joystick";
-      }
+      const finalName = item.transformed ? item.transformed.name : item.name;
+      const finalStatTier = item.transformed ? item.transformed.statTier : item.tier;
 
       const obj = getObject(finalName, finalStatTier);
       if (!obj || !obj.effects) continue;
@@ -117,12 +125,20 @@ export const PlayerValue = {
             if ((this as any)[category] && typeof (this as any)[category][stat] !== "undefined") {
               const baseValue = (baseState as any)[category][stat];
               
-              if (stat.includes("Factor")) {
-                (this as any)[category][stat] *= Math.max(0.01, 1 + (effectValue / 100));
-              } else if (baseValue === 1) {
-                (this as any)[category][stat] += effectValue / 100;
+              if (effect.tierRestricted) {
+                 const targetArray = (this as any)[category][stat + "Tiered"];
+                 if (targetArray) {
+                    targetArray.push({ tier: finalStatTier, value: effectValue });
+                 }
+                 console.log(PlayerValue)
               } else {
-                (this as any)[category][stat] += effectValue;
+                  if (stat.includes("Factor")) {
+                    (this as any)[category][stat] *= Math.max(0.01, 1 + (effectValue / 100));
+                  } else if (baseValue === 1) {
+                    (this as any)[category][stat] += effectValue / 100;
+                  } else {
+                    (this as any)[category][stat] += effectValue;
+                  }
               }
             }
           } else if (parts.length === 3) {
@@ -130,12 +146,19 @@ export const PlayerValue = {
             if ((this as any)[category] && (this as any)[category][sub] && typeof (this as any)[category][sub][stat] !== "undefined") {
               const baseValue = (baseState as any)[category][sub][stat];
               
-              if (stat.includes("Factor")) {
-                (this as any)[category][sub][stat] *= Math.max(0.01, 1 + (effectValue / 100));
-              } else if (baseValue === 1) {
-                (this as any)[category][sub][stat] += effectValue / 100;
+              if (effect.tierRestricted) {
+                 const targetArray = (this as any)[category][sub][stat + "Tiered"];
+                 if (targetArray) {
+                    targetArray.push({ tier: finalStatTier, value: effectValue });
+                 }
               } else {
-                (this as any)[category][sub][stat] += effectValue;
+                  if (stat.includes("Factor")) {
+                    (this as any)[category][sub][stat] *= Math.max(0.01, 1 + (effectValue / 100));
+                  } else if (baseValue === 1) {
+                    (this as any)[category][sub][stat] += effectValue / 100;
+                  } else {
+                    (this as any)[category][sub][stat] += effectValue;
+                  }
               }
             }
           }

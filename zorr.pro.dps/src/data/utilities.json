@@ -16,7 +16,7 @@
     "stack": false,
     "tierRestricted": false,
     "effects": [
-      { "type": "petal.damageMulti", "tierRestricted": true, "value": [4, 5, 6, 7, 10, 16, 23, 35, 60, 100] }
+      { "type": "petal.damageMulti", "tierRestricted": true, "value": [1.04, 1.05, 1.06, 1.07, 1.10, 1.16, 1.23, 1.35, 1.60, 2] }
     ]
   },
   "Fission": {
