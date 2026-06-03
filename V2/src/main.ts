@@ -18,7 +18,7 @@ interface CardConfig {
     dpsCategory?: any[];
     effects?: any[];
     petName?: string;     
-    petCount?: number;    
+    entityCount?: number; 
     petTier?: number;     
     isInactive?: boolean;
     inactiveReason?: string;
@@ -27,6 +27,11 @@ interface CardConfig {
     available?: number; 
     equippedQty?: number;
     totalQty?: number;
+}
+
+function getEntityCount(obj: any): number | undefined {
+    if (!obj) return undefined;
+    return obj.petCount ?? obj.petAmount ?? obj.amount ?? obj.count ?? obj.spawnCount ?? obj.quantity ?? obj.entity;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -43,11 +48,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const slotsContainer = document.getElementById("slots-container") as HTMLDivElement;
     const playerStatsContainer = document.getElementById("player-stats-container") as HTMLDivElement;
     const totalDpsDisplay = document.getElementById("total-dps-display") as HTMLDivElement;
+    
     const filterTypeSelect = document.getElementById("filter-type") as HTMLSelectElement;
+    const searchInput = document.getElementById("search-input") as HTMLInputElement;
+
+    const talentLevelInput = document.getElementById("talent-level-input") as HTMLInputElement;
 
     // --- INITIALISATION DES LISTES ---
     GameController.getAllItemNames().forEach(name => itemSelect.add(new Option(name, name)));
     GameController.getAllMobNames().forEach(name => targetSelect.add(new Option(name, name)));
+
+    // --- INITIALISATION DU NIVEAU SAUVEGARDÉ ---
+    if (talentLevelInput) {
+        talentLevelInput.value = GameController.getPlayerLevel().toString();
+        
+        talentLevelInput.addEventListener("input", (e) => {
+            const val = parseInt((e.target as HTMLInputElement).value, 10);
+            if (!isNaN(val) && val >= 0) {
+                GameController.setPlayerLevel(val);
+                refreshAll();
+            }
+        });
+    }
 
     // --- LOGIQUE FACTORISÉE : TOOLTIP FLIP ---
     function handleTooltipFlip(e: Event) {
@@ -107,13 +129,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (config.damage !== undefined && config.damage !== 0) statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #3498db;">Damage:</strong> ${formatNumber(config.damage)}</div>`);
         if (config.armor !== undefined && config.armor !== 0) statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #9b59b6;">Armor:</strong> ${formatNumber(config.armor)}</div>`);
 
-        // --- AFFICHAGE DU PET ---
         if (config.petName) {
-            const pCount = config.petCount || 1;
+            const pCount = config.entityCount || 1;
             const pTier = config.petTier !== undefined ? config.petTier : config.statTier!; 
             const pTierData = TIERS[pTier] || { Name: `T${pTier}`, Background: "#fff" };
             
             statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #48dbfb;">Pet:</strong> x${pCount} ${config.petName} (<span style="color: ${pTierData.Background}; font-weight: bold;">${pTierData.Name}</span>)</div>`);
+        } else if (config.entityCount !== undefined && config.entityCount !== 1) {
+            statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #f1c40f;">Entities:</strong> x${config.entityCount}</div>`);
         }
 
         if (config.effects) {
@@ -124,7 +147,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         : (typeof effect.value === "number" ? formatNumber(effect.value) : String(effect.value));
                     let effectName = effect.type.split('.').pop() || effect.type;
                     effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
-                    statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #1dd1a1;">${effectName}:</strong> ${displayVal}</div>`);
+                    
+                    // NOUVEAU : Coloration dynamique des effets dans les tooltips aussi
+                    let effectColor = "#1dd1a1"; // Vert par défaut
+                    const enLower = effectName.toLowerCase();
+                    if (enLower.includes("health") || enLower.includes("heal")) effectColor = "#2ecc71"; // Vert
+                    else if (enLower.includes("reload")) effectColor = "#3498db"; // Bleu
+                    else if (enLower.includes("damage")) effectColor = "#e74c3c"; // Rouge
+
+                    statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${effectColor};">${effectName}:</strong> ${displayVal}</div>`);
                 }
             }
         }
@@ -267,7 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 dpsCategory: slot.result.dpsCategory,
                 effects: slot.obj?.effects,
                 petName: slot.obj?.petName,
-                petCount: slot.obj?.entity, // <-- On lit la donnée propre gérée par GetObject !
+                entityCount: getEntityCount(slot.obj),
                 petTier: slot.obj?.petTier,
                 isInactive: slot.isInactive,
                 inactiveReason: slot.inactiveReason,
@@ -303,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 secondReload: targetObj.secondReload,
                 effects: targetObj.effects,
                 petName: targetObj.petName,
-                petCount: targetObj.entity, // <-- Ici aussi
+                entityCount: getEntityCount(targetObj),
                 petTier: targetObj.petTier
             });
             targetStatsDiv.appendChild(targetCard);
@@ -312,11 +343,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const inventoryGrid = document.getElementById("inventory-grid") as HTMLDivElement;
-        const inventoryItems = GameController.getInventoryData(currentTargetName, currentTargetTier, filterTypeSelect.value);
+        const inventoryItems = GameController.getInventoryData(currentTargetName, currentTargetTier, filterTypeSelect.value, searchInput.value);
         inventoryGrid.innerHTML = ""; 
 
         if (inventoryItems.length === 0) {
-            inventoryGrid.innerHTML = `<div style="width: 100%; text-align: center; color: #777; padding: 20px;">Inventaire vide ou aucun objet ne correspond au filtre.</div>`;
+            inventoryGrid.innerHTML = `<div style="width: 100%; text-align: center; color: #777; padding: 20px;">Inventaire vide ou aucun objet ne correspond à la recherche.</div>`;
             return;
         }
 
@@ -345,7 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 dpsCategory: item.dpsCategory,
                 effects: obj?.effects,
                 petName: obj?.petName,
-                petCount: obj?.entity, // <-- Et là aussi !
+                entityCount: getEntityCount(obj), 
                 petTier: obj?.petTier,
                 synergy: isTransformed ? "joystick" : "",
                 available: available,
@@ -399,23 +430,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 prefix = "x";
             }
 
-            let nameHtml = `<span>${diff.category}.${diff.stat}</span>`;
+            // NOUVEAU : Coloration intelligente du nom de la stat
+            let nameColor = "#fff"; // Blanc par défaut
+            const statLower = diff.stat.toLowerCase();
+            
+            if (statLower.includes("health") || statLower.includes("heal")) {
+                nameColor = "#2ecc71"; // Vert
+            } else if (statLower.includes("reload")) {
+                nameColor = "#3498db"; // Bleu
+            } else if (statLower.includes("damage")) {
+                nameColor = "#e74c3c"; // Rouge
+            }
+
+            let tierText = "";
             if (isTiered) {
                 const reqTierName = TIERS[diff.tierReq]?.Name || `T${diff.tierReq}`;
                 const reqTierColor = TIERS[diff.tierReq]?.Background || "#e74c3c";
-                nameHtml = `<span>${diff.category}.${diff.stat} <span style="color: ${reqTierColor}; font-size: 0.85em; font-weight: bold; text-shadow: 0 0 1px rgba(0,0,0,0.2);">[${reqTierName}-]</span></span>`;
+                tierText = ` (<span style="color: ${reqTierColor};">${reqTierName}-</span>)`;
             }
             
-            html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0;">
-                        ${nameHtml}
-                        <strong style="color: #27ae60;">${prefix}${displayVal}${suffix}</strong>
+            // Mise en forme selon votre exemple: pet damageMulti: 1.2 (ultra-)
+            html += `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; letter-spacing: 0.5px;">
+                        <span style="color: ${nameColor};">${diff.category} ${diff.stat}</span>: ${prefix}${displayVal}${suffix}${tierText}
                      </div>`;
         });
 
         if (diffData.hasJoystick) {
-            html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0; background-color: #fff9e6;">
-                        <span style="color: #d35400; font-weight: bold;">Synergie Active</span>
-                        <strong style="color: #d35400;">Joystick</strong>
+            html += `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; color: #f1c40f !important; letter-spacing: 0.5px;">
+                        Synergie Active: Joystick
                      </div>`;
         }
 
@@ -438,9 +480,31 @@ document.addEventListener("DOMContentLoaded", () => {
         refreshAll();
     });
 
+    searchInput.addEventListener("input", refreshAll); 
     filterTypeSelect.addEventListener("change", refreshAll);
     targetSelect.addEventListener("change", refreshAll);
     targetTier.addEventListener("input", refreshAll);
+
+    // --- GESTION DE LA LIGHTBOX TALENTS ---
+    const btnOpenTalents = document.getElementById('btn-open-talents');
+    const btnCloseTalents = document.getElementById('btn-close-talents');
+    const talentsLightbox = document.getElementById('talents-lightbox');
+
+    if (btnOpenTalents && btnCloseTalents && talentsLightbox) {
+        btnOpenTalents.addEventListener('click', () => {
+            talentsLightbox.style.display = 'flex';
+        });
+
+        btnCloseTalents.addEventListener('click', () => {
+            talentsLightbox.style.display = 'none';
+        });
+
+        talentsLightbox.addEventListener('click', (e) => {
+            if (e.target === talentsLightbox) {
+                talentsLightbox.style.display = 'none';
+            }
+        });
+    }
 
     refreshAll();
 });

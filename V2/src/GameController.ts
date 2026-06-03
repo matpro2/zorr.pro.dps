@@ -12,9 +12,11 @@ import { DpsCalculator } from "./DpsCalculator";
 import { PlayerValue } from "./PlayerValue";
 import { 
     addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, 
-    getProcessedInventory, getEquippedSlots, getEquippedCount, MAX_SLOTS,
-    getEffectiveBuild
+    getProcessedInventory, getEquippedSlots, getEquippedCount,
+    getEffectiveBuild, getMaxSlots, enforceSlotLimit
 } from "./inventory";
+
+import { TIERS } from "./constants"; 
 
 export const allData: Record<string, any> = {
     ...petals,
@@ -28,6 +30,17 @@ export const allData: Record<string, any> = {
 export const GameController = {
     getAllItemNames() { return Object.keys(allData).sort(); },
     getAllMobNames() { return Object.keys(mobs).sort(); },
+
+    // --- ACCESSEURS POUR LE LEVEL DU JOUEUR ---
+    setPlayerLevel(lvl: number) {
+        PlayerValue.setLevel(lvl);
+        // APPEL DE LA SÉCURITÉ : Déséquipe les objets dans les slots inaccessibles
+        enforceSlotLimit(); 
+    },
+    getPlayerLevel() {
+        return PlayerValue.level;
+    },
+    // ------------------------------------------
 
     refreshPlayerStats() {
         PlayerValue.reset();
@@ -80,8 +93,9 @@ export const GameController = {
         const effectiveBuild = getEffectiveBuild();
         let totalDps = 0;
         const slots = [];
+        const currentMaxSlots = getMaxSlots(); 
 
-        for (let i = 0; i < MAX_SLOTS; i++) {
+        for (let i = 0; i < currentMaxSlots; i++) {
             const item = effectiveBuild[i];
 
             if (!item) {
@@ -118,7 +132,6 @@ export const GameController = {
             const obj = getObject(effectiveName, statTier);
             let itemReload = 0, itemSecondReload = 0, itemHealth = 0, itemDamage = 0, itemArmor = 0;
             
-            // CORRECTION: Récupération propre des Stats (y compris pour les œufs)
             if (obj) {
                 itemReload = obj.reload || 0;
                 itemSecondReload = obj.secondReload || 0;
@@ -158,29 +171,51 @@ export const GameController = {
         return getObject(targetName, targetTier);
     },
 
-    getInventoryData(targetName: string, targetTier: number, filterType: string) {
+    getInventoryData(targetName: string, targetTier: number, filterType: string, searchQuery: string = "") {
         let inventoryItems = getProcessedInventory(targetName, targetTier);
         
+        if (searchQuery && searchQuery.trim() !== "") {
+            const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
+            
+            inventoryItems = inventoryItems.filter(item => {
+                const tierName = TIERS[item.tier]?.Name?.toLowerCase() || `t${item.tier}`;
+                const itemName = item.isJoystickSynergy ? "joystick" : item.name.toLowerCase();
+                const targetText = `${tierName} ${itemName}`; 
+                
+                return queryWords.every(word => targetText.includes(word));
+            });
+        }
+
         if (filterType && filterType !== "all") {
             inventoryItems = inventoryItems.filter(item => {
                 const obj = getObject(item.name, item.tier);
                 if (!obj) return false;
 
                 switch (filterType) {
-                    case "default": return (item.dps || 0) > 0;
-                    case "special":
-                        if (!obj.effects) return false;
+                    case "basic": 
+                        return (obj.health || 0) > 0 && (obj.damage || 0) > 0 && (obj.reload || 0) > 0;
+                    
+                    case "effects":
+                        return Array.isArray(obj.effects) && obj.effects.length > 0;
+                    
+                    case "boosting":
+                        if (!Array.isArray(obj.effects)) return false;
+                        const boostKeywords = ["rate", "factor", "multi", "evasion", "bounce", "duration", "mutation", "luck"];
                         return obj.effects.some((e: any) => {
                             if (!e.type) return false;
-                            const t = e.type.toLowerCase();
-                            return t === "poison" || t === "fire" || t === "lightning";
+                            const effectType = e.type.toLowerCase();
+                            return boostKeywords.some(keyword => effectType.includes(keyword));
                         });
-                    case "utility":
-                        if (!obj.effects) return false;
-                        return obj.effects.some((e: any) => e.type && e.type.includes("."));
-                    case "egg": return obj.type === "egg";
-                    case "spill": return obj.type === "spill";
-                    default: return true;
+                    
+                    case "egg": 
+                        return obj.type === "egg";
+                    case "spill": 
+                        return obj.type === "spill";
+                    case "radiation": 
+                        return obj.type === "radiation";
+                    
+                    default: 
+                        return true;
                 }
             });
         }

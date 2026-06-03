@@ -1,9 +1,9 @@
-import petals from "../src/data/petals.json";
-import mobs from "../src/data/mobs.json";
-import spills from "../src/data/spills.json";
-import eggs from "../src/data/eggs.json";
-import utilities from "../src/data/utilities.json";
-import radiation from "../src/data/radiation.json";
+import petals from "./data/petals.json";
+import mobs from "./data/mobs.json";
+import spills from "./data/spills.json";
+import eggs from "./data/eggs.json";
+import utilities from "./data/utilities.json";
+import radiation from "./data/radiation.json";
 
 import { PlayerValue } from "./PlayerValue";
 

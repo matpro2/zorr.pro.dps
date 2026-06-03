@@ -1,5 +1,8 @@
+// inventory.ts
+
 import { DpsCalculator } from "./DpsCalculator";
 import { getObject } from "./GetObject";
+import { PlayerValue } from "./PlayerValue";
 
 export interface IInventoryItem {
     id: number;
@@ -12,7 +15,7 @@ export interface IInventoryItem {
     damage?: number;
     armor?: number;
     reload?: number;     
-    secondReload?: number; // <-- NOUVEAU: On stocke le second reload séparément !
+    secondReload?: number; 
     itemType?: string;   
     isJoystickSynergy?: boolean; 
 }
@@ -34,41 +37,50 @@ export interface IEffectiveItem extends IInventoryItem {
 let inventory: IInventoryItem[] = [];
 let nextId = 0;
 
-export const MAX_SLOTS = 14;
-let equippedSlots: (number | null)[] = Array(MAX_SLOTS).fill(null);
+// Les slots ne sont plus sauvegardés. Ils recommencent vides à chaque chargement de page.
+let equippedSlots: (number | null)[] = Array(30).fill(null);
+
+export function getMaxSlots(): number {
+    return PlayerValue ? PlayerValue.getMaxSlots() : 5;
+}
 
 function saveState() {
     localStorage.setItem("zorr_inventory", JSON.stringify(inventory));
     localStorage.setItem("zorr_nextId", nextId.toString());
-    localStorage.setItem("zorr_slots", JSON.stringify(equippedSlots));
+    // SAUVEGARDE DES SLOTS SUPPRIMÉE
 }
 
 function loadState() {
     const savedInv = localStorage.getItem("zorr_inventory");
     const savedId = localStorage.getItem("zorr_nextId");
-    const savedSlots = localStorage.getItem("zorr_slots");
 
     if (savedInv) inventory = JSON.parse(savedInv);
     if (savedId) nextId = parseInt(savedId, 10);
-    if (savedSlots) equippedSlots = JSON.parse(savedSlots);
+    // CHARGEMENT DES SLOTS SUPPRIMÉ
 }
 
 loadState();
+
+// --- NOUVELLE FONCTION : EXPULSION DES PÉTALES QUAND LE NIVEAU BAISSE ---
+export function enforceSlotLimit() {
+    const max = getMaxSlots();
+    for (let i = max; i < equippedSlots.length; i++) {
+        // Remet automatiquement la pétale dans l'inventaire en vidant le slot
+        equippedSlots[i] = null; 
+    }
+}
 
 export function getEquippedCount(id: number): number {
     return equippedSlots.filter(slotId => slotId === id).length;
 }
 
 export function getEquippedSlots(): (number | null)[] {
-    return equippedSlots;
-}
-
-export function getItemById(id: number): IInventoryItem | undefined {
-    return inventory.find(i => i.id === id);
+    return equippedSlots.slice(0, getMaxSlots());
 }
 
 export function getEffectiveBuild(): (IEffectiveItem | null)[] {
-    const build: (IEffectiveItem | null)[] = equippedSlots.map(slotId => {
+    const activeSlots = getEquippedSlots();
+    const build: (IEffectiveItem | null)[] = activeSlots.map(slotId => {
         if (slotId === null) return null;
         const item = getItemById(slotId);
         return item ? { ...item } : null; 
@@ -236,7 +248,7 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
         const itemObj = getObject(effectiveName, statTier);
         if (itemObj) {
             item.itemType = itemObj.type || "default"; 
-            item.reload = itemObj.reload || 0; // CORRECTION: On n'additionne plus !
+            item.reload = itemObj.reload || 0; 
             item.secondReload = itemObj.secondReload || 0; 
 
             if (itemObj.type === "egg" && itemObj.petName) {
@@ -257,6 +269,10 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
 
     inventory.sort((a, b) => (b.dps || 0) - (a.dps || 0));
     return inventory;
+}
+
+export function getItemById(id: number): IInventoryItem | undefined {
+    return inventory.find(i => i.id === id);
 }
 
 export function addItem(name: string, tier: number, qty: number) {
@@ -298,17 +314,18 @@ export function equipItem(id: number) {
     if (!item) return;
 
     const available = item.quantity - getEquippedCount(id);
-    const emptyIndex = equippedSlots.indexOf(null);
+    const activeSlots = getEquippedSlots();
+    const emptyIndex = activeSlots.indexOf(null);
 
     if (emptyIndex !== -1 && available > 0) {
         equippedSlots[emptyIndex] = id;
     }
-    saveState();
+    // Pas de saveState() pour les slots !
 }
 
 export function unequipSlot(index: number) {
-    if (index >= 0 && index < MAX_SLOTS) {
+    if (index >= 0 && index < getMaxSlots()) {
         equippedSlots[index] = null;
     }
-    saveState();
+    // Pas de saveState() pour les slots !
 }
