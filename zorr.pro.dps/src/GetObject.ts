@@ -69,13 +69,40 @@ function getApplicableStat(globalValue: number, tieredArray: { tier: number, val
     return finalValue;
 }
 
-export function getObject(name: string, tier: number) {
+export function getObject(name: string, tier: number, forcePet: boolean = false) {
   const key = Object.keys(allData).find(p => p.toLowerCase() === name.toLowerCase());
 
   if (!key) return null;
 
   const rawObject = allData[key];
   const object = resolveTiers(rawObject, tier);
+  
+  if (object.type === "egg") {
+    
+    if (typeof object.entity === "object" && object.entity !== null) {
+      const base = object.entity.base || 1;
+      const multi = object.entity.multi || 1;
+      object.entity = (tier >= 8) ? Math.round(base * multi) : base;
+    }
+
+    if (typeof object.petTier === "object" && object.petTier !== null) {
+      const gap = object.petTier.gap;
+      if (gap !== undefined) {
+        object.petTier = (tier <= gap) ? tier : (tier - 1);
+      } else {
+        object.petTier = tier; 
+      }
+    }
+
+  if (object.name && object.name.toLowerCase().includes("centipede")) {
+      const baseCount = object.entity || 1;
+      
+      object.entity = baseCount * 6.5;
+    }
+  }
+
+  const isPet = forcePet || object.object === "pet";
+  const isMob = !forcePet && object.object === "mob";
 
   const tierMulti = 3 ** tier;
 
@@ -105,10 +132,13 @@ export function getObject(name: string, tier: number) {
     if (object.object === "petal") {
         const finalDamageMulti = getApplicableStat(PlayerValue.petal.damageMulti, PlayerValue.petal.damageMultiTiered, tier, true);
         object.damage *= finalDamageMulti;
-    } else if (object.object === "pet") {
+    } else if (isPet) {
         const finalDamageMulti = getApplicableStat(PlayerValue.pet.damageMulti, PlayerValue.pet.damageMultiTiered, tier, true);
         object.damage *= finalDamageMulti;
-    } else if (object.object === "mob") {
+        if (object.spectrum === true) {
+            object.damage *= 10;
+        }
+    } else if (isMob) {
         object.damage *= PlayerValue.mob.damageMulti; 
     }
   }
@@ -122,21 +152,27 @@ export function getObject(name: string, tier: number) {
         const finalArmor = getApplicableStat(PlayerValue.petal.armor, PlayerValue.petal.armorTiered, tier);
         const finalArmorMulti = getApplicableStat(PlayerValue.petal.armorMulti, PlayerValue.petal.armorMultiTiered, tier, true);
         object.armor = (object.armor + finalArmor) * finalArmorMulti;
-    } else if (object.object === "pet") {
+    } else if (isPet) {
         object.armor = (object.armor + PlayerValue.pet.armor);
-    } else if (object.object === "mob") {
+    } else if (isMob) {
         object.armor = (object.armor + PlayerValue.mob.armor) * PlayerValue.mob.armorMulti;
     }
   }
 
   if (typeof object.reload === "number" && (object.object === "petal" || object.object === "pet")) {
     const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, PlayerValue.petal.reloadFactorTiered, tier, false, true);
+    const finalReloadSkipRate = getApplicableStat(PlayerValue.petal.reloadSkipRate, PlayerValue.petal.reloadSkipRateTiered, tier);
+    
     object.reload /= Math.max(0.01, finalReloadFactor);
+    object.reload *= Math.max(0, 1 - (finalReloadSkipRate / 100));
   }
 
   if (typeof object.secondReload === "number" && (object.object === "petal" || object.object === "pet")) {
     const finalSecondReloadFactor = getApplicableStat(PlayerValue.petal.secondReloadFactor, PlayerValue.petal.secondReloadFactorTiered, tier, false, true);
+    const finalSecondReloadSkipRate = getApplicableStat(PlayerValue.petal.secondReloadSkipRate, PlayerValue.petal.secondReloadSkipRateTiered, tier);
+    
     object.secondReload /= Math.max(0.01, finalSecondReloadFactor);
+    object.secondReload *= Math.max(0, 1 - (finalSecondReloadSkipRate / 100));
   }
 
   if (Array.isArray(object.effects) && Array.isArray(rawObject.effects)) {

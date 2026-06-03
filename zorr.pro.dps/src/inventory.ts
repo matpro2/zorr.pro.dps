@@ -241,7 +241,7 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
 
             if (itemObj.type === "egg" && itemObj.petName) {
                 const petTier = itemObj.petTier || 0;
-                const petObj = getObject(itemObj.petName, petTier);
+                const petObj = getObject(itemObj.petName, petTier,true);
                 if (petObj) {
                     item.health = petObj.health;
                     item.damage = petObj.damage;
@@ -289,7 +289,7 @@ export function removeOneItem(id: number) {
 
 export function removeAllItems(id: number) {
     inventory = inventory.filter(i => i.id !== id);
-    equippedSlots = equippedSlots.map(slotId => slotId === id ? null : id);
+    equippedSlots = equippedSlots.map(slotId => slotId === id ? null : slotId); 
     saveState();
 }
 

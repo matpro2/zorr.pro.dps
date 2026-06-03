@@ -27,12 +27,26 @@
     "damage": 20,
     "armor": 0.2
   },
+  "Soldier Termite": {
+    "name": "Soldier Termite",
+    "object": "mob",
+    "health": 140,
+    "damage": 10,
+    "armor": 0.2
+  },
   "Troll": {
     "name": "Troll",
     "object": "mob",
     "health": 690,
     "damage": 100,
     "armor": 0.2
+  },
+  "Jellyfish": {
+    "name": "Jellyfish",
+    "object": "mob",
+    "health": 125,
+    "damage": 25,
+    "armor": 0.1
   },
   "Velociraptor": {
     "name": "Velociraptor",
@@ -61,5 +75,34 @@
     "health": 125,
     "damage": 40,
     "armor": 0.1
+  },
+  "Hel Centipede": {
+    "name": "Hel Centipede",
+    "object": "mob",
+    "health": 45,
+    "damage": 20,
+    "armor": 0.3
+  },
+  "Hel Bee": {
+    "name": "Hel Centipede",
+    "object": "mob",
+    "health": 100,
+    "damage": 50,
+    "armor": 0.4
+  },
+  "Spider Yoba": {
+    "name": "Spider Yoba",
+    "object": "mob",
+    "health": 400,
+    "damage": 30,
+    "armor": 0.2
+  },
+  "Ghost": {
+    "name": "Ghost",
+    "object": "mob",
+    "spectrum": true,
+    "health": 150,
+    "damage": 0.1,
+    "armor": 0
   }
 }

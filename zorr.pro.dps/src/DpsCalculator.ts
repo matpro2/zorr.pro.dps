@@ -71,16 +71,7 @@ export class DpsCalculator {
 
         const effectiveTargetArmor = attacker.type === "spill" ? 0 : (target.armor || 0);
 
-        let attackerDamage = attacker.damage || 0;
-        
-        if (attacker.effects) {
-            const armorMultiEffect = attacker.effects.find(e => e.type === "targetArmorMulti");
-            if (armorMultiEffect) {
-                attackerDamage = attackerDamage * armorMultiEffect.value * (target.armor || 0);
-            }
-        }
-
-        const finalAttackerDamage = Math.max(0, attackerDamage - effectiveTargetArmor);
+        const finalAttackerDamage = Math.max(0, (attacker.damage || 0) - effectiveTargetArmor);
         const finalTargetDamage = Math.max(0, (target.damage || 0) - (attacker.armor || 0));
 
         const attackerDamagePerTick = finalTargetDamage - (hps * this.TICK_RATE);
@@ -114,10 +105,11 @@ export class DpsCalculator {
         const reloadtime = (attacker.reload || 0) + (attacker.secondReload || 0);
         let result = this.getCollisionResult(attacker, target);
 
+        // --- CORRECTION ICI : Le Familier hérite maintenant du tier de son œuf ! ---
         if (attacker.type === "egg") {
             const petName = attacker.petName || "none";
-            const petTier = attacker.petTier || 0;
-            const pet = getObject(petName, petTier) as ICombatEntity | null;
+            const petTier = attacker.petTier !== undefined ? attacker.petTier : attackerTier; 
+            const pet = getObject(petName, petTier, true) as ICombatEntity | null;
             if (pet) {
                 result = this.getCollisionResult(pet, target);
             }
