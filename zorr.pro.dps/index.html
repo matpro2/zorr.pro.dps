@@ -5,20 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>zorr.pro.dps - Inventaire</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;900&display=swap" rel="stylesheet">
     
     <style>
-/* --- STYLE GLOBAL --- */
-/* --- STYLE GLOBAL --- */
+        /* --- STYLE GLOBAL --- */
         body, button, input, select { 
-            font-family: 'Fredoka', sans-serif; /* Remplacement de la police ici ! */
-            font-weight: 600; /* Poids de base un peu plus épais */
+            font-family: 'Fredoka', sans-serif; 
+            font-weight: 600; 
             color: #222; 
         }
 
         /* --- TEXTES AVEC BORDURE FLORR.IO --- */
-        /* Cible : Titres (h2), Noms des pétales, et Nom de la Target */
-        h2, .item-name-tiny, .target-name-large, .qty-badge {
+        h2, .card-name, .qty-badge, .entity-badge {
             color: #ffffff !important;
             font-weight: 900 !important;
             text-shadow: 
@@ -46,201 +44,150 @@
         .panel { flex: 1; min-width: 250px; padding: 20px; border: 1px solid #ccc; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .input-group { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
         
-
-        
-        #slots-container { 
-            display: flex; 
-            flex-wrap: nowrap; 
-            justify-content: center; 
-            gap: 6px; 
-            width: 100%; 
-            padding-bottom: 5px; 
-        }
-        
-        .equipped-item { 
-            flex: 0 1 65px; 
-            min-width: 48px; 
-            height: 65px; 
-            display: flex; 
-            flex-direction: column; /* On garde la colonne */
-            justify-content: space-between; /* Espace les éléments */
-            align-items: center; 
-            position: relative; 
-            padding: 4px; 
+        /* --- COMPOSANT FACTORISÉ : CARD SLOT --- */
+        .card-slot { 
+            position: relative; /* Le parent n'a plus ni bordure, ni fond, ni opacité */
             box-sizing: border-box; 
             border-radius: 3px;
-            border: 5px solid transparent; 
-            background: #fafafa;
-            cursor: pointer; 
-            transition: 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .item-name-tiny {
-            font-size: 10px;
-            font-weight: 900;
-            width: 100%;
-            text-align: center;
-            /* Flexbox pour le centrage vertical */
-            flex-grow: 1; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            word-break: break-all;
-            line-height: 1;
-        }
-
-        .equipped-item:hover { 
+        .card-slot:hover { 
             transform: translateY(-3px); 
             box-shadow: 0 6px 12px rgba(0,0,0,0.15); 
             z-index: 999;
         }
 
-        .item-dps-tiny {
+        /* La partie visuelle qui contiendra la couleur, la bordure et la transparence */
+        .card-visuals {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-sizing: border-box; 
+            border-radius: 3px;
+            border: 5px solid transparent; 
+            z-index: 1;
+        }
+
+        /* Tailles de Cartes */
+        .card-small {
+            flex: 0 1 65px; 
+            min-width: 48px; 
+            height: 65px; 
+            cursor: pointer;
+        }
+        .card-small .card-visuals {
+            padding: 4px;
+        }
+
+        .card-large {
+            width: 100px;
+            height: 100px;
+            cursor: default;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); /* L'ombre de base reste sur le parent */
+        }
+        .card-large .card-visuals {
+            padding: 8px;
+        }
+
+        /* Contenu de la Carte */
+        .card-name {
+            width: 100%;
+            text-align: center;
+            flex-grow: 1; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            word-wrap: break-word; 
+            line-height: 1.1;
+            padding: 0 2px;
+            z-index: 5;
+        }
+
+        .card-dps {
             font-size: 11px;
             font-weight: 900;
-            background: rgba(255, 255, 255, 0.49);
-            color: #2c3e50;
+            color: #fff;
+            text-shadow: 0px 1px 2px rgba(0,0,0,0.4);
             padding: 2px 0;
             border-radius: 4px;
             width: 100%;
             text-align: center;
             box-sizing: border-box;
+            z-index: 5;
         }
 
-        /* --- CSS : Affichage de la Cible (Target) --- */
-        #target-stats { 
-            display: flex; 
-            justify-content: center; 
-            margin-top: 15px; 
-            min-height: 100px;
+        /* Badges de Quantité et d'Entité */
+        .qty-badge, .entity-badge {
+            position: absolute;
+            font-size: 11px;
+            z-index: 15;
         }
+        .qty-badge { top: -6px; right: -6px; }
+        .entity-badge { bottom: 16px; right: -4px; color: #e84393 !important; }
 
-        /* --- CSS : Design du cadre Target --- */
-        #target-panel {
-            background-color: #dbd74b;
-            border: 5px solid #c5c143;
-            border-radius: 3px;
-        }
-
-        .target-slot {
-            width: 100px;
-            height: 100px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            padding: 8px;
-            box-sizing: border-box;
-            border-radius: 3px;
-            border: 5px solid #bdc3c7;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            transition: transform 0.2s;
-        }
-        
-        .target-slot:hover {
-            transform: translateY(-2px);
-        }
-
-        .target-name-large {
-            font-size: 14px;
-            font-weight: 900;
-            text-align: center;
-            color: rgba(0,0,0,0.85);
-            word-wrap: break-word;
-            line-height: 1.2;
-        }
-
-        /* --- CSS : Design du cadre Player Stats --- */
-        #player-panel {
-            background-color: #db5a5a;
-            border: 5px solid #c55151;
-            border-radius: 3px;
-        }
-
-        /* --- TOOLTIP : Infos détaillées --- */
-
-        /* --- CSS : Inversion automatique du Tooltip vers le bas --- */
-        .tooltip-container.tooltip-flip .tooltip-content {
-            bottom: auto;
-            top: 135%;
-        }
-        
-        /* On inverse également la petite flèche pour qu'elle pointe vers le haut */
-        .tooltip-container.tooltip-flip .tooltip-content::after {
-            top: auto;
-            bottom: 100%;
-            border-color: transparent transparent #fff transparent;
-        }
-        .tooltip-container.tooltip-flip .tooltip-content::before {
-            top: auto;
-            bottom: 100%;
-            border-color: transparent transparent #ccc transparent;
-        }
-        .tooltip-container { position: absolute; top: 2px; right: 2px; cursor: help; margin: 0; z-index: 10; }
-        .tooltip-icon { background: #34495e; color: #fff; border-radius: 50%; width: 14px; height: 14px; display: inline-flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; font-family: serif; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        /* --- TOOLTIP FACTORISÉ (Survol Automatique) --- */
         .tooltip-content { 
             display: none; 
             position: absolute; 
-            bottom: 135%; 
+            bottom: 110%; 
             left: 50%;
             transform: translateX(-50%);
-            background: #fff; 
-            border: 1px solid #ccc; 
+            background: rgba(15, 25, 20, 0.75); /* Fond sombre transparent */
+            border: 2px solid #222; 
             padding: 12px; 
-            border-radius: 6px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+            border-radius: 8px; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.5); 
             width: max-content; 
-            min-width: 200px; 
-            z-index: 100; 
+            min-width: 220px; 
+            z-index: 1000; /* Priorité maximale */
             font-size: 0.9em; 
             font-weight: normal; 
-            color: #222; 
+            color: #fff; 
             text-align: left; 
             cursor: default; 
         }
-        .tooltip-content::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #fff transparent transparent transparent; }
-        .tooltip-content::before { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 7px; border-style: solid; border-color: #ccc transparent transparent transparent; }
-        .tooltip-container:hover .tooltip-content { display: block; }
+        .tooltip-content::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: rgba(15, 25, 20, 0.95) transparent transparent transparent; }
+        .tooltip-content::before { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 8px; border-style: solid; border-color: #222 transparent transparent transparent; }
+        
+        .card-slot:hover .tooltip-content { display: block; }
 
-        /* --- NOUVEAU CSS : Inventaire & Tooltip à gauche --- */
-        .inventory-layout {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding-top: 15px;
+        .card-slot.tooltip-flip .tooltip-content {
+            bottom: auto;
+            top: 110%;
         }
-        
-        /* --- CSS : Design du cadre d'inventaire --- */
-        #inventory-panel {
-            background-color: #5a9fdb;
-            border: 5px solid #518fc5;
-            border-radius: 3px; 
+        .card-slot.tooltip-flip .tooltip-content::after {
+            top: auto;
+            bottom: 100%;
+            border-color: transparent transparent rgba(15, 25, 20, 0.95) transparent;
         }
-        
-        .tooltip-container.tooltip-left {
-            left: 2px;
-            right: auto;
+        .card-slot.tooltip-flip .tooltip-content::before {
+            top: auto;
+            bottom: 100%;
+            border-color: transparent transparent #222 transparent;
         }
-        .tooltip-container.tooltip-left .tooltip-content {
+
+        .tooltip-content.tooltip-left {
             left: 0;
             transform: none;
         }
-        .tooltip-container.tooltip-left .tooltip-content::after,
-        .tooltip-container.tooltip-left .tooltip-content::before {
+        .tooltip-content.tooltip-left::after,
+        .tooltip-content.tooltip-left::before {
             left: 10px;
             transform: none;
         }
-        
-        .qty-badge {
-            position: absolute;
-            top: 2px;
-            right: 4px;
-            font-size: 10px;
-            font-weight: 900;
-            color: rgba(0,0,0,0.7);
-        }
+
+        /* --- CONTENEURS D'INTERFACE --- */
+        #slots-container { display: flex; flex-wrap: nowrap; justify-content: center; gap: 6px; width: 100%; padding-bottom: 5px; }
+        #target-stats { display: flex; justify-content: center; margin-top: 15px; min-height: 100px; }
+        #target-panel { background-color: #dbd74b; border: 5px solid #c5c143; border-radius: 3px; }
+        #player-panel { background-color: #db5a5a; border: 5px solid #c55151; border-radius: 3px; }
+        #inventory-panel { background-color: #5a9fdb; border: 5px solid #518fc5; border-radius: 3px; }
+        .inventory-layout { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 15px; }
     </style>
 </head>
 <body>
@@ -250,20 +197,19 @@
                 Total DPS: 0
             </div>
         </div>
-        
         <div id="slots-container"></div>
     </div>
 
-   <div class="layout">
-    <div id="target-panel" class="panel" style="flex: 1; min-width: 300px;">
-        <h2 style="margin-top: 0;">Target Mob</h2>
-        <div class="input-group">
-            <select id="target-select" style="flex: 1;"></select>
-            <label>Tier:</label>
-            <input id="target-tier" type="number" value="0" min="0">
+    <div class="layout">
+        <div id="target-panel" class="panel" style="flex: 1; min-width: 300px;">
+            <h2 style="margin-top: 0;">Target Mob</h2>
+            <div class="input-group">
+                <select id="target-select" style="flex: 1;"></select>
+                <label>Tier:</label>
+                <input id="target-tier" type="number" value="0" min="0">
+            </div>
+            <div id="target-stats"></div>
         </div>
-        <div id="target-stats"></div>
-    </div>
 
         <div id="player-panel" class="panel" style="flex: 1; min-width: 300px;">
             <h2 style="margin-top: 0;">Player Stats</h2>
@@ -276,7 +222,6 @@
             
             <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                 <h2 style="margin: 0;">Inventory</h2>
-                
                 <div class="input-group" style="margin: 0; background: #f0f3f4; padding: 6px 12px; border-radius: 6px; border: 1px solid #dcdde1; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
                     <select id="item-select" style="border-radius: 4px; padding: 4px; border: 1px solid #ccc;"></select>
                     
@@ -306,7 +251,6 @@
         </div>
         
         <div id="inventory-grid" class="inventory-layout"></div>
-
     </div>
 
     <script type="module" src="/src/main.ts"></script>

@@ -12,8 +12,9 @@ export interface IInventoryItem {
     damage?: number;
     armor?: number;
     reload?: number;     
+    secondReload?: number; // <-- NOUVEAU: On stocke le second reload séparément !
     itemType?: string;   
-    isJoystickSynergy?: boolean; // <-- NOUVELLE LIGNE ICI
+    isJoystickSynergy?: boolean; 
 }
 
 export interface ITransformedState {
@@ -183,7 +184,7 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // PASSE 5 : JOYSTICK (Géré à 100% par l'inventaire maintenant !)
+    // PASSE 5 : JOYSTICK
     let maxJoystickTier = -1;
     for (const item of build) {
         if (item && !item.inactive && getEffectiveName(item).toLowerCase() === "joystick") {
@@ -196,7 +197,7 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
             if (item && !item.inactive && getEffectiveName(item).toLowerCase() === "stick" && getDisplayTier(item) <= maxJoystickTier) {
                 const prevSynergy = item.transformed?.synergy || "";
                 item.transformed = {
-                    name: "Joystick", // Se transforme officiellement !
+                    name: "Joystick",
                     displayTier: getDisplayTier(item),
                     statTier: getStatTier(item), 
                     synergy: prevSynergy ? prevSynergy + ", joystick" : "joystick",
@@ -209,7 +210,6 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
     return build;
 }
 
-// L'inventaire recalcule lui-même s'il y a un Joystick actif dans le build
 export function getProcessedInventory(targetName: string, targetTier: number): IInventoryItem[] {
     const build = getEffectiveBuild();
     let maxJoystickTier = -1;
@@ -222,12 +222,11 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
     inventory.forEach(item => {
         let effectiveName = item.name;
         let statTier = item.tier;
-        item.isJoystickSynergy = false; // Reset par défaut
+        item.isJoystickSynergy = false; 
         
-        // Applique la synergie à l'affichage de l'inventaire
         if (maxJoystickTier >= 0 && item.name.toLowerCase() === "stick" && item.tier <= maxJoystickTier) {
             effectiveName = "joystick";
-            item.isJoystickSynergy = true; // <-- ON DIT EXPLICITEMENT AU FRONTEND QUE C'EST UN JOYSTICK
+            item.isJoystickSynergy = true; 
         }
 
         const result = DpsCalculator.calculateDps(effectiveName, statTier, targetName, targetTier);
@@ -237,11 +236,12 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
         const itemObj = getObject(effectiveName, statTier);
         if (itemObj) {
             item.itemType = itemObj.type || "default"; 
-            item.reload = (itemObj.reload || 0) + (itemObj.secondReload || 0);
+            item.reload = itemObj.reload || 0; // CORRECTION: On n'additionne plus !
+            item.secondReload = itemObj.secondReload || 0; 
 
             if (itemObj.type === "egg" && itemObj.petName) {
-                const petTier = itemObj.petTier || 0;
-                const petObj = getObject(itemObj.petName, petTier,true);
+                const petTier = itemObj.petTier !== undefined ? itemObj.petTier : statTier;
+                const petObj = getObject(itemObj.petName, petTier, true);
                 if (petObj) {
                     item.health = petObj.health;
                     item.damage = petObj.damage;

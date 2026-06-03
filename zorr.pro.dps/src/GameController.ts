@@ -16,7 +16,6 @@ import {
     getEffectiveBuild
 } from "./inventory";
 
-// 1. Assemblage des données brutes
 export const allData: Record<string, any> = {
     ...petals,
     ...mobs,
@@ -27,18 +26,14 @@ export const allData: Record<string, any> = {
 };
 
 export const GameController = {
-    // --- LISTES POUR LES MENUS DÉROULANTS ---
     getAllItemNames() { return Object.keys(allData).sort(); },
     getAllMobNames() { return Object.keys(mobs).sort(); },
 
-    // --- GESTION DU JOUEUR ---
     refreshPlayerStats() {
         PlayerValue.reset();
         const baseState = JSON.parse(JSON.stringify(PlayerValue));
-        
         PlayerValue.updateFromSlots();
-        
-        return baseState; // Retourné au front pour calculer la différence
+        return baseState; 
     },
 
     getPlayerStatsDiff(baseState: any) {
@@ -51,7 +46,6 @@ export const GameController = {
                 for (const stat of Object.keys(baseCat)) {
                     if (stat === "hasJoystick") continue;
 
-                    // Gestion des stats restreintes par tier (Tableaux)
                     if (stat.endsWith("Tiered")) {
                         const tieredArray = currCat[stat];
                         if (Array.isArray(tieredArray) && tieredArray.length > 0) {
@@ -64,7 +58,6 @@ export const GameController = {
                         continue;
                     }
 
-                    // Gestion des stats globales
                     if (typeof baseCat[stat] === "number") {
                         if (currCat[stat] !== baseCat[stat]) {
                             diffs.push({ category, stat, value: currCat[stat], baseValue: baseCat[stat] });
@@ -79,12 +72,11 @@ export const GameController = {
                 }
             }
         }
-        
         const hasJoystick = (PlayerValue as any).petal?.hasJoystick?.active || false;
         return { diffs, hasJoystick };
     },
 
-getSlotsData(targetName: string, targetTier: number) {
+    getSlotsData(targetName: string, targetTier: number) {
         const effectiveBuild = getEffectiveBuild();
         let totalDps = 0;
         const slots = [];
@@ -108,8 +100,6 @@ getSlotsData(targetName: string, targetTier: number) {
             const isMimic = item.transformed?.synergy?.includes("mimic") || false;
             const isFission = item.transformed?.synergy?.includes("fission") || false;
             const isFusion = item.transformed?.synergy?.includes("fusion") || false;
-            
-            // PLUS DE LOGIQUE JOYSTICK COMPLEXE ! On lit juste la synergie pour la couleur dorée
             const isJoystick = item.transformed?.synergy?.includes("joystick") || false;
 
             const result = DpsCalculator.calculateDps(effectiveName, statTier, targetName, targetTier);
@@ -126,17 +116,38 @@ getSlotsData(targetName: string, targetTier: number) {
             }
             
             const obj = getObject(effectiveName, statTier);
-            const itemReload = obj ? ((obj.reload || 0) + (obj.secondReload || 0)) : 0;
-            const itemHealth = obj ? obj.health : item.health;
-            const itemDamage = obj ? obj.damage : item.damage;
-            const itemArmor = obj ? obj.armor : item.armor;
+            let itemReload = 0, itemSecondReload = 0, itemHealth = 0, itemDamage = 0, itemArmor = 0;
+            
+            // CORRECTION: Récupération propre des Stats (y compris pour les œufs)
+            if (obj) {
+                itemReload = obj.reload || 0;
+                itemSecondReload = obj.secondReload || 0;
+
+                if (obj.type === "egg" && obj.petName) {
+                    const petTier = obj.petTier !== undefined ? obj.petTier : statTier;
+                    const petObj = getObject(obj.petName, petTier, true);
+                    if (petObj) {
+                        itemHealth = petObj.health;
+                        itemDamage = petObj.damage;
+                        itemArmor = petObj.armor;
+                    }
+                } else {
+                    itemHealth = obj.health;
+                    itemDamage = obj.damage;
+                    itemArmor = obj.armor;
+                }
+            } else {
+                itemHealth = item.health || 0;
+                itemDamage = item.damage || 0;
+                itemArmor = item.armor || 0;
+            }
 
             slots.push({
                 isEmpty: false, index: i, item,
                 effectiveName, displayTier, statTier, entityMulti,
                 isInactive, inactiveReason,
                 isMimic, isFission, isFusion, isJoystick,
-                result, obj, itemReload, itemHealth, itemDamage, itemArmor
+                result, obj, itemReload, itemSecondReload, itemHealth, itemDamage, itemArmor
             });
         }
 
@@ -148,7 +159,6 @@ getSlotsData(targetName: string, targetTier: number) {
     },
 
     getInventoryData(targetName: string, targetTier: number, filterType: string) {
-        // PLUS BESOIN de récupérer hasJoystickActive et joystickTier !
         let inventoryItems = getProcessedInventory(targetName, targetTier);
         
         if (filterType && filterType !== "all") {

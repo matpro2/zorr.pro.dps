@@ -4,6 +4,31 @@ import { GameController } from "./GameController";
 import { TIERS } from "./constants";
 import { formatNumber } from "./formatNumber"; 
 
+interface CardConfig {
+    type: 'target' | 'equipped' | 'inventory' | 'empty';
+    effectiveName?: string;
+    displayTier?: number;
+    statTier?: number;
+    health?: number;
+    damage?: number;
+    armor?: number;
+    reload?: number;
+    secondReload?: number; 
+    dps?: number;
+    dpsCategory?: any[];
+    effects?: any[];
+    petName?: string;     
+    petCount?: number;    
+    petTier?: number;     
+    isInactive?: boolean;
+    inactiveReason?: string;
+    synergy?: string;
+    entityMulti?: number;
+    available?: number; 
+    equippedQty?: number;
+    totalQty?: number;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     // --- RÉCUPÉRATION DES ÉLÉMENTS DOM ---
     const itemSelect = document.getElementById("item-select") as HTMLSelectElement;
@@ -24,151 +49,234 @@ document.addEventListener("DOMContentLoaded", () => {
     GameController.getAllItemNames().forEach(name => itemSelect.add(new Option(name, name)));
     GameController.getAllMobNames().forEach(name => targetSelect.add(new Option(name, name)));
 
-    // --- FONCTIONS DE RENDU (UI UNIQUEMENT) ---
-    
-    // --- FONCTION DE FLIP AUTOMATIQUE DES TOOLTIPS ---
+    // --- LOGIQUE FACTORISÉE : TOOLTIP FLIP ---
     function handleTooltipFlip(e: Event) {
-        const container = e.currentTarget as HTMLElement;
-        container.classList.remove("tooltip-flip"); // On reset pour mesurer sa position normale vers le haut
-        const content = container.querySelector(".tooltip-content");
+        const slot = e.currentTarget as HTMLElement;
+        slot.classList.remove("tooltip-flip"); 
         
-        if (content) {
-            const rect = content.getBoundingClientRect();
-            // Si le haut du tooltip dépasse l'écran (avec une marge de sécurité de 10px)
-            if (rect.top < 10) {
-                container.classList.add("tooltip-flip");
+        setTimeout(() => {
+            const content = slot.querySelector(".tooltip-content");
+            if (content) {
+                const rect = content.getBoundingClientRect();
+                if (rect.top < 10 && rect.top !== 0) {
+                    slot.classList.add("tooltip-flip");
+                }
+            }
+        }, 10);
+    }
+
+    // --- USINE FACTORISÉE : GÉNÉRATEUR DE CARTES ---
+    function createCard(config: CardConfig): HTMLDivElement {
+        const div = document.createElement("div");
+
+        if (config.type === 'empty') {
+            div.className = "card-slot card-small";
+            div.innerHTML = `<div class="card-visuals" style="border-style: solid; border-color: #cbcbcb; background-color: #ffffff;"></div>`;
+            return div;
+        }
+
+        const isTarget = config.type === 'target';
+        div.className = `card-slot ${isTarget ? 'card-large' : 'card-small'}`;
+
+        const tierData = TIERS[config.displayTier!] || { Name: `T${config.displayTier}`, Background: "#fafafa", Border: "#ccc" };
+        
+        // --- STYLES DU CALQUE VISUEL ---
+        let visualStyles = `background-color: ${tierData.Background}; `;
+        let borderColor = tierData.Border;
+
+        if (config.isInactive) {
+            visualStyles += `opacity: 0.5; filter: grayscale(80%); border-style: dashed; `;
+        } else if (config.synergy) {
+            if (config.synergy.includes("fusion")) borderColor = "#3498db";
+            if (config.synergy.includes("mimic")) borderColor = "#9b59b6";
+            if (config.synergy.includes("fission")) borderColor = "#ff9ff3";
+            if (config.synergy.includes("joystick")) borderColor = "#f39c12";
+
+            visualStyles += `box-shadow: inset 0 0 10px ${borderColor}50; `;
+        } else {
+            if (config.type === 'inventory' && (config.available || 0) <= 0) {
+                visualStyles += `opacity: 0.5; `;
             }
         }
+        visualStyles += `border-color: ${borderColor}; `;
+
+        // --- GÉNÉRATION DES STATS ---
+        const statParts: string[] = [];
+        
+        if (config.health !== undefined && config.health !== 0) statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #ff4757;">Health:</strong> ${formatNumber(config.health)}</div>`);
+        if (config.damage !== undefined && config.damage !== 0) statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #3498db;">Damage:</strong> ${formatNumber(config.damage)}</div>`);
+        if (config.armor !== undefined && config.armor !== 0) statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #9b59b6;">Armor:</strong> ${formatNumber(config.armor)}</div>`);
+
+        // --- AFFICHAGE DU PET ---
+        if (config.petName) {
+            const pCount = config.petCount || 1;
+            const pTier = config.petTier !== undefined ? config.petTier : config.statTier!; 
+            const pTierData = TIERS[pTier] || { Name: `T${pTier}`, Background: "#fff" };
+            
+            statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #48dbfb;">Pet:</strong> x${pCount} ${config.petName} (<span style="color: ${pTierData.Background}; font-weight: bold;">${pTierData.Name}</span>)</div>`);
+        }
+
+        if (config.effects) {
+            for (const effect of config.effects) {
+                if (effect.value !== undefined && effect.value !== 0) {
+                    let displayVal = typeof effect.value === "object" && effect.value !== null
+                        ? `${effect.value.chance}% (x${effect.value.multiplier})`
+                        : (typeof effect.value === "number" ? formatNumber(effect.value) : String(effect.value));
+                    let effectName = effect.type.split('.').pop() || effect.type;
+                    effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
+                    statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #1dd1a1;">${effectName}:</strong> ${displayVal}</div>`);
+                }
+            }
+        }
+        
+        let statsHtml = statParts.length > 0
+            ? `<div style="display: flex; flex-direction: column; font-size: 0.95em;">${statParts.join('')}</div>`
+            : ``;
+
+        let dpsBreakdown = "";
+        if (config.dpsCategory && config.dpsCategory.length > 0 && !isTarget) {
+            const breakdownText = config.dpsCategory.map((cat: any) => `<div style="display:flex; justify-content:space-between; margin-bottom: 2px;"><span>${cat.type}:</span> <strong>${formatNumber(cat.dps)}</strong></div>`).join('');
+            dpsBreakdown = `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dotted rgba(255,255,255,0.2); color: #ff6b81;">${breakdownText}</div>`;
+        }
+
+        // --- EN-TÊTE DU TOOLTIP ---
+        const displayTierName = tierData.Name;
+        const displayTierColor = tierData.Background;
+        
+        let titleName = config.effectiveName;
+        if (config.synergy) {
+             let synText = "";
+             if (config.synergy.includes("fusion")) synText = "Fusion";
+             else if (config.synergy.includes("mimic")) synText = "Mimic";
+             else if (config.synergy.includes("fission")) synText = "Fission";
+             else if (config.synergy.includes("joystick")) synText = "Stick";
+
+             if (config.synergy.includes("joystick") && synText !== "Stick") synText += " ➔ Joystick";
+             else if (config.synergy.includes("joystick")) synText = "Stick ➔ Joystick";
+             else synText += ` ➔ ${config.effectiveName}`;
+             titleName = synText;
+        }
+
+        let tierStatusText = displayTierName;
+        if (config.isInactive) {
+            tierStatusText += config.inactiveReason === "fusion" ? " (Ingrédient)" : " (Qté Insuffisante)";
+        }
+        if (config.statTier !== config.displayTier) {
+            tierStatusText += ` (Stats T${config.statTier})`;
+        }
+
+        let reloadHtml = '';
+        if ((config.reload !== undefined && config.reload > 0) || (config.secondReload !== undefined && config.secondReload > 0)) {
+            let r1 = config.reload || 0;
+            let r2 = config.secondReload || 0;
+            
+            let reloadText = "";
+            if (r1 > 0 && r2 > 0) {
+                reloadText = `${formatNumber(r1)}s + ${formatNumber(r2)}s`;
+            } else if (r1 > 0) {
+                reloadText = `${formatNumber(r1)}s`;
+            } else if (r2 > 0) {
+                reloadText = `${formatNumber(r2)}s`;
+            }
+            
+            reloadHtml = `<div style="font-size: 0.95em; font-weight: bold; color: #fff; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; white-space: nowrap;">${reloadText} ↻</div>`;
+        }
+
+        const nameLen = config.effectiveName!.length;
+        let dynamicSize = isTarget ? 14 : 11;
+        if (!isTarget) {
+            if (nameLen >= 12) dynamicSize = 8;
+            else if (nameLen >= 9) dynamicSize = 9;
+            else if (nameLen >= 7) dynamicSize = 10;
+        }
+
+        // --- ASSEMBLAGE HTML ---
+        let innerHTML = `<div class="card-visuals" style="${visualStyles}">`;
+
+        if (config.entityMulti && config.entityMulti > 1 && !config.isInactive && config.type === 'equipped') {
+            innerHTML += `<div class="entity-badge">x${config.entityMulti}</div>`;
+        }
+
+        innerHTML += `<div class="card-name" style="font-size: ${dynamicSize}px;">${config.effectiveName}</div>`;
+
+        if (!isTarget) {
+             innerHTML += `<div class="card-dps" style="display: ${(config.dps || 0) > 0 ? 'block' : 'none'}; background-color: ${borderColor};">
+                ${formatNumber(config.dps || 0)}
+            </div>`;
+        }
+        innerHTML += `</div>`; 
+
+        let tooltipHTML = `<div class="tooltip-content ${config.type === 'inventory' ? 'tooltip-left' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid rgba(255,255,255,0.1); gap: 15px;">
+                <div>
+                    <div style="font-size: 1.3em; font-weight: 900; color: #fff; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 2px rgba(0,0,0,0.5);">${titleName}</div>
+                    <div style="color: ${displayTierColor}; font-weight: 900; font-size: 0.95em; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">${tierStatusText}</div>
+                </div>
+                ${reloadHtml}
+            </div>
+            ${statsHtml}
+            ${dpsBreakdown}
+        `;
+
+        if (config.type === 'inventory') {
+            tooltipHTML += `<div style="margin-top: 10px; display: flex; gap: 5px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                <button class="inv-remove-one" style="flex:1; background: #e67e22; color: #fff; border: none; border-radius: 4px; padding: 4px; cursor: pointer;">-1</button>
+                <button class="inv-remove-all" style="flex:1; background: #e74c3c; color: #fff; border: none; border-radius: 4px; padding: 4px; cursor: pointer;">Del</button>
+            </div>`;
+        }
+        tooltipHTML += `</div>`;
+        innerHTML += tooltipHTML;
+
+        if (config.type === 'inventory' && config.totalQty !== undefined) {
+            innerHTML += `<div class="qty-badge">${config.equippedQty}/${config.totalQty}</div>`;
+        }
+
+        div.innerHTML = innerHTML;
+
+        const tooltipContent = div.querySelector('.tooltip-content');
+        if (tooltipContent) tooltipContent.addEventListener('click', (e) => e.stopPropagation());
+        
+        div.addEventListener('mouseenter', handleTooltipFlip);
+
+        return div;
     }
 
     function renderSlots() {
         slotsContainer.innerHTML = "";
-        
-        // On demande au Backend toutes les données prêtes à être affichées
         const data = GameController.getSlotsData(targetSelect.value, Number(targetTier.value));
         
         data.slots.forEach(slot => {
-            const slotDiv = document.createElement("div");
-            slotDiv.className = "equipped-item";
-
-            if (!slot.isEmpty) {
-                const tierData = TIERS[slot.item.tier] || { Name: `T${slot.item.tier}`, Background: "#fafafa", Border: "#ccc" };
-                slotDiv.style.backgroundColor = tierData.Background;
-                
-                // Détermination des couleurs de bordure
-                let borderColor = tierData.Border; 
-                if (slot.isInactive) {
-                    slotDiv.style.opacity = "0.5";
-                    slotDiv.style.filter = "grayscale(80%)";
-                    slotDiv.style.borderStyle = "dashed";
-                    slotDiv.style.borderColor = borderColor;
-                } else if (slot.isFusion || slot.isMimic || slot.isJoystick || slot.isFission) {
-                    if (slot.isFusion) borderColor = "#3498db";
-                    else if (slot.isMimic) borderColor = "#9b59b6";   
-                    else if (slot.isFission) borderColor = "#ff9ff3"; 
-                    if (slot.isJoystick) borderColor = "#f39c12";    
-
-                    slotDiv.style.borderColor = borderColor;
-                    slotDiv.style.boxShadow = `inset 0 0 10px ${borderColor}50`;
-                } else {
-                    slotDiv.style.borderColor = borderColor;
-                }
-
-                // Formatage des statistiques dynamiques pour le Tooltip
-                const statParts: string[] = [];
-                if (slot.itemHealth !== 0 && slot.itemHealth !== undefined) statParts.push(`<div><strong>Health:</strong> ${formatNumber(slot.itemHealth)}</div>`);
-                if (slot.itemDamage !== 0 && slot.itemDamage !== undefined) statParts.push(`<div><strong>Damage:</strong> ${formatNumber(slot.itemDamage)}</div>`);
-                if (slot.itemArmor !== 0 && slot.itemArmor !== undefined) statParts.push(`<div><strong>Armor:</strong> ${formatNumber(slot.itemArmor)}</div>`);
-                if (slot.itemReload !== 0 && slot.itemReload !== undefined) statParts.push(`<div><strong>Reload:</strong> ${formatNumber(slot.itemReload)}s</div>`);
-
-                if (slot.obj && slot.obj.effects) {
-                    for (const effect of slot.obj.effects) {
-                        if (effect.value !== undefined && effect.value !== 0) {
-                            let displayVal = "";
-                            if (typeof effect.value === "object" && effect.value !== null) {
-                                displayVal = `${effect.value.chance}% (x${effect.value.multiplier})`;
-                            } else {
-                                displayVal = typeof effect.value === "number" ? formatNumber(effect.value) : String(effect.value);
-                            }
-                            let effectName = effect.type.split('.').pop() || effect.type;
-                            effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
-                            statParts.push(`<div><strong style="color: #8e44ad;">${effectName}:</strong> ${displayVal}</div>`);
-                        }
-                    }
-                }
-
-                let statsHtml = statParts.length > 0 
-                    ? `<div style="display: grid; grid-template-columns: auto auto; column-gap: 15px; row-gap: 4px; margin-bottom: 5px;">${statParts.join('')}</div>`
-                    : `<div style="margin-bottom: 5px; color: #7f8c8d; font-style: italic;">Aucune stat brute</div>`;
-
-                let dpsBreakdown = "";
-                if (slot.result.dpsCategory && slot.result.dpsCategory.length > 0) {
-                    const breakdownText = slot.result.dpsCategory.map((cat: any) => `<div style="display:flex; justify-content:space-between; margin-bottom: 2px;"><span>${cat.type}:</span> <strong>${formatNumber(cat.dps)}</strong></div>`).join('');
-                    dpsBreakdown = `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dotted rgba(0,0,0,0.3); color: #c0392b;">${breakdownText}</div>`;
-                }
-
-                // Formatage des textes visuels
-                let countBadge = slot.entityMulti > 1 && !slot.isInactive ? `<div style="font-size: 10px; color: #e84393; font-weight: bold; margin-top: 2px;">x${slot.entityMulti}</div>` : "";
-                
-                const displayTierName = TIERS[slot.displayTier]?.Name || `T${slot.displayTier}`;
-                const displayTierColor = TIERS[slot.displayTier]?.Background || "#fff";
-                const statTierName = TIERS[slot.statTier]?.Name || `T${slot.statTier}`;
-                const statTierColor = TIERS[slot.statTier]?.Background || "#fff";
-
-                let tierText = slot.statTier !== slot.displayTier 
-                    ? `<span style="color: ${displayTierColor}; font-weight: bold;">${displayTierName}</span> <span style="color: #bdc3c7;">(Stats <span style="color: ${statTierColor};">${statTierName}</span>)</span>` 
-                    : `<span style="color: ${displayTierColor}; font-weight: bold;">${displayTierName}</span>`;
-                let badgeHtml = "";
-                if (slot.isInactive) {
-                    const reasonText = slot.inactiveReason === "fusion" ? "Ingrédient" : "Qté Insuffisante";
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #bdc3c7; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">${slot.effectiveName} (${tierText})<br>${reasonText}</span>`;
-                } else if (slot.isFusion && slot.isJoystick) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Fusion ➔ Joystick (${tierText})</span>`;
-                } else if (slot.isMimic && slot.isJoystick) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Mimic ➔ Joystick (${tierText})</span>`;
-                } else if (slot.isFusion) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #3498db; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Fusion ➔ ${slot.effectiveName} (${tierText})</span>`;
-                } else if (slot.isMimic) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #e056fd; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Mimic ➔ ${slot.effectiveName} (${tierText})</span>`;
-                } else if (slot.isJoystick) {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Stick ➔ Joystick (${tierText})</span>`;
-                } else {
-                    badgeHtml = `<span style="background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">${slot.item.name} (${tierText})</span>`;
-                }
-
-                // Insertion HTML finale
-                slotDiv.innerHTML = `
-                    <div class="item-name-tiny" title="${slot.effectiveName}">${slot.effectiveName}</div>
-                    <div class="tooltip-container">
-                        <span class="tooltip-icon">i</span>
-                        <div class="tooltip-content">
-                            <div style="text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px;">
-                                ${badgeHtml}
-                            </div>
-                            ${statsHtml} 
-                            ${dpsBreakdown}
-                        </div>
-                    </div>
-                    ${countBadge}
-                <div class="item-dps-tiny" style="display: ${slot.result.dps > 0 ? 'block' : 'none'}; background-color: ${borderColor}; color: #fff; text-shadow: 0px 1px 2px rgba(0,0,0,0.4);">
-                    ${formatNumber(slot.result.dps)}
-                </div>
-                `;
-
-                const tooltipContainer = slotDiv.querySelector('.tooltip-container');
-                if (tooltipContainer) {
-                    tooltipContainer.addEventListener("click", (e) => e.stopPropagation());
-                    tooltipContainer.addEventListener("mouseenter", handleTooltipFlip);
-                }
-
-            } else {
-                slotDiv.addEventListener("click", () => { GameController.unequipSlot(slot.index); refreshAll(); });
-                slotDiv.style.borderStyle = "solid";
-                slotDiv.style.borderColor = "#cbcbcb";
-                slotDiv.style.backgroundColor = "#ffffff";
-                slotDiv.innerHTML = ""; 
+            if (slot.isEmpty) {
+                const emptyCard = createCard({ type: 'empty' });
+                emptyCard.addEventListener("click", () => { GameController.unequipSlot(slot.index); refreshAll(); });
+                slotsContainer.appendChild(emptyCard);
+                return;
             }
-            slotsContainer.appendChild(slotDiv);
+
+            const card = createCard({
+                type: 'equipped',
+                effectiveName: slot.effectiveName,
+                displayTier: slot.displayTier,
+                statTier: slot.statTier,
+                health: slot.itemHealth,
+                damage: slot.itemDamage,
+                armor: slot.itemArmor,
+                reload: slot.itemReload,
+                secondReload: slot.itemSecondReload, 
+                dps: slot.result.dps,
+                dpsCategory: slot.result.dpsCategory,
+                effects: slot.obj?.effects,
+                petName: slot.obj?.petName,
+                petCount: slot.obj?.entity, // <-- On lit la donnée propre gérée par GetObject !
+                petTier: slot.obj?.petTier,
+                isInactive: slot.isInactive,
+                inactiveReason: slot.inactiveReason,
+                synergy: slot.item.transformed?.synergy || (slot.isJoystick ? "joystick" : ""),
+                entityMulti: slot.entityMulti
+            });
+
+            card.addEventListener("click", () => { GameController.unequipSlot(slot.index); refreshAll(); });
+            slotsContainer.appendChild(card);
         });
 
         if (totalDpsDisplay) {
@@ -180,44 +288,29 @@ document.addEventListener("DOMContentLoaded", () => {
         const currentTargetName = targetSelect.value;
         const currentTargetTier = Number(targetTier.value);
 
-        // UI : Cible
+        targetStatsDiv.innerHTML = ""; 
         const targetObj = GameController.getTargetData(currentTargetName, currentTargetTier);
-        targetStatsDiv.removeAttribute("style"); 
-
         if (targetObj) {
-            const targetTierData = TIERS[currentTargetTier] || { Name: `T${currentTargetTier}`, Background: "#f8f8f8", Border: "#bdc3c7" };
-
-            targetStatsDiv.innerHTML = `
-                <div class="target-slot" style="background-color: ${targetTierData.Background}; border-color: ${targetTierData.Border};">
-                    <div class="tooltip-container">
-                        <span class="tooltip-icon">i</span>
-                        <div class="tooltip-content" style="cursor: default;">
-                            <div style="text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px;">
-                                <span style="background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">
-                                    ${targetObj.name || currentTargetName} (<span style="color: ${targetTierData.Background}; font-weight: bold;">${targetTierData.Name}</span>)
-                                </span>
-                            </div>
-                            <div style="display: grid; grid-template-columns: auto auto; column-gap: 15px; row-gap: 4px;">
-                                <div><strong>Health:</strong> ${formatNumber(targetObj.health)}</div>
-                                <div><strong>Damage:</strong> ${formatNumber(targetObj.damage)}</div>
-                                <div><strong>Armor:</strong> ${formatNumber(targetObj.armor)}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="target-name-large">
-                        ${targetObj.name || currentTargetName}
-                    </div>
-                </div>
-            `;
+            const targetCard = createCard({
+                type: 'target',
+                effectiveName: targetObj.name || currentTargetName,
+                displayTier: currentTargetTier,
+                statTier: currentTargetTier,
+                health: targetObj.health,
+                damage: targetObj.damage,
+                armor: targetObj.armor,
+                reload: targetObj.reload,
+                secondReload: targetObj.secondReload,
+                effects: targetObj.effects,
+                petName: targetObj.petName,
+                petCount: targetObj.entity, // <-- Ici aussi
+                petTier: targetObj.petTier
+            });
+            targetStatsDiv.appendChild(targetCard);
         } else {
             targetStatsDiv.innerHTML = `<div style="text-align: center; color: #777; width: 100%;">Impossible de charger la cible.</div>`;
         }
-        // AJOUTEZ CECI POUR LE TOOLTIP DE LA CIBLE :
-        const targetTooltip = targetStatsDiv.querySelector('.tooltip-container');
-        if (targetTooltip) {
-            targetTooltip.addEventListener("mouseenter", handleTooltipFlip);
-        }
-        // UI : Grille d'inventaire
+
         const inventoryGrid = document.getElementById("inventory-grid") as HTMLDivElement;
         const inventoryItems = GameController.getInventoryData(currentTargetName, currentTargetTier, filterTypeSelect.value);
         inventoryGrid.innerHTML = ""; 
@@ -237,119 +330,51 @@ document.addEventListener("DOMContentLoaded", () => {
             const isTransformed = item.isJoystickSynergy || false;
             const effectiveName = isTransformed ? "Joystick" : item.name;
             const obj = GameController.getTargetData(effectiveName, item.tier); 
-            
-            const tierData = TIERS[item.tier] || { Name: `T${item.tier}`, Background: "#fafafa", Border: "#ccc" };
-            
-            const slotDiv = document.createElement("div");
-            slotDiv.className = "equipped-item";
-            slotDiv.style.backgroundColor = tierData.Background;
-            
-            let borderColor = tierData.Border;
-            if (available <= 0) {
-                slotDiv.style.opacity = "0.5";
-            }
-            if (isTransformed) {
-                borderColor = "#f39c12"; // Couleur spéciale Joystick
-                slotDiv.style.borderColor = borderColor;
-                slotDiv.style.boxShadow = `inset 0 0 10px #f39c1250`;
-            } else {
-                slotDiv.style.borderColor = borderColor;
-            }
 
-            // Statistiques détaillées pour le tooltip
-            const statParts: string[] = [];
-            if (item.health !== 0 && item.health !== undefined) statParts.push(`<div><strong>Health:</strong> ${formatNumber(item.health)}</div>`);
-            if (item.damage !== 0 && item.damage !== undefined) statParts.push(`<div><strong>Damage:</strong> ${formatNumber(item.damage)}</div>`);
-            if (item.armor !== 0 && item.armor !== undefined) statParts.push(`<div><strong>Armor:</strong> ${formatNumber(item.armor)}</div>`);
-            if (item.reload !== 0 && item.reload !== undefined) statParts.push(`<div><strong>Reload:</strong> ${formatNumber(item.reload)}s</div>`);
+            const card = createCard({
+                type: 'inventory',
+                effectiveName: effectiveName,
+                displayTier: item.tier,
+                statTier: item.tier,
+                health: item.health,
+                damage: item.damage,
+                armor: item.armor,
+                reload: item.reload,
+                secondReload: item.secondReload, 
+                dps: item.dps,
+                dpsCategory: item.dpsCategory,
+                effects: obj?.effects,
+                petName: obj?.petName,
+                petCount: obj?.entity, // <-- Et là aussi !
+                petTier: obj?.petTier,
+                synergy: isTransformed ? "joystick" : "",
+                available: available,
+                equippedQty: equipped,
+                totalQty: item.quantity
+            });
 
-            if (obj && obj.effects) {
-                for (const effect of obj.effects) {
-                    if (effect.value !== undefined && effect.value !== 0) {
-                        let displayVal = "";
-                        if (typeof effect.value === "object" && effect.value !== null) {
-                            displayVal = `${effect.value.chance}% (x${effect.value.multiplier})`;
-                        } else {
-                            displayVal = typeof effect.value === "number" ? formatNumber(effect.value) : String(effect.value);
-                        }
-                        let effectName = effect.type.split('.').pop() || effect.type;
-                        effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
-                        statParts.push(`<div><strong style="color: #8e44ad;">${effectName}:</strong> ${displayVal}</div>`);
-                    }
-                }
-            }
-
-            let statsHtml = statParts.length > 0 
-                ? `<div style="display: grid; grid-template-columns: auto auto; column-gap: 15px; row-gap: 4px; margin-bottom: 5px;">${statParts.join('')}</div>`
-                : `<div style="margin-bottom: 5px; color: #7f8c8d; font-style: italic;">Aucune stat brute</div>`;
-
-            let dpsBreakdown = "";
-            if (item.dpsCategory && item.dpsCategory.length > 0) {
-                const breakdownText = item.dpsCategory.map((cat: any) => `<div style="display:flex; justify-content:space-between; margin-bottom: 2px;"><span>${cat.type}:</span> <strong>${formatNumber(cat.dps)}</strong></div>`).join('');
-                dpsBreakdown = `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dotted rgba(0,0,0,0.3); color: #c0392b;">${breakdownText}</div>`;
-            }
-            
-            const itemTierName = tierData.Name;
-            const itemTierColor = tierData.Background;
-            const tierHtml = `<span style="color: ${itemTierColor}; font-weight: bold;">${itemTierName}</span>`;
-
-            const badgeHtml = isTransformed 
-                ? `<span style="background: rgba(0,0,0,0.8); color: #f1c40f; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">Stick ➔ Joystick (${tierHtml})</span>`
-                : `<span style="background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px; border-radius: 4px; display:inline-block; margin-bottom: 8px;">${item.name} (${tierHtml})</span>`;
-            
-            // HTML du slot d'inventaire
-            slotDiv.innerHTML = `
-                <div class="tooltip-container tooltip-left">
-                    <span class="tooltip-icon">i</span>
-                    <div class="tooltip-content" style="cursor: default;">
-                        <div style="text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px;">
-                            ${badgeHtml}
-                        </div>
-                        ${statsHtml} 
-                        ${dpsBreakdown}
-                        <div style="margin-top: 10px; display: flex; gap: 5px; border-top: 1px solid #eee; padding-top: 8px;">
-                            <button class="inv-remove-one" style="flex:1; background: #e67e22; color: #fff; border: none; border-radius: 4px; padding: 4px; cursor: pointer;">-1</button>
-                            <button class="inv-remove-all" style="flex:1; background: #e74c3c; color: #fff; border: none; border-radius: 4px; padding: 4px; cursor: pointer;">Del</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="qty-badge">${equipped}/${item.quantity}</div>
-                <div class="item-name-tiny" style="margin-top: 14px;" title="${item.name}">${effectiveName}</div>
-            <div class="item-dps-tiny" style="display: ${(item.dps || 0) > 0 ? 'block' : 'none'}; background-color: ${borderColor}; color: #fff; text-shadow: 0px 1px 2px rgba(0,0,0,0.4);">
-                            ${formatNumber(item.dps || 0)}
-                                        </div>
-            `;
-
-            // Ajout des Events
-            const tooltipContainer = slotDiv.querySelector('.tooltip-container');
-            if (tooltipContainer) {
-                tooltipContainer.addEventListener('click', (e) => e.stopPropagation());
-                tooltipContainer.addEventListener('mouseenter', handleTooltipFlip);
-            }
-
-            const btnRemoveOne = slotDiv.querySelector('.inv-remove-one');
+            const btnRemoveOne = card.querySelector('.inv-remove-one');
             if (btnRemoveOne) btnRemoveOne.addEventListener('click', (e) => { 
                 e.stopPropagation(); 
                 GameController.removeOneItem(item.id); 
                 refreshAll(); 
             });
 
-            const btnRemoveAll = slotDiv.querySelector('.inv-remove-all');
+            const btnRemoveAll = card.querySelector('.inv-remove-all');
             if (btnRemoveAll) btnRemoveAll.addEventListener('click', (e) => { 
                 e.stopPropagation(); 
                 GameController.removeAllItems(item.id); 
                 refreshAll(); 
             });
 
-            // Equiper l'objet
-            slotDiv.addEventListener('click', () => {
+            card.addEventListener('click', () => {
                 if (available > 0 && hasEmptySlot) {
                     GameController.equipItem(item.id); 
                     refreshAll();
                 }
             });
 
-            inventoryGrid.appendChild(slotDiv);
+            inventoryGrid.appendChild(card);
         });
     }
 
@@ -408,7 +433,6 @@ document.addEventListener("DOMContentLoaded", () => {
         renderPlayerStats(baseState); 
     }
 
-    // --- LISTENERS ---
     btnAdd.addEventListener("click", () => {
         GameController.addItem(itemSelect.value, Number(itemTier.value), Number(itemQty.value));
         refreshAll();
@@ -418,6 +442,5 @@ document.addEventListener("DOMContentLoaded", () => {
     targetSelect.addEventListener("change", refreshAll);
     targetTier.addEventListener("input", refreshAll);
 
-    // Initialisation
     refreshAll();
 });
