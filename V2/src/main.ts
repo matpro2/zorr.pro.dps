@@ -7,6 +7,7 @@ import { formatNumber } from "./formatNumber";
 interface CardConfig {
     type: 'target' | 'equipped' | 'inventory' | 'empty';
     effectiveName?: string;
+    originalName?: string; // <-- NOUVEAU : On stocke le nom d'origine pour les synergies
     displayTier?: number;
     statTier?: number;
     health?: number;
@@ -148,12 +149,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     let effectName = effect.type.split('.').pop() || effect.type;
                     effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
                     
-                    // NOUVEAU : Coloration dynamique des effets dans les tooltips aussi
-                    let effectColor = "#1dd1a1"; // Vert par défaut
+                    let effectColor = "#1dd1a1"; 
                     const enLower = effectName.toLowerCase();
-                    if (enLower.includes("health") || enLower.includes("heal")) effectColor = "#2ecc71"; // Vert
-                    else if (enLower.includes("reload")) effectColor = "#3498db"; // Bleu
-                    else if (enLower.includes("damage")) effectColor = "#e74c3c"; // Rouge
+                    if (enLower.includes("health") || enLower.includes("heal")) effectColor = "#2ecc71"; 
+                    else if (enLower.includes("reload")) effectColor = "#3498db"; 
+                    else if (enLower.includes("damage")) effectColor = "#e74c3c"; 
 
                     statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${effectColor};">${effectName}:</strong> ${displayVal}</div>`);
                 }
@@ -174,17 +174,23 @@ document.addEventListener("DOMContentLoaded", () => {
         const displayTierName = tierData.Name;
         const displayTierColor = tierData.Background;
         
+        // MODIFICATION ICI : On utilise le nom d'origine pour l'affichage des synergies Joystick
         let titleName = config.effectiveName;
         if (config.synergy) {
              let synText = "";
              if (config.synergy.includes("fusion")) synText = "Fusion";
              else if (config.synergy.includes("mimic")) synText = "Mimic";
              else if (config.synergy.includes("fission")) synText = "Fission";
-             else if (config.synergy.includes("joystick")) synText = "Stick";
 
-             if (config.synergy.includes("joystick") && synText !== "Stick") synText += " ➔ Joystick";
-             else if (config.synergy.includes("joystick")) synText = "Stick ➔ Joystick";
-             else synText += ` ➔ ${config.effectiveName}`;
+             if (config.synergy.includes("joystick")) {
+                 if (synText !== "") { // S'il y a déjà Fusion ou Mimic
+                     synText += " ➔ Joystick";
+                 } else { // Si c'est juste un stick normal qui se transforme
+                     synText = `${config.originalName || "Stick"} ➔ Joystick`;
+                 }
+             } else {
+                 synText += ` ➔ ${config.effectiveName}`;
+             }
              titleName = synText;
         }
 
@@ -287,6 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const card = createCard({
                 type: 'equipped',
                 effectiveName: slot.effectiveName,
+                originalName: slot.item.name, // <-- INJECTION DU NOM ORIGINAL ICI
                 displayTier: slot.displayTier,
                 statTier: slot.statTier,
                 health: slot.itemHealth,
@@ -365,6 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const card = createCard({
                 type: 'inventory',
                 effectiveName: effectiveName,
+                originalName: item.name, // <-- INJECTION DU NOM ORIGINAL ICI AUSSI
                 displayTier: item.tier,
                 statTier: item.tier,
                 health: item.health,
@@ -430,16 +438,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 prefix = "x";
             }
 
-            // NOUVEAU : Coloration intelligente du nom de la stat
-            let nameColor = "#fff"; // Blanc par défaut
+            let nameColor = "#fff"; 
             const statLower = diff.stat.toLowerCase();
             
             if (statLower.includes("health") || statLower.includes("heal")) {
-                nameColor = "#2ecc71"; // Vert
+                nameColor = "#2ecc71"; 
             } else if (statLower.includes("reload")) {
-                nameColor = "#3498db"; // Bleu
+                nameColor = "#3498db"; 
             } else if (statLower.includes("damage")) {
-                nameColor = "#e74c3c"; // Rouge
+                nameColor = "#e74c3c"; 
             }
 
             let tierText = "";
@@ -449,7 +456,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 tierText = ` (<span style="color: ${reqTierColor};">${reqTierName}-</span>)`;
             }
             
-            // Mise en forme selon votre exemple: pet damageMulti: 1.2 (ultra-)
             html += `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; letter-spacing: 0.5px;">
                         <span style="color: ${nameColor};">${diff.category} ${diff.stat}</span>: ${prefix}${displayVal}${suffix}${tierText}
                      </div>`;

@@ -138,6 +138,9 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
         if (object.spectrum === true) {
             object.damage *= 10;
         }
+        if (object.bubble === true) {
+            object.damage *= 100;
+        }
     } else if (isMob) {
         object.damage *= PlayerValue.mob.damageMulti; 
     }

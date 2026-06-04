@@ -37,7 +37,6 @@ export interface IEffectiveItem extends IInventoryItem {
 let inventory: IInventoryItem[] = [];
 let nextId = 0;
 
-// Les slots ne sont plus sauvegardés. Ils recommencent vides à chaque chargement de page.
 let equippedSlots: (number | null)[] = Array(30).fill(null);
 
 export function getMaxSlots(): number {
@@ -47,7 +46,6 @@ export function getMaxSlots(): number {
 function saveState() {
     localStorage.setItem("zorr_inventory", JSON.stringify(inventory));
     localStorage.setItem("zorr_nextId", nextId.toString());
-    // SAUVEGARDE DES SLOTS SUPPRIMÉE
 }
 
 function loadState() {
@@ -56,16 +54,13 @@ function loadState() {
 
     if (savedInv) inventory = JSON.parse(savedInv);
     if (savedId) nextId = parseInt(savedId, 10);
-    // CHARGEMENT DES SLOTS SUPPRIMÉ
 }
 
 loadState();
 
-// --- NOUVELLE FONCTION : EXPULSION DES PÉTALES QUAND LE NIVEAU BAISSE ---
 export function enforceSlotLimit() {
     const max = getMaxSlots();
     for (let i = max; i < equippedSlots.length; i++) {
-        // Remet automatiquement la pétale dans l'inventaire en vidant le slot
         equippedSlots[i] = null; 
     }
 }
@@ -206,7 +201,7 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
 
     if (maxJoystickTier >= 0) {
         for (const item of build) {
-            if (item && !item.inactive && getEffectiveName(item).toLowerCase() === "stick" && getDisplayTier(item) <= maxJoystickTier) {
+            if (item && !item.inactive && getEffectiveName(item).toLowerCase().includes("stick") && getDisplayTier(item) <= maxJoystickTier) {
                 const prevSynergy = item.transformed?.synergy || "";
                 item.transformed = {
                     name: "Joystick",
@@ -236,7 +231,7 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
         let statTier = item.tier;
         item.isJoystickSynergy = false; 
         
-        if (maxJoystickTier >= 0 && item.name.toLowerCase() === "stick" && item.tier <= maxJoystickTier) {
+        if (maxJoystickTier >= 0 && item.name.toLowerCase().includes("stick") && item.tier <= maxJoystickTier) {
             effectiveName = "joystick";
             item.isJoystickSynergy = true; 
         }
@@ -298,7 +293,8 @@ export function removeOneItem(id: number) {
         }
     } else {
         inventory = inventory.filter(i => i.id !== id);
-        equippedSlots = equippedSlots.map(slotId => slotId === id ? null : id);
+        // CORRECTION DU BUG ICI : On remet `slotId` et non `id` si ce n'est pas la bonne case !
+        equippedSlots = equippedSlots.map(slotId => slotId === id ? null : slotId); 
     }
     saveState();
 }
@@ -320,12 +316,10 @@ export function equipItem(id: number) {
     if (emptyIndex !== -1 && available > 0) {
         equippedSlots[emptyIndex] = id;
     }
-    // Pas de saveState() pour les slots !
 }
 
 export function unequipSlot(index: number) {
     if (index >= 0 && index < getMaxSlots()) {
         equippedSlots[index] = null;
     }
-    // Pas de saveState() pour les slots !
 }

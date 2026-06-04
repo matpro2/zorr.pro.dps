@@ -20,10 +20,48 @@
     "damage": 10,
     "armor": 0.2
   },
+  "Red Blood Cell": {
+    "name": "Red Blood Cell",
+    "object": "mob",
+    "health": 125,
+    "damage": 40,
+    "armor": 0.1
+  },
+  "Parasite": {
+    "name": "Parasite",
+    "object": "mob",
+    "health": 150,
+    "damage": 30,
+    "armor": 0.3,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 30, "stack": false }
+    ]
+  },
+  "Stegosaurus": {
+    "name": "Stegosaurus",
+    "object": "mob",
+    "health": 450,
+    "damage": 55,
+    "armor": 4
+  },
   "Soldier Fire Ant": {
     "name": "Soldier Fire Ant",
     "object": "mob",
     "health": 100,
+    "damage": 20,
+    "armor": 0.2
+  },
+  "Queen Fire Ant": {
+    "name": "Queen Fire Ant",
+    "object": "mob",
+    "health": 250,
+    "damage": 20,
+    "armor": 0.2
+  },
+  "Worker Fire Ant": {
+    "name": "Worker Fire Ant",
+    "object": "mob",
+    "health": 50,
     "damage": 20,
     "armor": 0.2
   },
@@ -48,7 +86,7 @@
     "damage": 25,
     "armor": 0.1,
     "effects": [
-      { "type": "Lightning", "bounce": 1, "value": 1, "multiHit": false }
+      { "type": "Lightning", "Trigger": "Seconds", "bounce": 1, "value": 1, "multiHit": false }
     ]
   },
   "Velociraptor": {
@@ -86,6 +124,23 @@
     "object": "mob",
     "health": 125,
     "damage": 40,
+    "armor": 0.1
+  },
+  "Firestorm": {
+    "name": "Firestorm",
+    "object": "mob",
+    "health": 175,
+    "damage": 40,
+    "armor": 0.1,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 40, "stack": false }
+    ]
+  },
+  "Snowstorm": {
+    "name": "Snowstorm",
+    "object": "mob",
+    "health": 100,
+    "damage": 65,
     "armor": 0.1
   },
   "Tyrannosaurus": {
@@ -150,6 +205,118 @@
     "damage": 150,
     "armor": 0.5
   },
+  "Mantis": {
+    "name": "Mantis",
+    "object": "mob",
+    "health": 100,
+    "damage": 30,
+    "armor": 0.2
+  },
+  "Bacteria": {
+    "name": "Bacteria",
+    "object": "mob",
+    "health": 75,
+    "damage": 10,
+    "armor": 0.1,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 35, "stack": false }
+    ]
+  },
+  "Nuke": {
+    "name": "Nuke",
+    "object": "mob",
+    "health": 125,
+    "damage": 50,
+    "armor": 0.5,
+    "effects": [
+      { "type": "Explosion", "value": 250, "stack": false },
+      { "type": "Poison", "Trigger": "death", "duration": 5, "value": 375, "stack": false },
+      { "type": "Fire", "Trigger": "death", "duration": 3, "value": 375, "stack": false }
+    ]
+  },
+  "Pirate Digger": {
+    "name": "Pirate Digger",
+    "object": "mob",
+    "health": 175,
+    "damage": 125,
+    "armor": 0.5
+  },
+  "Hel Queen Bee": {
+    "name": "Hel Queen Bee",
+    "object": "mob",
+    "health": 650,
+    "damage": 105,
+    "armor": 0.4,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 2.5, "stack": false }
+    ]
+  },
+    "Queen Bee": {
+    "name": "Queen Bee",
+    "object": "mob",
+    "health": 500,
+    "damage": 75,
+    "armor": 0.3
+  },
+  "Frost Digger": {
+    "name": "Digger",
+    "object": "mob",
+    "health": 125,
+    "damage": 200,
+    "armor": 1
+  },
+  "Trash Digger": {
+    "name": "Trash Digger",
+    "object": "mob",
+    "health": 250,
+    "damage": 45,
+    "armor": 0.5,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 50, "stack": true }
+    ]
+  },
+  "Vampire Digger": {
+    "name": "Vampire Digger",
+    "object": "mob",
+    "health": 200,
+    "damage": 165,
+    "armor": 0.5,
+    "effects": [
+      { "type": "damageHeal", "value": 5 }
+    ]
+  },
+  "Biologist": {
+    "name": "Biologist",
+    "object": "mob",
+    "health": 225,
+    "damage": 100,
+    "armor": 0.5,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 150, "stack": false },
+      { "type": "damageGrowth", "value":1.5, "scale":false }
+    ]
+  },
+  "Cicada 3301": {
+    "name": "Cicada 3301",
+    "object": "mob",
+    "health": 330.1,
+    "damage": 11,
+    "armor": 0.33,
+    "effects": [
+      { "type": "Telepathic", "value": 7.33},
+      { "type": "Critical", "value": { "chance": 33, "multiplier": 33 }, "scale": false }
+    ]
+  },
+  "Cicada": {
+    "name": "Cicada",
+    "object": "mob",
+    "health": 40,
+    "damage": 25,
+    "armor": 0.2,
+    "effects": [
+      { "type": "Critical", "value": { "chance": 11, "multiplier": 42 }, "scale": false }
+    ]
+  },
   "Hel Beekeeper": {
     "name": "Hel Beekeeper",
     "object": "mob",
@@ -178,7 +345,7 @@
     ]
   },
   "Angel": {
-    "name": "Alien",
+    "name": "Angel",
     "object": "mob",
     "health": 999,
     "damage": 25,
@@ -188,7 +355,7 @@
     ]
   },
   "White Blood Cell": {
-    "name": "Alien",
+    "name": "White Blood Cell",
     "object": "mob",
     "health": 125,
     "damage": 30,
@@ -202,7 +369,42 @@
     "object": "mob",
     "health": 100,
     "damage": 10,
-    "armor": 0.1
+    "armor": 0.1,
+    "effects": [
+      { "type": "Lightning", "Trigger": "hit", "bounce": 1, "value": 15, "multiHit": false },
+      { "type": "Poison", "duration": 5, "value": 10, "stack": false },
+      { "type": "Fire", "duration": 3, "value": 6, "stack": false }
+    ]
+  },
+  "Firefly": {
+    "name": "Firefly",
+    "object": "mob",
+    "health": 40,
+    "damage": 25,
+    "armor": 0.2,
+    "effects": [
+      { "type": "Lightning", "Trigger": "hit", "bounce": 1, "value": 2, "multiHit": false }
+    ]
+  },
+  "Fly": {
+    "name": "Fly",
+    "object": "mob",
+    "health": 25,
+    "damage": 10,
+    "armor": 0.1,
+    "effects": [
+      { "type": "Evasion", "value": 80, "scale": false}
+    ]
+  },
+  "Ice Dragon": {
+    "name": "Ice Dragon",
+    "object": "mob",
+    "health": 350,
+    "damage": 50,
+    "armor": 1,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 1, "stack": false }
+    ]
   },
   "Nigersaurus": {
     "name": "Nigersaurus",
@@ -210,6 +412,13 @@
     "health": 600,
     "damage": 200,
     "armor": 6
+  },
+  "Silverfish": {
+    "name": "Silverfish",
+    "object": "mob",
+    "health": 375,
+    "damage": 85,
+    "armor": 0.6
   },
   "Una Bomber": {
     "name": "Una Bomber",
@@ -226,6 +435,25 @@
     "damage": 0.1,
     "armor": 0
   },
+  "Bubble": {
+    "name": "Bubble",
+    "object": "mob",
+    "bubble": true,
+    "health": 1,
+    "damage": 1,
+    "armor": 1
+  },
+  "Acid Bubble": {
+    "name": "Acid Bubble",
+    "object": "mob",
+    "bubble": true,
+    "health": 5,
+    "damage": 1,
+    "armor": 1,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 100, "stack": false }
+    ]
+  },
   "Grave Digger": {
     "name": "Grave Digger",
     "object": "mob",
@@ -239,7 +467,10 @@
     "object": "mob",
     "health": 400,
     "damage": 200,
-    "armor": 0.5
+    "armor": 0.5,
+      "effects": [
+      { "type": "Telepathic", "value": 225}
+    ]
   },
   "Momy": {
     "name": "Momy",

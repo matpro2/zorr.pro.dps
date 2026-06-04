@@ -9,6 +9,26 @@
     "petName": "Bee",
     "petTier": { "gap": 4 }
   },
+  "Bubble Egg": {
+    "name": "Bubble Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 6 },
+    "reload": 1.0,
+    "secondReload": [1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.75, 4.5, 6.75],
+    "petName": "Bubble",
+    "petTier": { "gap": 10 }
+  },
+  "Acid Bubble Egg": {
+    "name": "Acid Bubble Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 6 },
+    "reload": 1.0,
+    "secondReload": [1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.75, 4.5, 6.75],
+    "petName": "Acid Bubble",
+    "petTier": { "gap": 10 }
+  },
   "Momy Egg": {
     "name": "Momy Egg",
     "object": "pet",
@@ -29,6 +49,56 @@
     "petName": "Zatan",
     "petTier": { "gap": 0 }
   },
+  "Mantis Egg": {
+    "name": "Mantis Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [1.75, 3, 4.5, 5.5, 7, 2.5, 5, 8, 13, 30],
+    "petName": "Mantis",
+    "petTier": { "gap": 4 }
+  },
+  "Bacteria Egg": {
+    "name": "Bacteria Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [3.5, 5.5, 8, 12, 2, 3.5, 5, 8.25, 12.5, 28.5],
+    "petName": "Bacteria",
+    "petTier": { "gap": 3 }
+  },
+  "Stegosaurus Egg": {
+    "name": "Stegosaurus Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 1 },
+    "reload": 1.0,
+    "secondReload": [5, 8, 11, 14, 19, 26, 5, 7, 14, 28],
+    "petName": "Stegosaurus",
+    "petTier": { "gap": 5 }
+  },
+  "Red Blood Cell Egg": {
+    "name": "Red Blood Cell Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [3.5, 4.5, 6, 8, 2, 5.5, 8.5, 12.5, 22.5, 50],
+    "petName": "Red Blood Cell",
+    "petTier": { "gap": 3 }
+  },
+  "Parasite Egg": {
+    "name": "Parasite Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [5.5, 7.5, 10, 15, 2, 3.5, 4.5, 5.5, 12.25, 42.5],
+    "petName": "Parasite",
+    "petTier": { "gap": 3 }
+  },
   "UFO Egg": {
     "name": "UFO Egg",
     "object": "pet",
@@ -39,6 +109,26 @@
     "petName": "Alien",
     "petTier": { "gap": 4 }
   },
+  "Hel Queen Bee Egg": {
+    "name": "Hel Queen Bee Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [6, 7.5, 9, 10, 12, 15, 8, 10, 16, 47.5],
+    "petName": "Hel Queen Bee",
+    "petTier": { "gap": 5 }
+  },
+  "Queen Bee Egg": {
+    "name": "Queen Bee Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [5, 6.5, 8, 9, 11, 13, 8, 9, 14, 40],
+    "petName": "Queen Bee",
+    "petTier": { "gap": 5 }
+  },
   "Digger Egg": {
     "name": "Digger Egg",
     "object": "pet",
@@ -48,6 +138,126 @@
     "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 7, 13, 20],
     "petName": "Digger",
     "petTier": { "gap": 4 }
+  },
+  "Nuke Egg": {
+    "name": "Nuke Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 1.5 },
+    "reload": 1.0,
+    "secondReload": [3.8, 4.5, 5.3, 6, 6.8, 7.5, 3.4, 6, 9, 19.45],
+    "petName": "Nuke",
+    "petTier": { "gap": 5 }
+  },
+  "Firefly Egg": {
+    "name": "Firefly Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [3, 5, 8, 12, 15, 2.5, 4, 7.5, 15, 30],
+    "petName": "Firefly",
+    "petTier": { "gap": 4 }
+  },
+  "Fly Egg": {
+    "name": "Fly Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 4 },
+    "reload": 1.0,
+    "secondReload": [2.5, 4, 6, 8, 10, 1.5, 3, 5, 10, 25],
+    "petName": "Fly",
+    "petTier": { "gap": 4 }
+  },
+  "Silverfish Egg": {
+    "name": "Silverfish Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [11, 12.8, 14.4, 16.1, 17.8, 11.9, 12.8, 10, 15.3, 60],
+    "petName": "Silverfish",
+    "petTier": { "gap": 4 }
+  },
+  "Ice Dragon Egg": {
+    "name": "Ice Dragon Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [7, 9, 11, 13, 3, 4.5, 6, 8.5, 15, 45],
+    "petName": "Ice Dragon",
+    "petTier": { "gap": 3 }
+  },
+  "Pirate Digger Egg": {
+    "name": "Pirate Digger Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [3, 3.5, 4, 4.5, 5.5, 2, 4, 6, 12, 48.75],
+    "petName": "Pirate Digger",
+    "petTier": { "gap": 4 }
+  },
+  "Frost Digger Egg": {
+    "name": "Frost Digger Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [6, 7, 8, 9, 10, 3, 6, 9, 12, 46.25],
+    "petName": "Frost Digger",
+    "petTier": { "gap": 4 }
+  },
+  "Trash Digger Egg": {
+    "name": "Trash Digger Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 5.5, 13, 70],
+    "petName": "Trash Digger",
+    "petTier": { "gap": 4 }
+  },
+  "Vampire Digger Egg": {
+    "name": "Vampire Digger Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [6, 6.5, 7, 7.5, 8.5, 4, 5.5, 8, 13, 34],
+    "petName": "Vampire Digger",
+    "petTier": { "gap": 4 }
+  },
+  "Biologist Egg": {
+    "name": "Biologist Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 7, 13, 65],
+    "petName": "Biologist",
+    "petTier": { "gap": 4 }
+  },
+  "Cicada 3301 Egg": {
+    "name": "Cicada 3301 Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [8, 9.5, 11, 13, 5, 6, 7, 8.5, 12, 33.01],
+    "petName": "Cicada 3301",
+    "petTier": { "gap": 3 }
+  },
+  "Cicada Egg": {
+    "name": "Cicada Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [7.5, 8.5, 10, 12.5, 2, 3.5, 5.5, 6, 22.25, 67],
+    "petName": "Cicada",
+    "petTier": { "gap": 3 }
   },
   "Nigersaurus Egg": {
     "name": "Nigersaurus Egg",
@@ -179,6 +389,36 @@
     "petName": "Soldier Fire Ant",
     "petTier": { "gap": 3 }
   },
+  "Soldier Ant Egg": {
+    "name": "Soldier Ant Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 1.6666666666666666667 },
+    "reload": 1.0,
+    "secondReload": [4, 5, 6.5, 8, 10, 11, 3, 5, 10, 20],
+    "petName": "Soldier Ant",
+    "petTier": { "gap": 2 }
+  },
+  "Queen Fire Ant Egg": {
+    "name": "Queen Fire Ant Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [6, 7.5, 9, 1.5, 3, 4.5, 6.5, 9, 17.5, 45],
+    "petName": "Queen Fire Ant",
+    "petTier": { "gap": 2 }
+  },
+  "Worker Fire Ant Egg": {
+    "name": "Worker Fire Ant Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 4, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [3.5, 5, 7, 1, 2, 3.5, 5, 6, 10, 27.5],
+    "petName": "Worker Fire Ant",
+    "petTier": { "gap": 2 }
+  },
   "Termite Hole Egg": {
     "name": "Termite Hole Egg",
     "object": "pet",
@@ -186,6 +426,16 @@
     "entity": { "base": 15, "multi": 1.3333333333333333 },
     "reload": 1.0,
     "secondReload": [25, 27.5, 30, 6, 8, 11, 14, 15, 25, 90],
+    "petName": "Soldier Termite",
+    "petTier": { "gap": 2 }
+  },
+  "Soldier Termite Egg": {
+    "name": "Soldier Termite Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 1.66666666666666667 },
+    "reload": 1.0,
+    "secondReload": [5, 6, 7.5, 9, 12, 14, 5, 6, 12, 32.5],
     "petName": "Soldier Termite",
     "petTier": { "gap": 2 }
   },
@@ -247,6 +497,26 @@
     "reload": 1.0,
     "secondReload": [7.5, 8.5, 10, 13, 17, 1.5, 4, 6, 20, 55],
     "petName": "Sandstorm",
+    "petTier": { "gap": 4 }
+  },
+  "Fire Stick": {
+    "name": "Fire Stick",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 1.3333333333333333 },
+    "reload": 1.0,
+    "secondReload": [7.5, 8.5, 10, 13, 17, 1.5, 4, 6, 20, 60],
+    "petName": "Firestorm",
+    "petTier": { "gap": 4 }
+  },
+  "Snowstorm Stick": {
+    "name": "Snowstorm Stick",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 1.3333333333333333 },
+    "reload": 1.0,
+    "secondReload": [7.5, 10, 15, 20, 25, 5, 8, 6, 20, 45],
+    "petName": "Snowstorm",
     "petTier": { "gap": 4 }
   },
   "Hel Centipede Egg": {
