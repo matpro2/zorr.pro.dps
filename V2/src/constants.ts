@@ -12,3 +12,17 @@ export const TIERS = [
     { "Name": "Omega",     "Background": "#f329d9", "Border": "#c221ae" }, // 8
     { "Name": "Unique",    "Background": "#444444", "Border": "#363636" }  // 9
 ];
+
+export const GENERAL_COLORS = [
+    { 1: "#f65555"},
+    { 2: "#4cb1de"},
+    { 3: "#f2b853"},
+    { 4: "#555df6"},
+    { 5: "#c7f153"},
+    { 6: "#a950e9"},
+    { 7: "#60ea50"},
+    { 8: "#ec51cb"},
+    { 9: "#52efa6"},
+    { 10: "#ed526a"},
+    { 11: "#51d2ec"},
+];

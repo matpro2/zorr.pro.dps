@@ -46,23 +46,39 @@ export function getMaxSlots(): number {
 function saveState() {
     localStorage.setItem("zorr_inventory", JSON.stringify(inventory));
     localStorage.setItem("zorr_nextId", nextId.toString());
+    localStorage.setItem("zorr_equippedSlots", JSON.stringify(equippedSlots)); 
 }
 
 function loadState() {
     const savedInv = localStorage.getItem("zorr_inventory");
     const savedId = localStorage.getItem("zorr_nextId");
+    const savedSlots = localStorage.getItem("zorr_equippedSlots"); 
 
     if (savedInv) inventory = JSON.parse(savedInv);
     if (savedId) nextId = parseInt(savedId, 10);
+    
+    if (savedSlots) {
+        const parsedSlots = JSON.parse(savedSlots);
+        if (Array.isArray(parsedSlots)) {
+            for (let i = 0; i < 30; i++) {
+                equippedSlots[i] = i < parsedSlots.length ? parsedSlots[i] : null;
+            }
+        }
+    }
 }
 
 loadState();
 
 export function enforceSlotLimit() {
     const max = getMaxSlots();
+    let changed = false;
     for (let i = max; i < equippedSlots.length; i++) {
-        equippedSlots[i] = null; 
+        if (equippedSlots[i] !== null) {
+            equippedSlots[i] = null; 
+            changed = true;
+        }
     }
+    if (changed) saveState(); 
 }
 
 export function getEquippedCount(id: number): number {
@@ -162,7 +178,42 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // Passe 4 : Amount Requirement
+    // Passe 4 : Non-Stackable Restriction (Cumul)
+    const checkedNames = new Set<string>();
+    for (let i = 0; i < build.length; i++) {
+        const current = build[i];
+        if (!current || current.inactive) continue;
+
+        const name = getEffectiveName(current).toLowerCase();
+        if (checkedNames.has(name)) continue;
+        checkedNames.add(name);
+
+        const statTier = getStatTier(current);
+        const obj = getObject(name, statTier);
+        
+        if (obj && obj.stack === false) {
+            const instances = [];
+            for (let j = 0; j < build.length; j++) {
+                const other = build[j];
+                if (other && !other.inactive && getEffectiveName(other).toLowerCase() === name) {
+                    instances.push({ index: j, item: other, tier: getDisplayTier(other) });
+                }
+            }
+            
+            if (instances.length > 1) {
+                instances.sort((a, b) => b.tier - a.tier);
+                for (let k = 1; k < instances.length; k++) {
+                    const idx = instances[k].index;
+                    if (build[idx]) {
+                        build[idx]!.inactive = true;
+                        build[idx]!.inactiveReason = "unstackable";
+                    }
+                }
+            }
+        }
+    }
+
+    // Passe 5 : Amount Requirement
     for (let i = 0; i < build.length; i++) {
         const current = build[i];
         if (!current || current.inactive) continue;
@@ -191,7 +242,7 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // PASSE 5 : JOYSTICK
+    // PASSE 6 : JOYSTICK
     let maxJoystickTier = -1;
     for (const item of build) {
         if (item && !item.inactive && getEffectiveName(item).toLowerCase() === "joystick") {
@@ -293,7 +344,6 @@ export function removeOneItem(id: number) {
         }
     } else {
         inventory = inventory.filter(i => i.id !== id);
-        // CORRECTION DU BUG ICI : On remet `slotId` et non `id` si ce n'est pas la bonne case !
         equippedSlots = equippedSlots.map(slotId => slotId === id ? null : slotId); 
     }
     saveState();
@@ -315,11 +365,41 @@ export function equipItem(id: number) {
 
     if (emptyIndex !== -1 && available > 0) {
         equippedSlots[emptyIndex] = id;
+        saveState();
     }
 }
 
 export function unequipSlot(index: number) {
     if (index >= 0 && index < getMaxSlots()) {
         equippedSlots[index] = null;
+        saveState();
+    }
+}
+
+// --- NOUVELLES FONCTIONS : CLEAR, EXPORT, IMPORT ---
+
+export function clearInventory() {
+    inventory = [];
+    equippedSlots = Array(30).fill(null);
+    saveState();
+}
+
+export function exportInventoryData(): any[] {
+    return inventory.map(item => ({
+        name: item.name,
+        tier: item.tier,
+        amount: item.quantity 
+    }));
+}
+
+export function importInventoryData(data: any[]) {
+    if (!Array.isArray(data)) return;
+    for (const item of data) {
+        if (item && typeof item.name === "string" && typeof item.tier === "number") {
+            const qty = typeof item.amount === "number" ? item.amount : (typeof item.quantity === "number" ? item.quantity : 1);
+            if (qty > 0) {
+                addItem(item.name, item.tier, qty);
+            }
+        }
     }
 }

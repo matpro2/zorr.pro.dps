@@ -13,7 +13,8 @@ import { PlayerValue } from "./PlayerValue";
 import { 
     addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, 
     getProcessedInventory, getEquippedSlots, getEquippedCount,
-    getEffectiveBuild, getMaxSlots, enforceSlotLimit
+    getEffectiveBuild, getMaxSlots, enforceSlotLimit,
+    clearInventory, exportInventoryData, importInventoryData // <-- NOUVEAU
 } from "./inventory";
 
 import { TIERS } from "./constants"; 
@@ -31,16 +32,13 @@ export const GameController = {
     getAllItemNames() { return Object.keys(allData).sort(); },
     getAllMobNames() { return Object.keys(mobs).sort(); },
 
-    // --- ACCESSEURS POUR LE LEVEL DU JOUEUR ---
     setPlayerLevel(lvl: number) {
         PlayerValue.setLevel(lvl);
-        // APPEL DE LA SÉCURITÉ : Déséquipe les objets dans les slots inaccessibles
         enforceSlotLimit(); 
     },
     getPlayerLevel() {
         return PlayerValue.level;
     },
-    // ------------------------------------------
 
     refreshPlayerStats() {
         PlayerValue.reset();
@@ -222,5 +220,6 @@ export const GameController = {
         return inventoryItems;
     },
 
-    addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, getEquippedCount, getEquippedSlots
+    addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, getEquippedCount, getEquippedSlots,
+    clearInventory, exportInventoryData, importInventoryData // <-- EXPORTATION
 };

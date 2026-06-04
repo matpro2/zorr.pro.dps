@@ -1,0 +1,31 @@
+------------------- EGG PROMPT: ---------------------
+
+Act as a flawless Vision OCR and Data Extraction specialist. Your absolute priority is 100% numerical and textual accuracy.
+Strict Verification Steps:
+
+Row Count: Count the exact number of rows present in the image. Your secondReload array must contain exactly that number of elements. Do not skip, merge, or omit any rows.
+Value Extraction: For each row from top to bottom, look only at the number right after the + sign. Ignore the s (seconds) and extract the exact integer or decimal.
+Duplicate Detection: Read the left column row-by-row. Find the exact rarity name that is listed twice. Put this exact name in the petTier.gap field.
+Egg Name: Extract the exact prefix before "Egg" from the headers.
+Formatting Constraints:
+
+Keep entity and petTier objects on a single line.
+Keep the secondReload array on a single line.
+Output ONLY the raw JSON block. No conversational filler, no explanations.
+Expected Structure:
+JSON
+
+{
+  "[Name] Egg": {
+    "name": "[Name] Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [val1, val2, val3, ...],
+    "petName": "[Name]",
+    "petTier": { "gap": "[Duplicate_Tier]" }
+  }
+}
+
+----------------------------------------------------

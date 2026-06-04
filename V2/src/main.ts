@@ -1,516 +1,213 @@
 // main.ts
 
 import { GameController } from "./GameController";
-import { TIERS } from "./constants";
-import { formatNumber } from "./formatNumber"; 
-
-interface CardConfig {
-    type: 'target' | 'equipped' | 'inventory' | 'empty';
-    effectiveName?: string;
-    originalName?: string; // <-- NOUVEAU : On stocke le nom d'origine pour les synergies
-    displayTier?: number;
-    statTier?: number;
-    health?: number;
-    damage?: number;
-    armor?: number;
-    reload?: number;
-    secondReload?: number; 
-    dps?: number;
-    dpsCategory?: any[];
-    effects?: any[];
-    petName?: string;     
-    entityCount?: number; 
-    petTier?: number;     
-    isInactive?: boolean;
-    inactiveReason?: string;
-    synergy?: string;
-    entityMulti?: number;
-    available?: number; 
-    equippedQty?: number;
-    totalQty?: number;
-}
-
-function getEntityCount(obj: any): number | undefined {
-    if (!obj) return undefined;
-    return obj.petCount ?? obj.petAmount ?? obj.amount ?? obj.count ?? obj.spawnCount ?? obj.quantity ?? obj.entity;
-}
+import { UIRenderer } from "./UIRenderer";
+import { TIERS } from "./constants"; 
 
 document.addEventListener("DOMContentLoaded", () => {
-    // --- RÉCUPÉRATION DES ÉLÉMENTS DOM ---
-    const itemSelect = document.getElementById("item-select") as HTMLSelectElement;
-    const itemTier = document.getElementById("item-tier") as HTMLInputElement;
-    const itemQty = document.getElementById("item-qty") as HTMLInputElement;
-    const btnAdd = document.getElementById("btn-add") as HTMLButtonElement;
-    
-    const targetSelect = document.getElementById("target-select") as HTMLSelectElement;
-    const targetTier = document.getElementById("target-tier") as HTMLInputElement;
-    const targetStatsDiv = document.getElementById("target-stats") as HTMLDivElement;
+    // --- 1. RÉCUPÉRATION DES ÉLÉMENTS DOM ---
+    const dom = {
+        targetNameInput: document.getElementById("target-name-input") as HTMLInputElement,
+        targetTierInput: document.getElementById("target-tier-input") as HTMLInputElement,
+        targetStatsDiv: document.getElementById("target-stats") as HTMLDivElement,
 
-    const slotsContainer = document.getElementById("slots-container") as HTMLDivElement;
-    const playerStatsContainer = document.getElementById("player-stats-container") as HTMLDivElement;
-    const totalDpsDisplay = document.getElementById("total-dps-display") as HTMLDivElement;
-    
-    const filterTypeSelect = document.getElementById("filter-type") as HTMLSelectElement;
-    const searchInput = document.getElementById("search-input") as HTMLInputElement;
-
-    const talentLevelInput = document.getElementById("talent-level-input") as HTMLInputElement;
-
-    // --- INITIALISATION DES LISTES ---
-    GameController.getAllItemNames().forEach(name => itemSelect.add(new Option(name, name)));
-    GameController.getAllMobNames().forEach(name => targetSelect.add(new Option(name, name)));
-
-    // --- INITIALISATION DU NIVEAU SAUVEGARDÉ ---
-    if (talentLevelInput) {
-        talentLevelInput.value = GameController.getPlayerLevel().toString();
+        slotsContainer: document.getElementById("slots-container") as HTMLDivElement,
+        playerStatsContainer: document.getElementById("player-stats-container") as HTMLDivElement,
+        totalDpsDisplay: document.getElementById("total-dps-display") as HTMLDivElement,
+        inventoryGrid: document.getElementById("inventory-grid") as HTMLDivElement,
         
-        talentLevelInput.addEventListener("input", (e) => {
-            const val = parseInt((e.target as HTMLInputElement).value, 10);
-            if (!isNaN(val) && val >= 0) {
-                GameController.setPlayerLevel(val);
+        filterTypeSelect: document.getElementById("filter-type") as HTMLSelectElement,
+        searchInput: document.getElementById("search-input") as HTMLInputElement,
+        
+        // Talents
+        talentLevelInput: document.getElementById("talent-level-input") as HTMLInputElement,
+        btnOpenTalents: document.getElementById('btn-open-talents'),
+        btnCloseTalents: document.getElementById('btn-close-talents'),
+        talentsLightbox: document.getElementById('talents-lightbox'),
+
+        // Catalogue Petals
+        btnOpenCatalog: document.getElementById('btn-open-catalog'),
+        btnCloseCatalog: document.getElementById('btn-close-catalog'),
+        catalogLightbox: document.getElementById('catalog-lightbox'),
+        catalogTierInput: document.getElementById('catalog-tier-input') as HTMLSelectElement, 
+        catalogSearchInput: document.getElementById('catalog-search-input') as HTMLInputElement,
+        catalogGrid: document.getElementById('catalog-grid') as HTMLDivElement,
+
+        // Catalogue Mob 
+        btnCloseMobCatalog: document.getElementById('btn-close-mob-catalog'),
+        mobCatalogLightbox: document.getElementById('mob-catalog-lightbox'),
+        mobCatalogTierInput: document.getElementById('mob-catalog-tier-input') as HTMLSelectElement, 
+        mobCatalogSearchInput: document.getElementById('mob-catalog-search-input') as HTMLInputElement,
+        mobCatalogGrid: document.getElementById('mob-catalog-grid') as HTMLDivElement,
+
+        // --- NOUVEAU: Import / Export / Clear ---
+        btnClearInventory: document.getElementById('btn-clear-inventory') as HTMLButtonElement,
+        btnExportInventory: document.getElementById('btn-export-inventory') as HTMLButtonElement,
+        btnImportInventory: document.getElementById('btn-import-inventory') as HTMLButtonElement,
+        importFileInput: document.getElementById('import-file-input') as HTMLInputElement
+    };
+
+    // --- 2. INITIALISATION ---
+    TIERS.forEach((tier, index) => {
+        if (dom.catalogTierInput) dom.catalogTierInput.add(new Option(tier.Name, index.toString()));
+        if (dom.mobCatalogTierInput) dom.mobCatalogTierInput.add(new Option(tier.Name, index.toString()));
+    });
+
+    if (dom.talentLevelInput) {
+        dom.talentLevelInput.value = GameController.getPlayerLevel().toString();
+    }
+
+    // --- 3. FONCTIONS DE MISE À JOUR ---
+    function refreshAll() {
+        const baseState = GameController.refreshPlayerStats();
+        
+        const tName = dom.targetNameInput.value;
+        const tTier = Number(dom.targetTierInput.value);
+
+        UIRenderer.renderSlots(dom.slotsContainer, dom.totalDpsDisplay, tName, tTier, refreshAll);
+        UIRenderer.renderInventory(dom.inventoryGrid, dom.targetStatsDiv, tName, tTier, dom.filterTypeSelect.value, dom.searchInput.value, refreshAll);
+        UIRenderer.renderPlayerStats(dom.playerStatsContainer, baseState); 
+    }
+
+    function refreshCatalog() {
+        if (!dom.catalogTierInput || !dom.catalogGrid) return;
+        const tier = Number(dom.catalogTierInput.value);
+        const searchQuery = dom.catalogSearchInput?.value || "";
+        
+        const inventoryItems = GameController.getInventoryData(dom.targetNameInput.value, Number(dom.targetTierInput.value), "all", "");
+
+        UIRenderer.renderCatalog(dom.catalogGrid, tier, searchQuery, inventoryItems, (name: string, tier: number) => {
+            GameController.addItem(name, tier, 1);
+            refreshAll(); 
+            refreshCatalog(); 
+        });
+    }
+
+    function refreshMobCatalog() {
+        if (!dom.mobCatalogTierInput || !dom.mobCatalogGrid) return;
+        const tier = Number(dom.mobCatalogTierInput.value);
+        const searchQuery = dom.mobCatalogSearchInput?.value || "";
+
+        UIRenderer.renderMobCatalog(dom.mobCatalogGrid, tier, searchQuery, (name: string, tier: number) => {
+            dom.targetNameInput.value = name;
+            dom.targetTierInput.value = tier.toString();
+            dom.mobCatalogLightbox!.style.display = 'none'; 
+            refreshAll();
+        });
+    }
+
+    // --- 4. ÉCOUTEURS D'ÉVÉNEMENTS GÉNÉRAUX ---
+    dom.searchInput.addEventListener("input", refreshAll); 
+    dom.filterTypeSelect.addEventListener("change", refreshAll);
+
+    dom.talentLevelInput?.addEventListener("input", (e) => {
+        const val = parseInt((e.target as HTMLInputElement).value, 10);
+        if (!isNaN(val) && val >= 0) {
+            GameController.setPlayerLevel(val);
+            refreshAll();
+        }
+    });
+
+    // --- 5. GESTION DU MODE SUPPRESSION (SHIFT) ---
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Shift") document.body.classList.add("shift-mode");
+    });
+    document.addEventListener("keyup", (e) => {
+        if (e.key === "Shift") document.body.classList.remove("shift-mode");
+    });
+    window.addEventListener("blur", () => {
+        document.body.classList.remove("shift-mode");
+    });
+
+    // --- 6. GESTION DES LIGHTBOX ---
+    
+    // Talents
+    if (dom.btnOpenTalents && dom.btnCloseTalents && dom.talentsLightbox) {
+        dom.btnOpenTalents.addEventListener('click', () => { dom.talentsLightbox!.style.display = 'flex'; });
+        dom.btnCloseTalents.addEventListener('click', () => { dom.talentsLightbox!.style.display = 'none'; });
+        dom.talentsLightbox.addEventListener('click', (e) => {
+            if (e.target === dom.talentsLightbox) dom.talentsLightbox!.style.display = 'none';
+        });
+    }
+
+    // Catalogue Petals
+    if (dom.btnOpenCatalog && dom.btnCloseCatalog && dom.catalogLightbox) {
+        dom.btnOpenCatalog.addEventListener('click', () => { 
+            dom.catalogLightbox!.style.display = 'flex'; 
+            refreshCatalog(); 
+        });
+        dom.btnCloseCatalog.addEventListener('click', () => { dom.catalogLightbox!.style.display = 'none'; });
+        dom.catalogLightbox.addEventListener('click', (e) => {
+            if (e.target === dom.catalogLightbox) dom.catalogLightbox!.style.display = 'none';
+        });
+    }
+
+    if (dom.catalogTierInput) dom.catalogTierInput.addEventListener('change', refreshCatalog);
+    if (dom.catalogSearchInput) dom.catalogSearchInput.addEventListener('input', refreshCatalog);
+
+    // Catalogue Mob 
+    if (dom.targetStatsDiv && dom.btnCloseMobCatalog && dom.mobCatalogLightbox) {
+        dom.targetStatsDiv.addEventListener('click', () => { 
+            dom.mobCatalogLightbox!.style.display = 'flex'; 
+            refreshMobCatalog(); 
+        });
+        dom.btnCloseMobCatalog.addEventListener('click', () => { dom.mobCatalogLightbox!.style.display = 'none'; });
+        dom.mobCatalogLightbox.addEventListener('click', (e) => {
+            if (e.target === dom.mobCatalogLightbox) dom.mobCatalogLightbox!.style.display = 'none';
+        });
+    }
+
+    if (dom.mobCatalogTierInput) dom.mobCatalogTierInput.addEventListener('change', refreshMobCatalog);
+    if (dom.mobCatalogSearchInput) dom.mobCatalogSearchInput.addEventListener('input', refreshMobCatalog);
+
+    // --- 7. NOUVEAU: GESTION CLEAR / IMPORT / EXPORT ---
+    if (dom.btnClearInventory) {
+        dom.btnClearInventory.addEventListener('click', () => {
+            if (confirm("Voulez-vous vraiment vider tout votre inventaire et vos pétales équipées ?")) {
+                GameController.clearInventory();
                 refreshAll();
             }
         });
     }
 
-    // --- LOGIQUE FACTORISÉE : TOOLTIP FLIP ---
-    function handleTooltipFlip(e: Event) {
-        const slot = e.currentTarget as HTMLElement;
-        slot.classList.remove("tooltip-flip"); 
-        
-        setTimeout(() => {
-            const content = slot.querySelector(".tooltip-content");
-            if (content) {
-                const rect = content.getBoundingClientRect();
-                if (rect.top < 10 && rect.top !== 0) {
-                    slot.classList.add("tooltip-flip");
-                }
-            }
-        }, 10);
+    if (dom.btnExportInventory) {
+        dom.btnExportInventory.addEventListener('click', () => {
+            const data = GameController.exportInventoryData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "florr_inventory.json";
+            a.click();
+            URL.revokeObjectURL(url);
+        });
     }
 
-    // --- USINE FACTORISÉE : GÉNÉRATEUR DE CARTES ---
-    function createCard(config: CardConfig): HTMLDivElement {
-        const div = document.createElement("div");
-
-        if (config.type === 'empty') {
-            div.className = "card-slot card-small";
-            div.innerHTML = `<div class="card-visuals" style="border-style: solid; border-color: #cbcbcb; background-color: #ffffff;"></div>`;
-            return div;
-        }
-
-        const isTarget = config.type === 'target';
-        div.className = `card-slot ${isTarget ? 'card-large' : 'card-small'}`;
-
-        const tierData = TIERS[config.displayTier!] || { Name: `T${config.displayTier}`, Background: "#fafafa", Border: "#ccc" };
-        
-        // --- STYLES DU CALQUE VISUEL ---
-        let visualStyles = `background-color: ${tierData.Background}; `;
-        let borderColor = tierData.Border;
-
-        if (config.isInactive) {
-            visualStyles += `opacity: 0.5; filter: grayscale(80%); border-style: dashed; `;
-        } else if (config.synergy) {
-            if (config.synergy.includes("fusion")) borderColor = "#3498db";
-            if (config.synergy.includes("mimic")) borderColor = "#9b59b6";
-            if (config.synergy.includes("fission")) borderColor = "#ff9ff3";
-            if (config.synergy.includes("joystick")) borderColor = "#f39c12";
-
-            visualStyles += `box-shadow: inset 0 0 10px ${borderColor}50; `;
-        } else {
-            if (config.type === 'inventory' && (config.available || 0) <= 0) {
-                visualStyles += `opacity: 0.5; `;
-            }
-        }
-        visualStyles += `border-color: ${borderColor}; `;
-
-        // --- GÉNÉRATION DES STATS ---
-        const statParts: string[] = [];
-        
-        if (config.health !== undefined && config.health !== 0) statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #ff4757;">Health:</strong> ${formatNumber(config.health)}</div>`);
-        if (config.damage !== undefined && config.damage !== 0) statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #3498db;">Damage:</strong> ${formatNumber(config.damage)}</div>`);
-        if (config.armor !== undefined && config.armor !== 0) statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #9b59b6;">Armor:</strong> ${formatNumber(config.armor)}</div>`);
-
-        if (config.petName) {
-            const pCount = config.entityCount || 1;
-            const pTier = config.petTier !== undefined ? config.petTier : config.statTier!; 
-            const pTierData = TIERS[pTier] || { Name: `T${pTier}`, Background: "#fff" };
-            
-            statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #48dbfb;">Pet:</strong> x${pCount} ${config.petName} (<span style="color: ${pTierData.Background}; font-weight: bold;">${pTierData.Name}</span>)</div>`);
-        } else if (config.entityCount !== undefined && config.entityCount !== 1) {
-            statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: #f1c40f;">Entities:</strong> x${config.entityCount}</div>`);
-        }
-
-        if (config.effects) {
-            for (const effect of config.effects) {
-                if (effect.value !== undefined && effect.value !== 0) {
-                    let displayVal = typeof effect.value === "object" && effect.value !== null
-                        ? `${effect.value.chance}% (x${effect.value.multiplier})`
-                        : (typeof effect.value === "number" ? formatNumber(effect.value) : String(effect.value));
-                    let effectName = effect.type.split('.').pop() || effect.type;
-                    effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
-                    
-                    let effectColor = "#1dd1a1"; 
-                    const enLower = effectName.toLowerCase();
-                    if (enLower.includes("health") || enLower.includes("heal")) effectColor = "#2ecc71"; 
-                    else if (enLower.includes("reload")) effectColor = "#3498db"; 
-                    else if (enLower.includes("damage")) effectColor = "#e74c3c"; 
-
-                    statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${effectColor};">${effectName}:</strong> ${displayVal}</div>`);
-                }
-            }
-        }
-        
-        let statsHtml = statParts.length > 0
-            ? `<div style="display: flex; flex-direction: column; font-size: 0.95em;">${statParts.join('')}</div>`
-            : ``;
-
-        let dpsBreakdown = "";
-        if (config.dpsCategory && config.dpsCategory.length > 0 && !isTarget) {
-            const breakdownText = config.dpsCategory.map((cat: any) => `<div style="display:flex; justify-content:space-between; margin-bottom: 2px;"><span>${cat.type}:</span> <strong>${formatNumber(cat.dps)}</strong></div>`).join('');
-            dpsBreakdown = `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dotted rgba(255,255,255,0.2); color: #ff6b81;">${breakdownText}</div>`;
-        }
-
-        // --- EN-TÊTE DU TOOLTIP ---
-        const displayTierName = tierData.Name;
-        const displayTierColor = tierData.Background;
-        
-        // MODIFICATION ICI : On utilise le nom d'origine pour l'affichage des synergies Joystick
-        let titleName = config.effectiveName;
-        if (config.synergy) {
-             let synText = "";
-             if (config.synergy.includes("fusion")) synText = "Fusion";
-             else if (config.synergy.includes("mimic")) synText = "Mimic";
-             else if (config.synergy.includes("fission")) synText = "Fission";
-
-             if (config.synergy.includes("joystick")) {
-                 if (synText !== "") { // S'il y a déjà Fusion ou Mimic
-                     synText += " ➔ Joystick";
-                 } else { // Si c'est juste un stick normal qui se transforme
-                     synText = `${config.originalName || "Stick"} ➔ Joystick`;
-                 }
-             } else {
-                 synText += ` ➔ ${config.effectiveName}`;
-             }
-             titleName = synText;
-        }
-
-        let tierStatusText = displayTierName;
-        if (config.isInactive) {
-            tierStatusText += config.inactiveReason === "fusion" ? " (Ingrédient)" : " (Qté Insuffisante)";
-        }
-        if (config.statTier !== config.displayTier) {
-            tierStatusText += ` (Stats T${config.statTier})`;
-        }
-
-        let reloadHtml = '';
-        if ((config.reload !== undefined && config.reload > 0) || (config.secondReload !== undefined && config.secondReload > 0)) {
-            let r1 = config.reload || 0;
-            let r2 = config.secondReload || 0;
-            
-            let reloadText = "";
-            if (r1 > 0 && r2 > 0) {
-                reloadText = `${formatNumber(r1)}s + ${formatNumber(r2)}s`;
-            } else if (r1 > 0) {
-                reloadText = `${formatNumber(r1)}s`;
-            } else if (r2 > 0) {
-                reloadText = `${formatNumber(r2)}s`;
-            }
-            
-            reloadHtml = `<div style="font-size: 0.95em; font-weight: bold; color: #fff; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; white-space: nowrap;">${reloadText} ↻</div>`;
-        }
-
-        const nameLen = config.effectiveName!.length;
-        let dynamicSize = isTarget ? 14 : 11;
-        if (!isTarget) {
-            if (nameLen >= 12) dynamicSize = 8;
-            else if (nameLen >= 9) dynamicSize = 9;
-            else if (nameLen >= 7) dynamicSize = 10;
-        }
-
-        // --- ASSEMBLAGE HTML ---
-        let innerHTML = `<div class="card-visuals" style="${visualStyles}">`;
-
-        if (config.entityMulti && config.entityMulti > 1 && !config.isInactive && config.type === 'equipped') {
-            innerHTML += `<div class="entity-badge">x${config.entityMulti}</div>`;
-        }
-
-        innerHTML += `<div class="card-name" style="font-size: ${dynamicSize}px;">${config.effectiveName}</div>`;
-
-        if (!isTarget) {
-             innerHTML += `<div class="card-dps" style="display: ${(config.dps || 0) > 0 ? 'block' : 'none'}; background-color: ${borderColor};">
-                ${formatNumber(config.dps || 0)}
-            </div>`;
-        }
-        innerHTML += `</div>`; 
-
-        let tooltipHTML = `<div class="tooltip-content ${config.type === 'inventory' ? 'tooltip-left' : ''}">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid rgba(255,255,255,0.1); gap: 15px;">
-                <div>
-                    <div style="font-size: 1.3em; font-weight: 900; color: #fff; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 2px rgba(0,0,0,0.5);">${titleName}</div>
-                    <div style="color: ${displayTierColor}; font-weight: 900; font-size: 0.95em; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">${tierStatusText}</div>
-                </div>
-                ${reloadHtml}
-            </div>
-            ${statsHtml}
-            ${dpsBreakdown}
-        `;
-
-        if (config.type === 'inventory') {
-            tooltipHTML += `<div style="margin-top: 10px; display: flex; gap: 5px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-                <button class="inv-remove-one" style="flex:1; background: #e67e22; color: #fff; border: none; border-radius: 4px; padding: 4px; cursor: pointer;">-1</button>
-                <button class="inv-remove-all" style="flex:1; background: #e74c3c; color: #fff; border: none; border-radius: 4px; padding: 4px; cursor: pointer;">Del</button>
-            </div>`;
-        }
-        tooltipHTML += `</div>`;
-        innerHTML += tooltipHTML;
-
-        if (config.type === 'inventory' && config.totalQty !== undefined) {
-            innerHTML += `<div class="qty-badge">${config.equippedQty}/${config.totalQty}</div>`;
-        }
-
-        div.innerHTML = innerHTML;
-
-        const tooltipContent = div.querySelector('.tooltip-content');
-        if (tooltipContent) tooltipContent.addEventListener('click', (e) => e.stopPropagation());
-        
-        div.addEventListener('mouseenter', handleTooltipFlip);
-
-        return div;
-    }
-
-    function renderSlots() {
-        slotsContainer.innerHTML = "";
-        const data = GameController.getSlotsData(targetSelect.value, Number(targetTier.value));
-        
-        data.slots.forEach(slot => {
-            if (slot.isEmpty) {
-                const emptyCard = createCard({ type: 'empty' });
-                emptyCard.addEventListener("click", () => { GameController.unequipSlot(slot.index); refreshAll(); });
-                slotsContainer.appendChild(emptyCard);
-                return;
-            }
-
-            const card = createCard({
-                type: 'equipped',
-                effectiveName: slot.effectiveName,
-                originalName: slot.item.name, // <-- INJECTION DU NOM ORIGINAL ICI
-                displayTier: slot.displayTier,
-                statTier: slot.statTier,
-                health: slot.itemHealth,
-                damage: slot.itemDamage,
-                armor: slot.itemArmor,
-                reload: slot.itemReload,
-                secondReload: slot.itemSecondReload, 
-                dps: slot.result.dps,
-                dpsCategory: slot.result.dpsCategory,
-                effects: slot.obj?.effects,
-                petName: slot.obj?.petName,
-                entityCount: getEntityCount(slot.obj),
-                petTier: slot.obj?.petTier,
-                isInactive: slot.isInactive,
-                inactiveReason: slot.inactiveReason,
-                synergy: slot.item.transformed?.synergy || (slot.isJoystick ? "joystick" : ""),
-                entityMulti: slot.entityMulti
-            });
-
-            card.addEventListener("click", () => { GameController.unequipSlot(slot.index); refreshAll(); });
-            slotsContainer.appendChild(card);
+    if (dom.btnImportInventory && dom.importFileInput) {
+        dom.btnImportInventory.addEventListener('click', () => {
+            dom.importFileInput.click();
         });
 
-        if (totalDpsDisplay) {
-            totalDpsDisplay.innerHTML = `Total DPS: ${formatNumber(data.totalDps)}`;
-        }
-    }
+        dom.importFileInput.addEventListener('change', (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
 
-    function renderInventory() {
-        const currentTargetName = targetSelect.value;
-        const currentTargetTier = Number(targetTier.value);
-
-        targetStatsDiv.innerHTML = ""; 
-        const targetObj = GameController.getTargetData(currentTargetName, currentTargetTier);
-        if (targetObj) {
-            const targetCard = createCard({
-                type: 'target',
-                effectiveName: targetObj.name || currentTargetName,
-                displayTier: currentTargetTier,
-                statTier: currentTargetTier,
-                health: targetObj.health,
-                damage: targetObj.damage,
-                armor: targetObj.armor,
-                reload: targetObj.reload,
-                secondReload: targetObj.secondReload,
-                effects: targetObj.effects,
-                petName: targetObj.petName,
-                entityCount: getEntityCount(targetObj),
-                petTier: targetObj.petTier
-            });
-            targetStatsDiv.appendChild(targetCard);
-        } else {
-            targetStatsDiv.innerHTML = `<div style="text-align: center; color: #777; width: 100%;">Impossible de charger la cible.</div>`;
-        }
-
-        const inventoryGrid = document.getElementById("inventory-grid") as HTMLDivElement;
-        const inventoryItems = GameController.getInventoryData(currentTargetName, currentTargetTier, filterTypeSelect.value, searchInput.value);
-        inventoryGrid.innerHTML = ""; 
-
-        if (inventoryItems.length === 0) {
-            inventoryGrid.innerHTML = `<div style="width: 100%; text-align: center; color: #777; padding: 20px;">Inventaire vide ou aucun objet ne correspond à la recherche.</div>`;
-            return;
-        }
-
-        const slots = GameController.getEquippedSlots();
-        const hasEmptySlot = slots.includes(null);
-
-        inventoryItems.forEach(item => {
-            const equipped = GameController.getEquippedCount(item.id);
-            const available = item.quantity - equipped;
-            
-            const isTransformed = item.isJoystickSynergy || false;
-            const effectiveName = isTransformed ? "Joystick" : item.name;
-            const obj = GameController.getTargetData(effectiveName, item.tier); 
-
-            const card = createCard({
-                type: 'inventory',
-                effectiveName: effectiveName,
-                originalName: item.name, // <-- INJECTION DU NOM ORIGINAL ICI AUSSI
-                displayTier: item.tier,
-                statTier: item.tier,
-                health: item.health,
-                damage: item.damage,
-                armor: item.armor,
-                reload: item.reload,
-                secondReload: item.secondReload, 
-                dps: item.dps,
-                dpsCategory: item.dpsCategory,
-                effects: obj?.effects,
-                petName: obj?.petName,
-                entityCount: getEntityCount(obj), 
-                petTier: obj?.petTier,
-                synergy: isTransformed ? "joystick" : "",
-                available: available,
-                equippedQty: equipped,
-                totalQty: item.quantity
-            });
-
-            const btnRemoveOne = card.querySelector('.inv-remove-one');
-            if (btnRemoveOne) btnRemoveOne.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                GameController.removeOneItem(item.id); 
-                refreshAll(); 
-            });
-
-            const btnRemoveAll = card.querySelector('.inv-remove-all');
-            if (btnRemoveAll) btnRemoveAll.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                GameController.removeAllItems(item.id); 
-                refreshAll(); 
-            });
-
-            card.addEventListener('click', () => {
-                if (available > 0 && hasEmptySlot) {
-                    GameController.equipItem(item.id); 
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const data = JSON.parse(ev.target?.result as string);
+                    GameController.importInventoryData(data);
                     refreshAll();
+                    alert("Inventaire importé avec succès !");
+                } catch (err) {
+                    alert("Erreur lors de l'importation. Le fichier JSON est invalide.");
                 }
-            });
-
-            inventoryGrid.appendChild(card);
+                dom.importFileInput.value = ""; // Réinitialise l'input pour pouvoir réimporter le même fichier si besoin
+            };
+            reader.readAsText(file);
         });
     }
 
-    function renderPlayerStats(baseState: any) {
-        if (!playerStatsContainer) return;
-        let html = "";
-        
-        const diffData = GameController.getPlayerStatsDiff(baseState);
-
-        diffData.diffs.forEach(diff => {
-            let val = diff.value;
-            let displayVal = typeof val === "number" ? formatNumber(val) : val;
-            
-            const isTiered = diff.tierReq !== undefined;
-            let prefix = (typeof val === "number" && val > 0 && isTiered) ? "+" : "";
-            let suffix = "";
-            
-            if (diff.stat.toLowerCase().endsWith("rate")) {
-                suffix = "%";
-                if (typeof val === "number" && val > 0) prefix = "+";
-            } else if (!isTiered && diff.baseValue === 1) {
-                prefix = "x";
-            }
-
-            let nameColor = "#fff"; 
-            const statLower = diff.stat.toLowerCase();
-            
-            if (statLower.includes("health") || statLower.includes("heal")) {
-                nameColor = "#2ecc71"; 
-            } else if (statLower.includes("reload")) {
-                nameColor = "#3498db"; 
-            } else if (statLower.includes("damage")) {
-                nameColor = "#e74c3c"; 
-            }
-
-            let tierText = "";
-            if (isTiered) {
-                const reqTierName = TIERS[diff.tierReq]?.Name || `T${diff.tierReq}`;
-                const reqTierColor = TIERS[diff.tierReq]?.Background || "#e74c3c";
-                tierText = ` (<span style="color: ${reqTierColor};">${reqTierName}-</span>)`;
-            }
-            
-            html += `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; letter-spacing: 0.5px;">
-                        <span style="color: ${nameColor};">${diff.category} ${diff.stat}</span>: ${prefix}${displayVal}${suffix}${tierText}
-                     </div>`;
-        });
-
-        if (diffData.hasJoystick) {
-            html += `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; color: #f1c40f !important; letter-spacing: 0.5px;">
-                        Synergie Active: Joystick
-                     </div>`;
-        }
-
-        if (html === "") {
-            playerStatsContainer.innerHTML = `<em style="color: #aaa;">Aucune stat modifiée</em>`;
-        } else {
-            playerStatsContainer.innerHTML = html;
-        }
-    }
-
-    function refreshAll() {
-        const baseState = GameController.refreshPlayerStats();
-        renderSlots();
-        renderInventory();
-        renderPlayerStats(baseState); 
-    }
-
-    btnAdd.addEventListener("click", () => {
-        GameController.addItem(itemSelect.value, Number(itemTier.value), Number(itemQty.value));
-        refreshAll();
-    });
-
-    searchInput.addEventListener("input", refreshAll); 
-    filterTypeSelect.addEventListener("change", refreshAll);
-    targetSelect.addEventListener("change", refreshAll);
-    targetTier.addEventListener("input", refreshAll);
-
-    // --- GESTION DE LA LIGHTBOX TALENTS ---
-    const btnOpenTalents = document.getElementById('btn-open-talents');
-    const btnCloseTalents = document.getElementById('btn-close-talents');
-    const talentsLightbox = document.getElementById('talents-lightbox');
-
-    if (btnOpenTalents && btnCloseTalents && talentsLightbox) {
-        btnOpenTalents.addEventListener('click', () => {
-            talentsLightbox.style.display = 'flex';
-        });
-
-        btnCloseTalents.addEventListener('click', () => {
-            talentsLightbox.style.display = 'none';
-        });
-
-        talentsLightbox.addEventListener('click', (e) => {
-            if (e.target === talentsLightbox) {
-                talentsLightbox.style.display = 'none';
-            }
-        });
-    }
-
+    // Premier affichage de la page
     refreshAll();
 });

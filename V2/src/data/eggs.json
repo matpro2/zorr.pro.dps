@@ -7,7 +7,7 @@
     "reload": 1.0,
     "secondReload": [2, 3, 4, 5, 6.5, 1.5, 3.5, 5, 7.5, 25],
     "petName": "Bee",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Epic" }
   },
   "Bubble Egg": {
     "name": "Bubble Egg",
@@ -37,7 +37,7 @@
     "reload": 1.0,
     "secondReload": [35, 7, 8, 9, 10, 12, 15, 19, 22, 69],
     "petName": "Momy",
-    "petTier": { "gap": 0 }
+    "petTier": { "gap": "Common" }
   },
   "Zatan Egg": {
     "name": "Zatan Egg",
@@ -47,7 +47,7 @@
     "reload": 1.0,
     "secondReload": [42, 12, 14, 16, 18.5, 21, 24, 28, 35, 66.6],
     "petName": "Zatan",
-    "petTier": { "gap": 0 }
+    "petTier": { "gap": "Common" }
   },
   "Mantis Egg": {
     "name": "Mantis Egg",
@@ -57,7 +57,7 @@
     "reload": 1.0,
     "secondReload": [1.75, 3, 4.5, 5.5, 7, 2.5, 5, 8, 13, 30],
     "petName": "Mantis",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Bacteria Egg": {
     "name": "Bacteria Egg",
@@ -67,7 +67,7 @@
     "reload": 1.0,
     "secondReload": [3.5, 5.5, 8, 12, 2, 3.5, 5, 8.25, 12.5, 28.5],
     "petName": "Bacteria",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Stegosaurus Egg": {
     "name": "Stegosaurus Egg",
@@ -77,7 +77,7 @@
     "reload": 1.0,
     "secondReload": [5, 8, 11, 14, 19, 26, 5, 7, 14, 28],
     "petName": "Stegosaurus",
-    "petTier": { "gap": 5 }
+    "petTier": { "gap": "Mythic" }
   },
   "Red Blood Cell Egg": {
     "name": "Red Blood Cell Egg",
@@ -87,7 +87,7 @@
     "reload": 1.0,
     "secondReload": [3.5, 4.5, 6, 8, 2, 5.5, 8.5, 12.5, 22.5, 50],
     "petName": "Red Blood Cell",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Parasite Egg": {
     "name": "Parasite Egg",
@@ -97,7 +97,7 @@
     "reload": 1.0,
     "secondReload": [5.5, 7.5, 10, 15, 2, 3.5, 4.5, 5.5, 12.25, 42.5],
     "petName": "Parasite",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "UFO Egg": {
     "name": "UFO Egg",
@@ -107,7 +107,7 @@
     "reload": 1.0,
     "secondReload": [20, 23, 26, 30, 35, 15, 19, 26, 38, 105],
     "petName": "Alien",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Hel Queen Bee Egg": {
     "name": "Hel Queen Bee Egg",
@@ -117,7 +117,7 @@
     "reload": 1.0,
     "secondReload": [6, 7.5, 9, 10, 12, 15, 8, 10, 16, 47.5],
     "petName": "Hel Queen Bee",
-    "petTier": { "gap": 5 }
+    "petTier": { "gap": "Mythic" }
   },
   "Queen Bee Egg": {
     "name": "Queen Bee Egg",
@@ -127,7 +127,7 @@
     "reload": 1.0,
     "secondReload": [5, 6.5, 8, 9, 11, 13, 8, 9, 14, 40],
     "petName": "Queen Bee",
-    "petTier": { "gap": 5 }
+    "petTier": { "gap": "Mythic" }
   },
   "Digger Egg": {
     "name": "Digger Egg",
@@ -137,7 +137,7 @@
     "reload": 1.0,
     "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 7, 13, 20],
     "petName": "Digger",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Nuke Egg": {
     "name": "Nuke Egg",
@@ -147,7 +147,7 @@
     "reload": 1.0,
     "secondReload": [3.8, 4.5, 5.3, 6, 6.8, 7.5, 3.4, 6, 9, 19.45],
     "petName": "Nuke",
-    "petTier": { "gap": 5 }
+    "petTier": { "gap": "Mythic" }
   },
   "Firefly Egg": {
     "name": "Firefly Egg",
@@ -157,7 +157,7 @@
     "reload": 1.0,
     "secondReload": [3, 5, 8, 12, 15, 2.5, 4, 7.5, 15, 30],
     "petName": "Firefly",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Fly Egg": {
     "name": "Fly Egg",
@@ -167,7 +167,7 @@
     "reload": 1.0,
     "secondReload": [2.5, 4, 6, 8, 10, 1.5, 3, 5, 10, 25],
     "petName": "Fly",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Silverfish Egg": {
     "name": "Silverfish Egg",
@@ -177,7 +177,7 @@
     "reload": 1.0,
     "secondReload": [11, 12.8, 14.4, 16.1, 17.8, 11.9, 12.8, 10, 15.3, 60],
     "petName": "Silverfish",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Ice Dragon Egg": {
     "name": "Ice Dragon Egg",
@@ -187,7 +187,7 @@
     "reload": 1.0,
     "secondReload": [7, 9, 11, 13, 3, 4.5, 6, 8.5, 15, 45],
     "petName": "Ice Dragon",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Pirate Digger Egg": {
     "name": "Pirate Digger Egg",
@@ -197,7 +197,7 @@
     "reload": 1.0,
     "secondReload": [3, 3.5, 4, 4.5, 5.5, 2, 4, 6, 12, 48.75],
     "petName": "Pirate Digger",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Frost Digger Egg": {
     "name": "Frost Digger Egg",
@@ -207,7 +207,7 @@
     "reload": 1.0,
     "secondReload": [6, 7, 8, 9, 10, 3, 6, 9, 12, 46.25],
     "petName": "Frost Digger",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Trash Digger Egg": {
     "name": "Trash Digger Egg",
@@ -217,7 +217,7 @@
     "reload": 1.0,
     "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 5.5, 13, 70],
     "petName": "Trash Digger",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Vampire Digger Egg": {
     "name": "Vampire Digger Egg",
@@ -227,7 +227,7 @@
     "reload": 1.0,
     "secondReload": [6, 6.5, 7, 7.5, 8.5, 4, 5.5, 8, 13, 34],
     "petName": "Vampire Digger",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Biologist Egg": {
     "name": "Biologist Egg",
@@ -237,7 +237,7 @@
     "reload": 1.0,
     "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 7, 13, 65],
     "petName": "Biologist",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Cicada 3301 Egg": {
     "name": "Cicada 3301 Egg",
@@ -247,7 +247,7 @@
     "reload": 1.0,
     "secondReload": [8, 9.5, 11, 13, 5, 6, 7, 8.5, 12, 33.01],
     "petName": "Cicada 3301",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Cicada Egg": {
     "name": "Cicada Egg",
@@ -257,7 +257,7 @@
     "reload": 1.0,
     "secondReload": [7.5, 8.5, 10, 12.5, 2, 3.5, 5.5, 6, 22.25, 67],
     "petName": "Cicada",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Nigersaurus Egg": {
     "name": "Nigersaurus Egg",
@@ -267,7 +267,7 @@
     "reload": 1.0,
     "secondReload": [10, 11, 12, 13.5, 15, 8, 10.5, 14.5, 22, 40],
     "petName": "Nigersaurus",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Stem Cell Egg": {
     "name": "Stem Cell Egg",
@@ -277,7 +277,7 @@
     "reload": 1.0,
     "secondReload": [20, 22, 24, 26, 10, 14, 18, 22, 26, 95],
     "petName": "White Blood Cell",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Lamprey Eel Egg": {
     "name": "Lamprey Eel Egg",
@@ -287,7 +287,7 @@
     "reload": 1.0,
     "secondReload": [10, 11, 12, 13, 14, 5, 10, 15, 20, 44],
     "petName": "Lamprey Eel",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Grave Digger Egg": {
     "name": "Grave Digger Egg",
@@ -297,7 +297,7 @@
     "reload": 1.0,
     "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 5.5, 13, 60],
     "petName": "Grave Digger",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Alien Digger Egg": {
     "name": "Alien Digger Egg",
@@ -307,7 +307,7 @@
     "reload": 1.0,
     "secondReload": [5, 6, 7, 8, 9, 3, 5, 7, 11, 72.5],
     "petName": "Alien Digger",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Hel Beekeeper Egg": {
     "name": "Hel Beekeeper Egg",
@@ -317,7 +317,7 @@
     "reload": 1.0,
     "secondReload": [6, 6.5, 7, 7.5, 8.5, 5, 7, 9, 17.5, 67.5],
     "petName": "Hel Beekeeper",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Beekeeper Egg": {
     "name": "Hel Beekeeper Egg",
@@ -327,7 +327,7 @@
     "reload": 1.0,
     "secondReload": [5, 5.5, 6, 6.5, 7.5, 4, 6, 8, 15, 55],
     "petName": "Beekeeper",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Una Bomber Egg": {
     "name": "Una Bomber Egg",
@@ -337,7 +337,7 @@
     "reload": 1.0,
     "secondReload": [10, 11, 12.5, 14, 16, 8, 11, 14, 20, 75],
     "petName": "Una Bomber",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Ladybug Egg": {
     "name": "Ladybug Egg",
@@ -347,7 +347,7 @@
     "reload": 1.0,
     "secondReload": [2, 3.5, 5, 9, 2, 4, 5, 7.5, 10, 21],
     "petName": "Ladybug",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Angel Egg": {
     "name": "Angel Egg",
@@ -357,7 +357,7 @@
     "reload": 1.0,
     "secondReload": [30, 7, 8, 9, 11, 14, 17, 20, 25, 77],
     "petName": "Angel",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Tyrannosaurus Egg": {
     "name": "Tyrannosaurus Egg",
@@ -367,7 +367,7 @@
     "reload": 1.0,
     "secondReload": [7, 10, 13, 16, 20, 4, 6.5, 10, 18, 32],
     "petName": "Tyrannosaurus",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Toxic Dragon Egg": {
     "name": "Toxic Dragon Egg",
@@ -377,7 +377,7 @@
     "reload": 1.0,
     "secondReload": [4, 5, 6, 8, 10, 2, 3, 5, 10, 25],
     "petName": "Toxic Dragon",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Soldier Fire Ant Egg": {
     "name": "Soldier Fire Ant Egg",
@@ -387,7 +387,7 @@
     "reload": 1.0,
     "secondReload": [5.5, 7, 9, 11, 2, 4, 6, 7.5, 13.5, 40],
     "petName": "Soldier Fire Ant",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Soldier Ant Egg": {
     "name": "Soldier Ant Egg",
@@ -397,7 +397,7 @@
     "reload": 1.0,
     "secondReload": [4, 5, 6.5, 8, 10, 11, 3, 5, 10, 20],
     "petName": "Soldier Ant",
-    "petTier": { "gap": 2 }
+    "petTier": { "gap": "Rare" }
   },
   "Queen Fire Ant Egg": {
     "name": "Queen Fire Ant Egg",
@@ -407,7 +407,7 @@
     "reload": 1.0,
     "secondReload": [6, 7.5, 9, 1.5, 3, 4.5, 6.5, 9, 17.5, 45],
     "petName": "Queen Fire Ant",
-    "petTier": { "gap": 2 }
+    "petTier": { "gap": "Rare" }
   },
   "Worker Fire Ant Egg": {
     "name": "Worker Fire Ant Egg",
@@ -417,7 +417,7 @@
     "reload": 1.0,
     "secondReload": [3.5, 5, 7, 1, 2, 3.5, 5, 6, 10, 27.5],
     "petName": "Worker Fire Ant",
-    "petTier": { "gap": 2 }
+    "petTier": { "gap": "Rare" }
   },
   "Termite Hole Egg": {
     "name": "Termite Hole Egg",
@@ -427,7 +427,7 @@
     "reload": 1.0,
     "secondReload": [25, 27.5, 30, 6, 8, 11, 14, 15, 25, 90],
     "petName": "Soldier Termite",
-    "petTier": { "gap": 2 }
+    "petTier": { "gap": "Rare" }
   },
   "Soldier Termite Egg": {
     "name": "Soldier Termite Egg",
@@ -437,7 +437,7 @@
     "reload": 1.0,
     "secondReload": [5, 6, 7.5, 9, 12, 14, 5, 6, 12, 32.5],
     "petName": "Soldier Termite",
-    "petTier": { "gap": 2 }
+    "petTier": { "gap": "Rare" }
   },
   "Shipwreck Egg": {
     "name": "Shipwreck Egg",
@@ -447,7 +447,7 @@
     "reload": 1.0,
     "secondReload": [15, 18, 21, 25, 30, 10, 16, 23, 30, 105],
     "petName": "Jellyfish",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Troll Egg": {
     "name": "Troll Egg",
@@ -457,7 +457,7 @@
     "reload": 1.0,
     "secondReload": [40, 9, 10, 11, 12, 13, 14.5, 16, 20, 70],
     "petName": "Troll",
-    "petTier": { "gap": 0 }
+    "petTier": { "gap": "Common" }
   },
   "Velociraptor Egg": {
     "name": "Velociraptor Egg",
@@ -467,7 +467,7 @@
     "reload": 1.0,
     "secondReload": [7.5, 9, 10.5, 12, 19, 22, 1.5, 5, 14, 33],
     "petName": "Velociraptor",
-    "petTier": { "gap": 5 }
+    "petTier": { "gap": "Mythic" }
   },
   "Rat Egg": {
     "name": "Rat Egg",
@@ -477,7 +477,7 @@
     "reload": 1.0,
     "secondReload": [11.9, 13.2, 14.4, 15.7, 16.1, 13.6, 14.4, 15.3, 17, 40],
     "petName": "Rat",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Roach Egg": {
     "name": "Roach Egg",
@@ -487,7 +487,7 @@
     "reload": 1.0,
     "secondReload": [14.4, 15.3, 16.6, 17.4, 18.6, 12.8, 13.6, 14.4, 16.1, 45],
     "petName": "Roach",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Stick": {
     "name": "Stick",
@@ -497,7 +497,7 @@
     "reload": 1.0,
     "secondReload": [7.5, 8.5, 10, 13, 17, 1.5, 4, 6, 20, 55],
     "petName": "Sandstorm",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Fire Stick": {
     "name": "Fire Stick",
@@ -507,17 +507,17 @@
     "reload": 1.0,
     "secondReload": [7.5, 8.5, 10, 13, 17, 1.5, 4, 6, 20, 60],
     "petName": "Firestorm",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
-  "Snowstorm Stick": {
-    "name": "Snowstorm Stick",
+  "Snow Stick": {
+    "name": "Snow Stick",
     "object": "pet",
     "type": "egg",
     "entity": { "base": 3, "multi": 1.3333333333333333 },
     "reload": 1.0,
     "secondReload": [7.5, 10, 15, 20, 25, 5, 8, 6, 20, 45],
     "petName": "Snowstorm",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Hel Centipede Egg": {
     "name": "Hel Centipede Egg",
@@ -527,7 +527,7 @@
     "reload": 1.0,
     "secondReload": [7, 10, 13, 5, 6, 7, 8, 9, 17.5, 35],
     "petName": "Hel Centipede",
-    "petTier": { "gap": 3 }
+    "petTier": { "gap": "Epic" }
   },
   "Hel Bee Egg": {
     "name": "Hel Bee Egg",
@@ -537,7 +537,7 @@
     "reload": 1.0,
     "secondReload": [2.5, 4, 5.5, 7, 9.5, 2, 4, 7, 11.75, 34.25],
     "petName": "Hel Bee",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Spider Yoba Egg": {
     "name": "Spider Yoba Egg",
@@ -547,7 +547,7 @@
     "reload": 1.0,
     "secondReload": [3, 4, 5.5, 7, 8.5, 3.5, 5.5, 7.5, 15, 40],
     "petName": "Spider Yoba",
-    "petTier": { "gap": 4 }
+    "petTier": { "gap": "Legendary" }
   },
   "Gravestone Egg": {
     "name": "Gravestone Egg",
@@ -557,6 +557,16 @@
     "reload": 1.0,
     "secondReload": [15, 20, 25, 30, 35, 40, 20, 25, 30, 6],
     "petName": "Ghost",
-    "petTier": { "gap": 8 }
+    "petTier": { "gap": "Omega" }
+  },
+  "Hive Egg": {
+    "name": "Hive Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 10, "multi": 1.5 },
+    "reload": 1.0,
+    "secondReload": [10, 13, 16, 20, 25, 10, 15, 20, 25, 145],
+    "petName": "Bee",
+    "petTier": { "gap": "Legendary" }
   }
 }

@@ -1,3 +1,5 @@
+// GetObject.ts
+
 import petals from "./data/petals.json";
 import mobs from "./data/mobs.json";
 import spills from "./data/spills.json";
@@ -6,6 +8,7 @@ import utilities from "./data/utilities.json";
 import radiation from "./data/radiation.json";
 
 import { PlayerValue } from "./PlayerValue";
+import { TIERS } from "./constants"; // <-- IMPORTATION DES TIERS
 
 const allData: Record<string, any> = {
   ...petals,
@@ -58,7 +61,6 @@ function getApplicableStat(globalValue: number, tieredArray: { tier: number, val
                 if (isFactor) {
                     finalValue *= Math.max(0.01, 1 + (mod.value / 100));
                 } else if (isMultiplier) {
-                    // CORRECTION : On multiplie directement la valeur (ex: finalValue *= 1.1)
                     finalValue *= mod.value;
                 } else {
                     finalValue += mod.value;
@@ -86,8 +88,17 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
     }
 
     if (typeof object.petTier === "object" && object.petTier !== null) {
-      const gap = object.petTier.gap;
-      if (gap !== undefined) {
+      let gap = object.petTier.gap;
+      
+      if (typeof gap === "string") {
+        const foundIndex = TIERS.findIndex(t => t.Name.toLowerCase() === gap.toLowerCase());
+        if (foundIndex !== -1) {
+            gap = foundIndex;
+        }
+      }
+      // -----------------------------------------------------------------
+
+      if (gap !== undefined && typeof gap === "number") {
         object.petTier = (tier <= gap) ? tier : (tier - 1);
       } else {
         object.petTier = tier; 
@@ -96,7 +107,6 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
 
   if (object.name && object.name.toLowerCase().includes("centipede")) {
       const baseCount = object.entity || 1;
-      
       object.entity = baseCount * 6.5;
     }
   }
