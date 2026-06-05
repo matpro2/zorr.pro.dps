@@ -218,7 +218,6 @@ export class DpsCalculator {
         if (combatAttacker.effects && combatAttacker.effects.length > 0) {
             const effectiveTargetArmor = combatAttacker.type === "spill" ? 0 : (target.armor || 0);
             
-            // On extrait l'évasion de la cible pour l'envoyer au calcul des effets
             let targetEvasion = 0;
             if (target.effects) {
                 const ev = target.effects.find(e => e.type && e.type.toLowerCase() === "evasion");

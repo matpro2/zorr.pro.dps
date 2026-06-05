@@ -1,5 +1,3 @@
-// GetObject.ts
-
 import petals from "./data/petals.json";
 import mobs from "./data/mobs.json";
 import spills from "./data/spills.json";
@@ -8,7 +6,7 @@ import utilities from "./data/utilities.json";
 import radiation from "./data/radiation.json";
 
 import { PlayerValue } from "./PlayerValue";
-import { TIERS } from "./constants"; // <-- IMPORTATION DES TIERS
+import { TIERS } from "./constants"; 
 
 const allData: Record<string, any> = {
   ...petals,
@@ -52,12 +50,12 @@ function getMobHpMultiplier(tier: number): number {
     return hMult;
 }
 
-function getApplicableStat(globalValue: number, tieredArray: { tier: number, value: number }[] | undefined, currentTier: number, isMultiplier: boolean = false, isFactor: boolean = false): number {
-    let finalValue = globalValue;
+function getApplicableStat(boostArray: { source?: string, tierReq: number, value: number }[] | undefined, currentTier: number, baseValue: number, isMultiplier: boolean = false, isFactor: boolean = false): number {
+    let finalValue = baseValue;
     
-    if (tieredArray && tieredArray.length > 0) {
-        for (const mod of tieredArray) {
-            if (mod.tier >= currentTier) {
+    if (boostArray && boostArray.length > 0) {
+        for (const mod of boostArray) {
+            if (mod.tierReq >= currentTier) {
                 if (isFactor) {
                     finalValue *= Math.max(0.01, 1 + (mod.value / 100));
                 } else if (isMultiplier) {
@@ -129,7 +127,10 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
     object.health *= applyTierMulti;
     
     if (object.object === "petal") {
-        const finalHealthMulti = getApplicableStat(PlayerValue.petal.healthMulti, PlayerValue.petal.healthMultiTiered, tier, true);
+        const finalHealthMulti = getApplicableStat(PlayerValue.petal.healthMulti, tier, 1, true);
+        object.health *= finalHealthMulti;
+    } else if (isPet) {
+        const finalHealthMulti = getApplicableStat(PlayerValue.pet.healthMulti, tier, 1, true);
         object.health *= finalHealthMulti;
     }
   }
@@ -139,10 +140,10 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
     object.damage *= applyTierMulti;
     
     if (object.object === "petal") {
-        const finalDamageMulti = getApplicableStat(PlayerValue.petal.damageMulti, PlayerValue.petal.damageMultiTiered, tier, true);
+        const finalDamageMulti = getApplicableStat(PlayerValue.petal.damageMulti, tier, 1, true);
         object.damage *= finalDamageMulti;
     } else if (isPet) {
-        const finalDamageMulti = getApplicableStat(PlayerValue.pet.damageMulti, PlayerValue.pet.damageMultiTiered, tier, true);
+        const finalDamageMulti = getApplicableStat(PlayerValue.pet.damageMulti, tier, 1, true);
         object.damage *= finalDamageMulti;
         if (object.spectrum === true) {
             object.damage *= 10;
@@ -151,7 +152,7 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
             object.damage *= 100;
         }
     } else if (isMob) {
-        object.damage *= PlayerValue.mob.damageMulti; 
+        object.damage *= getApplicableStat(PlayerValue.mob.damageMulti, tier, 1, true); 
     }
   }
   
@@ -161,13 +162,13 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
     object.armor *= applyTierMulti;
 
     if (object.object === "petal") {
-        const finalArmor = getApplicableStat(PlayerValue.petal.armor, PlayerValue.petal.armorTiered, tier);
-        const finalArmorMulti = getApplicableStat(PlayerValue.petal.armorMulti, PlayerValue.petal.armorMultiTiered, tier, true);
+        const finalArmor = getApplicableStat(PlayerValue.petal.armor, tier, 0);
+        const finalArmorMulti = getApplicableStat(PlayerValue.petal.armorMulti, tier, 1, true);
         object.armor = (object.armor + finalArmor) * finalArmorMulti;
     } else if (isPet) {
-        object.armor = (object.armor + PlayerValue.pet.armor);
+        object.armor = (object.armor + getApplicableStat(PlayerValue.pet.armor, tier, 0));
     } else if (isMob) {
-        object.armor = (object.armor + PlayerValue.mob.armor) * PlayerValue.mob.armorMulti;
+        object.armor = (object.armor + getApplicableStat(PlayerValue.mob.armor, tier, 0)) * getApplicableStat(PlayerValue.mob.armorMulti, tier, 1, true);
     }
   }
 
@@ -176,16 +177,16 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
         object.reload = 10;
     }
 
-    const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, PlayerValue.petal.reloadFactorTiered, tier, false, true);
-    const finalReloadSkipRate = getApplicableStat(PlayerValue.petal.reloadSkipRate, PlayerValue.petal.reloadSkipRateTiered, tier);
+    const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, tier, 1, false, true);
+    const finalReloadSkipRate = getApplicableStat(PlayerValue.petal.reloadSkipRate, tier, 0);
     
     object.reload /= Math.max(0.01, finalReloadFactor);
     object.reload *= Math.max(0, 1 - (finalReloadSkipRate / 100));
   }
 
   if (typeof object.secondReload === "number" && (object.object === "petal" || object.object === "pet")) {
-    const finalSecondReloadFactor = getApplicableStat(PlayerValue.petal.secondReloadFactor, PlayerValue.petal.secondReloadFactorTiered, tier, false, true);
-    const finalSecondReloadSkipRate = getApplicableStat(PlayerValue.petal.secondReloadSkipRate, PlayerValue.petal.secondReloadSkipRateTiered, tier);
+    const finalSecondReloadFactor = getApplicableStat(PlayerValue.petal.secondReloadFactor, tier, 1, false, true);
+    const finalSecondReloadSkipRate = getApplicableStat(PlayerValue.petal.secondReloadSkipRate, tier, 0);
     
     object.secondReload /= Math.max(0.01, finalSecondReloadFactor);
     object.secondReload *= Math.max(0, 1 - (finalSecondReloadSkipRate / 100));
@@ -205,10 +206,10 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
       if (typeof effect.duration === "number" && (object.object === "petal" || object.object === "pet")) {
         switch (effect.type) {
           case "Poison":
-            effect.duration += PlayerValue.status.poisonDuration;
+            effect.duration += getApplicableStat(PlayerValue.status.poisonDuration, tier, 0);
             break;
           case "Fire":
-            effect.duration += PlayerValue.status.fireDuration;
+            effect.duration += getApplicableStat(PlayerValue.status.fireDuration, tier, 0);
             break;
         }
       }

@@ -2,9 +2,10 @@
 
 import { GameController } from "./GameController";
 import { UIRenderer } from "./UIRenderer";
-import { TIERS } from "./constants"; 
+import { TIERS } from "../constants"; 
 
 document.addEventListener("DOMContentLoaded", () => {
+    // --- 1. RÉCUPÉRATION DES ÉLÉMENTS DOM ---
     // --- 1. RÉCUPÉRATION DES ÉLÉMENTS DOM ---
     const dom = {
         targetNameInput: document.getElementById("target-name-input") as HTMLInputElement,
@@ -24,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnOpenTalents: document.getElementById('btn-open-talents'),
         btnCloseTalents: document.getElementById('btn-close-talents'),
         talentsLightbox: document.getElementById('talents-lightbox'),
+        talentsContainer: document.getElementById('talents-container') as HTMLDivElement,
 
         // Catalogue Petals
         btnOpenCatalog: document.getElementById('btn-open-catalog'),
@@ -59,14 +61,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- 3. FONCTIONS DE MISE À JOUR ---
     function refreshAll() {
-        const baseState = GameController.refreshPlayerStats();
+        GameController.refreshPlayerStats();
         
         const tName = dom.targetNameInput.value;
         const tTier = Number(dom.targetTierInput.value);
 
         UIRenderer.renderSlots(dom.slotsContainer, dom.totalDpsDisplay, tName, tTier, refreshAll);
         UIRenderer.renderInventory(dom.inventoryGrid, dom.targetStatsDiv, tName, tTier, dom.filterTypeSelect.value, dom.searchInput.value, refreshAll);
-        UIRenderer.renderPlayerStats(dom.playerStatsContainer, baseState); 
+        UIRenderer.renderPlayerStats(dom.playerStatsContainer); 
+
+        if (dom.talentsContainer) {
+            UIRenderer.renderTalents(
+                dom.talentsContainer,
+                GameController.getTalents(),
+                GameController.getTalentDefs(),
+                GameController.getTPInfo(), // Nouveau passage des infos TP
+                (id, lvl) => {
+                    GameController.setTalentLevel(id, lvl);
+                    refreshAll();
+                }
+            );
+        }
     }
 
     function refreshCatalog() {

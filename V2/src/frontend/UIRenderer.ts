@@ -1,8 +1,8 @@
 // UIRenderer.ts
 
 import { GameController } from "./GameController";
-import { TIERS, GENERAL_COLORS } from "./constants";
-import { formatNumber } from "./formatNumber"; 
+import { TIERS, GENERAL_COLORS } from "../constants";
+import { formatNumber } from "../formatNumber"; 
 
 interface CardConfig {
     type: 'target' | 'equipped' | 'inventory' | 'empty' | 'catalog' | 'mob-catalog';
@@ -86,6 +86,102 @@ function getDpsColor(dps: number): string {
     return "rgb(255, 80, 80)";
 }
 
+function generateStatHtml(
+    name: string,
+    value: string | number,
+    colorIndex: number,
+    options: { prefix?: string, suffix?: string, extraHtml?: string, isPlayerStat?: boolean } = {}
+): string {
+    const color = getSequenceColor(colorIndex);
+    const displayVal = typeof value === "number" ? formatNumber(value) : String(value);
+    const prefix = options.prefix || "";
+    const suffix = options.suffix || "";
+    const extra = options.extraHtml || "";
+
+    if (options.isPlayerStat) {
+        return `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; letter-spacing: 0.5px;"><span style="color: ${color};">${name}</span>: ${prefix}${displayVal}${suffix}${extra}</div>`;
+    } else {
+        return `<div style="margin-bottom: 2px;"><strong style="color: ${color};">${name}:</strong> ${prefix}${displayVal}${suffix}${extra}</div>`;
+    }
+}
+
+function buildGenericCatalog(
+    catalogGrid: HTMLElement,
+    tier: number,
+    searchQuery: string,
+    names: string[],
+    cardType: 'catalog' | 'mob-catalog',
+    options: {
+        inventoryItems?: any[],
+        onAdd?: (name: string, tier: number) => void,
+        onRemove?: (name: string, tier: number) => void,
+        onSelect?: (name: string, tier: number) => void
+    } = {}
+) {
+    catalogGrid.innerHTML = "";
+    let filteredNames = [...names];
+
+    if (searchQuery && searchQuery.trim() !== "") {
+        const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
+        filteredNames = filteredNames.filter(name => {
+            const tierName = TIERS[tier]?.Name?.toLowerCase() || `t${tier}`;
+            const targetText = `${tierName} ${name.toLowerCase()}`;
+            return queryWords.every(word => targetText.includes(word));
+        });
+    }
+
+    filteredNames.forEach(name => {
+        const obj = GameController.getTargetData(name, tier);
+        let qty = 0;
+        if (options.inventoryItems) {
+            const invItem = options.inventoryItems.find(i => i.name === name && i.tier === tier);
+            qty = invItem ? invItem.quantity : 0;
+        }
+
+        const card = createCard({
+            type: cardType,
+            effectiveName: name,
+            originalName: name,
+            displayTier: tier,
+            statTier: tier,
+            health: obj?.health,
+            damage: obj?.damage,
+            armor: obj?.armor,
+            reload: obj?.reload,
+            secondReload: obj?.secondReload,
+            effects: obj?.effects,
+            petName: obj?.petName,
+            entityCount: getEntityCount(obj),
+            petTier: obj?.petTier,
+            totalQty: cardType === 'catalog' ? qty : undefined
+        });
+
+        if (cardType === 'catalog') {
+            const btnAdd = card.querySelector('.cat-add-btn');
+            if (btnAdd && options.onAdd) {
+                btnAdd.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    options.onAdd!(name, tier);
+                });
+            }
+            const btnRem = card.querySelector('.cat-rem-btn');
+            if (btnRem && options.onRemove) {
+                btnRem.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    options.onRemove!(name, tier);
+                });
+            }
+        } else if (cardType === 'mob-catalog' && options.onSelect) {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                options.onSelect!(name, tier);
+            });
+        }
+
+        catalogGrid.appendChild(card);
+    });
+}
+
 function createCard(config: CardConfig): HTMLDivElement {
     const div = document.createElement("div");
 
@@ -130,27 +226,23 @@ function createCard(config: CardConfig): HTMLDivElement {
     let statIndex = 0; 
 
     if (config.health !== undefined && config.health !== 0) {
-        statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${getSequenceColor(statIndex)};">Health:</strong> ${formatNumber(config.health)}</div>`);
-        statIndex++;
+        statParts.push(generateStatHtml("Health", config.health, statIndex++));
     }
     if (config.damage !== undefined && config.damage !== 0) {
-        statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${getSequenceColor(statIndex)};">Damage:</strong> ${formatNumber(config.damage)}</div>`);
-        statIndex++;
+        statParts.push(generateStatHtml("Damage", config.damage, statIndex++));
     }
     if (config.armor !== undefined && config.armor !== 0) {
-        statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${getSequenceColor(statIndex)};">Armor:</strong> ${formatNumber(config.armor)}</div>`);
-        statIndex++;
+        statParts.push(generateStatHtml("Armor", config.armor, statIndex++));
     }
 
     if (config.petName) {
         const pCount = config.entityCount || 1;
         const pTier = config.petTier !== undefined ? config.petTier : config.statTier!; 
         const pTierData = TIERS[pTier] || { Name: `T${pTier}`, Background: "#fff" };
-        statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${getSequenceColor(statIndex)};">Pet:</strong> x${pCount} ${config.petName} (<span style="color: ${pTierData.Background}; font-weight: bold;">${pTierData.Name}</span>)</div>`);
-        statIndex++;
+        const extra = ` (<span style="color: ${pTierData.Background}; font-weight: bold;">${pTierData.Name}</span>)`;
+        statParts.push(generateStatHtml("Pet", `x${pCount} ${config.petName}`, statIndex++, { extraHtml: extra }));
     } else if (config.entityCount !== undefined && config.entityCount !== 1) {
-        statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${getSequenceColor(statIndex)};">Entities:</strong> x${config.entityCount}</div>`);
-        statIndex++;
+        statParts.push(generateStatHtml("Entities", config.entityCount, statIndex++, { prefix: "x" }));
     }
 
     if (config.effects) {
@@ -160,15 +252,15 @@ function createCard(config: CardConfig): HTMLDivElement {
                     ? `${effect.value.chance}% (x${effect.value.multiplier})`
                     : (typeof effect.value === "number" ? formatNumber(effect.value) : String(effect.value));
                 
+                let suffix = "";
                 if (effect.subExplosion !== undefined) {
-                    displayVal += ` (x${1 + effect.subExplosion} hits)`;
+                    suffix = ` (x${1 + effect.subExplosion} hits)`;
                 }
 
                 let effectName = effect.type.split('.').pop() || effect.type;
                 effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
                 
-                statParts.push(`<div style="margin-bottom: 2px;"><strong style="color: ${getSequenceColor(statIndex)};">${effectName}:</strong> ${displayVal}</div>`);
-                statIndex++;
+                statParts.push(generateStatHtml(effectName, displayVal, statIndex++, { suffix: suffix }));
             }
         }
     }
@@ -248,7 +340,6 @@ function createCard(config: CardConfig): HTMLDivElement {
     }
     innerHTML += `</div>`; 
 
-    // --- NOUVEAU : Le catalogue affiche les DEUX boutons ---
     if (config.type === 'catalog') {
         innerHTML += `<div class="edit-overlay">
             <button class="cat-add-btn add-btn">Add</button>
@@ -414,174 +505,241 @@ export const UIRenderer = {
     },
 
     renderCatalog(
-        catalogGrid: HTMLElement, 
-        tier: number, 
-        searchQuery: string,
-        inventoryItems: any[], 
-        onAdd: (name: string, tier: number) => void,
-        onRemove: (name: string, tier: number) => void // <-- NOUVEAU CALLBACK
-    ) {
-        catalogGrid.innerHTML = "";
-        let allNames = GameController.getAllItemNames();
+    catalogGrid: HTMLElement, 
+    tier: number, 
+    searchQuery: string,
+    inventoryItems: any[], 
+    onAdd: (name: string, tier: number) => void,
+    onRemove: (name: string, tier: number) => void
+) {
+    let allNames = GameController.getAllItemNames().filter(name => {
+        const obj = GameController.getTargetData(name, tier);
+        return obj && obj.object !== "mob";
+    });
 
-        allNames = allNames.filter(name => {
-            const obj = GameController.getTargetData(name, tier);
-            return obj && obj.object !== "mob"; 
-        });
-
-        if (searchQuery && searchQuery.trim() !== "") {
-            const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
-            allNames = allNames.filter(name => {
-                const tierName = TIERS[tier]?.Name?.toLowerCase() || `t${tier}`;
-                const targetText = `${tierName} ${name.toLowerCase()}`;
-                return queryWords.every(word => targetText.includes(word));
-            });
-        }
-
-        allNames.forEach(name => {
-            const obj = GameController.getTargetData(name, tier);
-            const invItem = inventoryItems.find(i => i.name === name && i.tier === tier);
-            const qty = invItem ? invItem.quantity : 0;
-
-            const card = createCard({
-                type: 'catalog',
-                effectiveName: name,
-                originalName: name,
-                displayTier: tier,
-                statTier: tier,
-                health: obj?.health,
-                damage: obj?.damage,
-                armor: obj?.armor,
-                reload: obj?.reload,
-                secondReload: obj?.secondReload,
-                effects: obj?.effects,
-                petName: obj?.petName,
-                entityCount: getEntityCount(obj),
-                petTier: obj?.petTier,
-                totalQty: qty 
-            });
-
-            const btnAdd = card.querySelector('.cat-add-btn');
-            if (btnAdd) {
-                btnAdd.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    onAdd(name, tier);
-                });
-            }
-
-            // NOUVEAU: Écouteur pour la suppression via le catalogue
-            const btnRem = card.querySelector('.cat-rem-btn');
-            if (btnRem) {
-                btnRem.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    onRemove(name, tier);
-                });
-            }
-
-            catalogGrid.appendChild(card);
-        });
-    },
+    buildGenericCatalog(catalogGrid, tier, searchQuery, allNames, 'catalog', {
+        inventoryItems: inventoryItems,
+        onAdd: onAdd,
+        onRemove: onRemove
+    });
+},
 
     renderMobCatalog(
-        catalogGrid: HTMLElement, 
-        tier: number, 
-        searchQuery: string,
-        onSelect: (name: string, tier: number) => void
-    ) {
-        catalogGrid.innerHTML = "";
-        let allNames = GameController.getAllMobNames();
+    catalogGrid: HTMLElement, 
+    tier: number, 
+    searchQuery: string,
+    onSelect: (name: string, tier: number) => void
+) {
+    let allNames = GameController.getAllMobNames();
 
-        if (searchQuery && searchQuery.trim() !== "") {
-            const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
-            allNames = allNames.filter(name => {
-                const tierName = TIERS[tier]?.Name?.toLowerCase() || `t${tier}`;
-                const targetText = `${tierName} ${name.toLowerCase()}`;
-                return queryWords.every(word => targetText.includes(word));
-            });
+    buildGenericCatalog(catalogGrid, tier, searchQuery, allNames, 'mob-catalog', {
+        onSelect: onSelect
+    });
+},
+
+renderPlayerStats(playerStatsContainer: HTMLElement) {
+    if (!playerStatsContainer) return;
+
+    let html = "";
+    let statIndex = 0;
+
+    const diffData = GameController.getPlayerStatsDiff();
+    const groupedStats: Record<string, any[]> = {};
+    const joystickStats: any[] = [];
+
+    diffData.diffs.forEach((diff: any) => {
+        if (diff.isJoystickFlag) {
+            joystickStats.push(diff);
+            return;
         }
 
-        allNames.forEach(name => {
-            const obj = GameController.getTargetData(name, tier);
+        let categoryName = diff.category.charAt(0).toUpperCase() + diff.category.slice(1);
+        let statName = diff.stat.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
+        let nameText = `${categoryName} ${statName}`;
 
-            const card = createCard({
-                type: 'mob-catalog',
-                effectiveName: name,
-                originalName: name,
-                displayTier: tier,
-                statTier: tier,
-                health: obj?.health,
-                damage: obj?.damage,
-                armor: obj?.armor,
-                reload: obj?.reload,
-                secondReload: obj?.secondReload,
-                effects: obj?.effects,
-                petName: obj?.petName,
-                entityCount: getEntityCount(obj),
-                petTier: obj?.petTier
-            });
+        if (!groupedStats[nameText]) groupedStats[nameText] = [];
+        groupedStats[nameText].push(diff);
+    });
 
-            card.addEventListener('click', (e) => {
-                e.stopPropagation();
-                onSelect(name, tier);
-            });
-
-            catalogGrid.appendChild(card);
-        });
-    },
-
-    renderPlayerStats(playerStatsContainer: HTMLElement, baseState: any) {
-        if (!playerStatsContainer) return;
-        let html = "";
-        let statIndex = 0; 
+    joystickStats.forEach(diff => {
+        const reqTierName = TIERS[diff.tierReq]?.Name || `T${diff.tierReq}`;
+        const reqTierColor = TIERS[diff.tierReq]?.Background || "#f1c40f";
+        const tierText = ` (<span style="color: ${reqTierColor};">${reqTierName}</span>)`;
         
-        const diffData = GameController.getPlayerStatsDiff(baseState);
+        html += generateStatHtml("Joystick", "Active", statIndex++, {
+            extraHtml: tierText,
+            isPlayerStat: true
+        });
+    });
 
-        diffData.diffs.forEach(diff => {
-            let val = diff.value;
-            let displayVal = typeof val === "number" ? formatNumber(val) : val;
-            
+    for (const [nameText, diffs] of Object.entries(groupedStats)) {
+        const colorIndex = statIndex++;
+        const nameColor = getSequenceColor(colorIndex);
+        
+        if (diffs.length === 1) {
+            const diff = diffs[0];
+            const val = diff.value;
             const isTiered = diff.tierReq !== undefined;
-            let prefix = (typeof val === "number" && val > 0 && isTiered) ? "+" : "";
-            let suffix = "";
+
+            let prefix = (typeof val === "number" && val > 0 && !diff.isMultiplier) ? "" : "";
+            if (diff.isMultiplier) prefix = "x";
+            let suffix = diff.stat.toLowerCase().endsWith("rate") ? "%" : "";
             
-            if (diff.stat.toLowerCase().endsWith("rate")) {
-                suffix = "%";
-                if (typeof val === "number" && val > 0) prefix = "+";
-            } else if (!isTiered && diff.baseValue === 1) {
-                prefix = "x";
-            }
-
-            let nameColor = getSequenceColor(statIndex);
-            statIndex++;
-
-            let nameText = `${diff.category} ${diff.stat}`;
-
             let tierText = "";
             if (isTiered) {
                 const reqTierName = TIERS[diff.tierReq]?.Name || `T${diff.tierReq}`;
                 const reqTierColor = TIERS[diff.tierReq]?.Background || "#e74c3c";
                 tierText = ` (<span style="color: ${reqTierColor};">${reqTierName}-</span>)`;
             }
-            
-            html += `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; letter-spacing: 0.5px;">
-                        <span style="color: ${nameColor};">${nameText}</span>: ${prefix}${displayVal}${suffix}${tierText}
-                     </div>`;
-        });
 
-        if (diffData.hasJoystick) {
-            let nameColor = getSequenceColor(statIndex);
-            statIndex++;
+            const sourceName = diff.source ? diff.source.charAt(0).toUpperCase() + diff.source.slice(1) : "";
+            const displayName = sourceName ? `${nameText} <span style="font-size: 0.85em; opacity: 0.8;">(${sourceName})</span>` : nameText;
+
+            html += generateStatHtml(displayName, val, colorIndex, {
+                prefix: prefix,
+                suffix: suffix,
+                extraHtml: tierText,
+                isPlayerStat: true
+            });
+        } else {
+            const isMultiplier = diffs[0].isMultiplier;
+            const isRate = diffs[0].stat.toLowerCase().endsWith("rate");
             
-            // --- NOUVEAU : Récupération du nom et de la couleur du tier du joystick ---
-            const jTier = diffData.joystickTier;
-            const tierName = TIERS[jTier]?.Name || `T${jTier}`;
-            const tierColor = TIERS[jTier]?.Background || "#f1c40f";
+            let totalVal = isMultiplier ? 1 : 0;
+            diffs.forEach(d => {
+                if (isMultiplier) totalVal *= d.value;
+                else totalVal += d.value;
+            });
+
+            let prefix = (totalVal > 0 && !isMultiplier) ? "+" : (isMultiplier ? "x" : "");
+            let suffix = isRate ? "%" : "";
             
-            html += `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; letter-spacing: 0.5px;">
-                        <span style="color: ${nameColor};">Joystick</span>: active (<span style="color: ${tierColor};">${tierName}</span>)
-                     </div>`;
+            let displayTotal = typeof totalVal === "number" ? formatNumber(totalVal) : String(totalVal);
+
+            let detailsHtml = `<details style="margin-bottom: 4px;">
+                <summary class="florr-text" style="font-size: 1.1em; letter-spacing: 0.5px; cursor: pointer; color: #fff; outline: none; user-select: none;">
+                    <span style="color: ${nameColor};">${nameText}</span>: ${prefix}${displayTotal}${suffix}
+                </summary>
+                <div style="padding-left: 20px; border-left: 2px solid ${nameColor}80; margin-top: 4px; margin-left: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 0.95em;">`;
+
+            diffs.forEach(diff => {
+                const val = diff.value;
+                const isTiered = diff.tierReq !== undefined;
+
+                let subPrefix = (typeof val === "number" && val > 0 && !diff.isMultiplier) ? "+" : "";
+                if (diff.isMultiplier) subPrefix = "x";
+                
+                let tierText = "";
+                if (isTiered) {
+                    const reqTierName = TIERS[diff.tierReq]?.Name || `T${diff.tierReq}`;
+                    const reqTierColor = TIERS[diff.tierReq]?.Background || "#e74c3c";
+                    tierText = ` (<span style="color: ${reqTierColor};">${reqTierName}-</span>)`;
+                }
+
+                const displayVal = typeof val === "number" ? formatNumber(val) : String(val);
+                const sourceName = diff.source ? diff.source.charAt(0).toUpperCase() + diff.source.slice(1) : "Item";
+                
+                detailsHtml += `<div class="florr-text" style="color: #fff;">↳ ${sourceName}: ${subPrefix}${displayVal}${suffix}${tierText}</div>`;
+            });
+
+            detailsHtml += `</div></details>`;
+            html += detailsHtml;
+        }
+    }
+
+    playerStatsContainer.innerHTML = html === "" ? `<em style="color: #aaa;">No stats to show</em>` : html;
+},
+
+renderTalents(container: HTMLElement, talents: Record<string, number>, defs: Record<string, { label: string, step: number, isMulti: boolean, basePrice: number, maxLevel: number, requires?: { id: string, lvl: number } }>, tpInfo: { total: number, spent: number, available: number }, onTalentChange: (id: string, lvl: number) => void) {
+    if (!container) return;
+    
+    let html = `
+    <div style="text-align: center; margin-bottom: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.1);">
+        <span class="florr-text" style="font-size: 1.3em; color: #f1c40f;">Talent Points (TP): <span style="color: ${tpInfo.available > 0 ? '#2ecc71' : '#e74c3c'};">${tpInfo.available}</span> / ${tpInfo.total}</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 480px; margin: 0 auto;">`;
+    
+    for (const [id, def] of Object.entries(defs)) {
+        const lvl = talents[id] || 0;
+        const val = def.isMulti ? 1 + (lvl * def.step) : (lvl * def.step);
+        const prefix = def.isMulti ? "x" : "+";
+        const displayVal = formatNumber(val);
+        
+        const nextCost = def.basePrice * (lvl + 1);
+        const refundAmount = def.basePrice * lvl;
+        const isMaxLevel = lvl >= def.maxLevel;
+        
+        // Vérification de la condition "requires" (est-ce que ce talent est débloqué ?)
+        let isLocked = false;
+        let lockMsg = "";
+        if (def.requires) {
+            const reqLvl = talents[def.requires.id] || 0;
+            if (reqLvl < def.requires.lvl) {
+                isLocked = true;
+                const reqLabel = defs[def.requires.id]?.label || def.requires.id;
+                lockMsg = `Requis: ${reqLabel} Lvl ${def.requires.lvl}`;
+            }
         }
 
-        playerStatsContainer.innerHTML = html === "" ? `<em style="color: #aaa;">Aucune stat modifiée</em>` : html;
+        const canAfford = tpInfo.available >= nextCost && !isMaxLevel && !isLocked;
+
+        // Vérification anti-remboursement (est-ce qu'un autre talent dépend de ce niveau ?)
+        let canDowngrade = lvl > 0;
+        if (canDowngrade) {
+            for (const [depId, depDef] of Object.entries(defs)) {
+                if (depDef.requires?.id === id && (talents[depId] || 0) > 0) {
+                    if (lvl - 1 < depDef.requires.lvl) {
+                        canDowngrade = false; // Bloque le remboursement si ça casse la condition de l'enfant
+                        break;
+                    }
+                }
+            }
+        }
+        
+        html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px; border: 2px solid ${isLocked ? 'rgba(231,76,60,0.5)' : 'rgba(255,255,255,0.1)'}; ${isLocked ? 'opacity: 0.7; filter: grayscale(50%);' : ''}">
+            <div style="display: flex; flex-direction: column;">
+                <span class="florr-text" style="font-size: 1.1em; color: ${isLocked ? '#e74c3c' : '#f1c40f'};">${def.label}</span>
+                ${isLocked ? 
+                    `<span style="font-size: 0.8em; color: #ff7675; font-weight: bold;">🔒 ${lockMsg}</span>` : 
+                    `<span style="font-size: 0.9em; color: #ddd; font-weight: bold;">Bonus : ${prefix}${displayVal}</span>`
+                }
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="talent-btn-minus btn-header" data-id="${id}" style="background-color: ${canDowngrade ? '#e74c3c' : '#95a5a6'} !important; border-color: ${canDowngrade ? '#c0392b' : '#7f8c8d'} !important; width: 45px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; line-height: 1;" ${!canDowngrade ? 'disabled' : ''}>
+                    <span style="font-weight: 900; font-size: 1.2em;">-</span>
+                    <span style="font-size: 0.65em; color: #ffd700;">+${refundAmount} TP</span>
+                </button>
+                
+                <span class="florr-text" style="width: 45px; text-align: center; font-size: 1.1em;">${lvl}/${def.maxLevel}</span>
+                
+                <button class="talent-btn-plus btn-header" data-id="${id}" style="background-color: ${canAfford ? '#2ecc71' : '#95a5a6'} !important; border-color: ${canAfford ? '#27ae60' : '#7f8c8d'} !important; width: 45px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; line-height: 1;" ${!canAfford ? 'disabled' : ''}>
+                    <span style="font-weight: 900; font-size: 1.2em;">${isMaxLevel ? 'MAX' : '+'}</span>
+                    <span style="font-size: 0.65em; color: #ffd700;">${isMaxLevel || isLocked ? '' : `-${nextCost} TP`}</span>
+                </button>
+            </div>
+        </div>`;
     }
+    
+    html += `</div>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll('.talent-btn-minus').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = (e.currentTarget as HTMLElement).getAttribute('data-id')!;
+            const currentLvl = talents[id] || 0;
+            if (currentLvl > 0) {
+                onTalentChange(id, currentLvl - 1);
+            }
+        });
+    });
+    
+    container.querySelectorAll('.talent-btn-plus').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = (e.currentTarget as HTMLElement).getAttribute('data-id')!;
+            const currentLvl = talents[id] || 0;
+            onTalentChange(id, currentLvl + 1);
+        });
+    });
+}
 };

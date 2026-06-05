@@ -1,89 +1,96 @@
-// PlayerValue.ts
-
 import { getEffectiveBuild } from "./inventory";
 import { getObject } from "./GetObject";
 
-const getInitialState = () => ({
-  petal: {
-    damageMulti: 1,
-    damageMultiTiered: [] as { tier: number, value: number }[],
-    healthMulti: 1,
-    healthMultiTiered: [] as { tier: number, value: number }[],
-    armor: 0,
-    armorTiered: [] as { tier: number, value: number }[],
-    armorMulti: 1,
-    armorMultiTiered: [] as { tier: number, value: number }[],
-    heal: 0,
-    healTiered: [] as { tier: number, value: number }[],
-    shield: 0,
-    shieldTiered: [] as { tier: number, value: number }[],
-    reloadFactor: 1,
-    reloadFactorTiered: [] as { tier: number, value: number }[],
-    secondReloadFactor: 1,
-    secondReloadFactorTiered: [] as { tier: number, value: number }[],
-    reloadSkipRate: 0,
-    reloadSkipRateTiered: [] as { tier: number, value: number }[],
-    secondReloadSkipRate: 0,
-    secondReloadSkipRateTiered: [] as { tier: number, value: number }[],
-    manaCostFactor: 1,
-    manaCostFactorTiered: [] as { tier: number, value: number }[],
-    luck: 0,
-    luckTiered: [] as { tier: number, value: number }[],
-    
-    hasJoystick: { active: false, tier: 0 } 
-  },
-  player: {
-    heal: 0,
-    healMulti: 1,
-    manaGeneration: 0,
-    manaGenerationMulti: 1,
-    manaDrain: 0,
-    shield: 0,
-    armor: 0,
-    armorMulti: 1,
-    bodyDamage: 0,
-    bodyDamageMulti: 1,
-    evasion: 0,
-    damageReduction: 0,
-    damageReflection: 0,
-  },
-  pet: {
-    damageMulti: 1,
-    damageMultiTiered: [] as { tier: number, value: number }[],
-    heal: 0,
-    shield: 0,
-    armor: 0,
-    mutation: 0,
-    mutationTiered: [] as { tier: number, value: number }[],
-    variantMutation: 0,
-    paranormalRate: 0,
-    fullRegenRate: 0,
-    dupeRate: 0,
-  },
-  mob: {
-    damageMulti: 1,
-    armor: 0,
-    armorMulti: 1,
-  },
-  status: {
-    fireDuration: 0,
-    poisonDuration: 0,
-    lightningBounce: 0,
-    lightningMultiRate: 0,
-  },
-  mana: {
-    generation: 0,
-    drain: 0,
-    capacityMulti: 1,
-  },
-});
+const getInitialState = () => {
+  const createEmptyArray = () => [] as { source: string, value: number, tierReq: number }[];
+  return {
+    petal: {
+      damageMulti: createEmptyArray(),
+      healthMulti: createEmptyArray(),
+      armor: createEmptyArray(),
+      armorMulti: createEmptyArray(),
+      heal: createEmptyArray(),
+      shield: createEmptyArray(),
+      reloadFactor: createEmptyArray(),
+      secondReloadFactor: createEmptyArray(),
+      reloadSkipRate: createEmptyArray(),
+      secondReloadSkipRate: createEmptyArray(),
+      manaCostFactor: createEmptyArray(),
+      luck: createEmptyArray(),
+      hasJoystick: { active: false, tier: 0 } 
+    },
+    player: {
+      heal: createEmptyArray(),
+      healMulti: createEmptyArray(),
+      manaGeneration: createEmptyArray(),
+      manaGenerationMulti: createEmptyArray(),
+      manaDrain: createEmptyArray(),
+      shield: createEmptyArray(),
+      armor: createEmptyArray(),
+      armorMulti: createEmptyArray(),
+      bodyDamage: createEmptyArray(),
+      bodyDamageMulti: createEmptyArray(),
+      evasion: createEmptyArray(),
+      damageReduction: createEmptyArray(),
+      damageReflection: createEmptyArray(),
+    },
+    pet: {
+      damageMulti: createEmptyArray(),
+      healthMulti: createEmptyArray(),
+      heal: createEmptyArray(),
+      shield: createEmptyArray(),
+      armor: createEmptyArray(),
+      mutation: createEmptyArray(),
+      variantMutation: createEmptyArray(),
+      paranormalRate: createEmptyArray(),
+      fullRegenRate: createEmptyArray(),
+      dupeRate: createEmptyArray(),
+    },
+    mob: {
+      damageMulti: createEmptyArray(),
+      armor: createEmptyArray(),
+      armorMulti: createEmptyArray(),
+    },
+    status: {
+      fireDuration: createEmptyArray(),
+      poisonDuration: createEmptyArray(),
+      lightningBounce: createEmptyArray(),
+      lightningMultiRate: createEmptyArray(),
+    },
+    mana: {
+      generation: createEmptyArray(),
+      drain: createEmptyArray(),
+      capacityMulti: createEmptyArray(),
+    },
+  };
+};
+
+export const TALENTS_DEF: Record<string, { label: string, step: number, isMulti: boolean, basePrice: number, maxLevel: number, requires?: { id: string, lvl: number } }> = {
+    "player.healMulti": { label: "Player Heal Multi", step: 0.1, isMulti: true, basePrice: 1, maxLevel: 50 },
+    "player.manaGenerationMulti": { label: "Player Mana Gen Multi", step: 0.1, isMulti: true, basePrice: 1, maxLevel: 50, requires: { id: "player.healMulti", lvl: 3 } },
+    "petal.damageMulti": { label: "Petal Damage Multi", step: 0.03, isMulti: true, basePrice: 1, maxLevel: 50 },
+    "petal.reloadFactor": { label: "Petal Reload Speed", step: 0.03, isMulti: true, basePrice: 1, maxLevel: 50 },
+    "petal.luck": { label: "Petal Luck", step: 0.0045, isMulti: false, basePrice: 1, maxLevel: 50 },
+    "petal.healthMulti": { label: "Petal Health Multi", step: 0.05, isMulti: true, basePrice: 1, maxLevel: 50 },
+    "pet.healthMulti": { label: "Pet Health Multi", step: 0.03, isMulti: true, basePrice: 1, maxLevel: 50 },
+    "pet.damageMulti": { label: "Pet Damage Multi", step: 0.03, isMulti: true, basePrice: 1, maxLevel: 50 }
+};
 
 export const PlayerValue = {
   level: Number(localStorage.getItem("zorr_player_level")) || 45,
+  talents: JSON.parse(localStorage.getItem("zorr_talents") || "{}") as Record<string, number>,
   
   setLevel(lvl: number) {
       this.level = lvl;
       localStorage.setItem("zorr_player_level", lvl.toString());
+  },
+
+  setTalent(id: string, lvl: number) {
+      const def = TALENTS_DEF[id];
+      if (def) {
+          this.talents[id] = Math.min(Math.max(0, lvl), def.maxLevel);
+          localStorage.setItem("zorr_talents", JSON.stringify(this.talents));
+      }
   },
   
   getMaxSlots() {
@@ -95,13 +102,29 @@ export const PlayerValue = {
 
   reset() {
     const savedLevel = this.level; 
+    const savedTalents = this.talents;
     Object.assign(this, getInitialState());
     this.level = savedLevel; 
+    this.talents = savedTalents;
   },
 
   updateFromSlots() {
     this.reset();
-    const baseState = getInitialState();
+
+    for (const [id, def] of Object.entries(TALENTS_DEF)) {
+        const lvl = this.talents[id] || 0;
+        if (lvl > 0) {
+            const val = def.isMulti ? 1 + (lvl * def.step) : (lvl * def.step);
+            const parts = id.split(".");
+            if (parts.length === 2 && (this as any)[parts[0]] && (this as any)[parts[0]][parts[1]]) {
+                (this as any)[parts[0]][parts[1]].push({
+                    source: "Talents",
+                    value: val,
+                    tierReq: Infinity
+                });
+            }
+        }
+    }
 
     const effectiveBuild = getEffectiveBuild();
 
@@ -135,45 +158,25 @@ export const PlayerValue = {
             effectValue = 1 + ((effectValue.chance / 100) * (effectValue.multiplier - 1));
           }
           
+          const tierReqValue = effect.tierRestricted ? finalStatTier : Infinity;
+
           if (parts.length === 2) {
             const [category, stat] = parts;
             if ((this as any)[category] && typeof (this as any)[category][stat] !== "undefined") {
-              const baseValue = (baseState as any)[category][stat];
-              
-              if (effect.tierRestricted) {
-                 const targetArray = (this as any)[category][stat + "Tiered"];
-                 if (targetArray) {
-                    targetArray.push({ tier: finalStatTier, value: effectValue });
-                 }
-              } else {
-                  if (stat.includes("Factor")) {
-                    (this as any)[category][stat] *= Math.max(0.01, 1 + (effectValue / 100));
-                  } else if (baseValue === 1) {
-                    (this as any)[category][stat] *= effectValue;
-                  } else {
-                    (this as any)[category][stat] += effectValue;
-                  }
-              }
+               (this as any)[category][stat].push({
+                  source: finalName,
+                  value: effectValue,
+                  tierReq: tierReqValue
+               });
             }
           } else if (parts.length === 3) {
             const [category, sub, stat] = parts;
             if ((this as any)[category] && (this as any)[category][sub] && typeof (this as any)[category][sub][stat] !== "undefined") {
-              const baseValue = (baseState as any)[category][sub][stat];
-              
-              if (effect.tierRestricted) {
-                 const targetArray = (this as any)[category][sub][stat + "Tiered"];
-                 if (targetArray) {
-                    targetArray.push({ tier: finalStatTier, value: effectValue });
-                 }
-              } else {
-                  if (stat.includes("Factor")) {
-                    (this as any)[category][sub][stat] *= Math.max(0.01, 1 + (effectValue / 100));
-                  } else if (baseValue === 1) {
-                    (this as any)[category][sub][stat] *= effectValue;
-                  } else {
-                    (this as any)[category][sub][stat] += effectValue;
-                  }
-              }
+               (this as any)[category][sub][stat].push({
+                  source: finalName,
+                  value: effectValue,
+                  tierReq: tierReqValue
+               });
             }
           }
         }

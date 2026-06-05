@@ -1,24 +1,22 @@
-// GameController.ts
+import petals from "../data/petals.json";
+import mobs from "../data/mobs.json";
+import spills from "../data/spills.json";
+import eggs from "../data/eggs.json";
+import utilities from "../data/utilities.json";
+import radiation from "../data/radiation.json";
 
-import petals from "./data/petals.json";
-import mobs from "./data/mobs.json";
-import spills from "./data/spills.json";
-import eggs from "./data/eggs.json";
-import utilities from "./data/utilities.json";
-import radiation from "./data/radiation.json";
-
-import { getObject } from "./GetObject";
-import { DpsCalculator } from "./DpsCalculator";
-import { PlayerValue } from "./PlayerValue";
+import { getObject } from "../GetObject";
+import { DpsCalculator } from "../DpsCalculator";
+import { PlayerValue, TALENTS_DEF } from "../PlayerValue";
 import { 
     addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, 
     getProcessedInventory, getEquippedSlots, getEquippedCount,
     getEffectiveBuild, getMaxSlots, enforceSlotLimit,
     clearInventory, exportInventoryData, importInventoryData,
-    removeOneItemByNameAndTier // <-- NOUVEAU
-} from "./inventory";
+    removeOneItemByNameAndTier 
+} from "../inventory";
 
-import { TIERS } from "./constants"; 
+import { TIERS } from "../constants"; 
 
 export const allData: Record<string, any> = {
     ...petals,
@@ -41,52 +39,70 @@ export const GameController = {
         return PlayerValue.level;
     },
 
-    refreshPlayerStats() {
-        PlayerValue.reset();
-        const baseState = JSON.parse(JSON.stringify(PlayerValue));
-        PlayerValue.updateFromSlots();
-        return baseState; 
+    getTalents() { return PlayerValue.talents; },
+    getTalentDefs() { return TALENTS_DEF; },
+    setTalentLevel(id: string, lvl: number) { PlayerValue.setTalent(id, lvl); },
+
+    getTPInfo() {
+        const talents = PlayerValue.talents;
+        let spent = 0;
+        for (const [id, def] of Object.entries(TALENTS_DEF)) {
+            const lvl = talents[id] || 0;
+            // Somme de 1 à N = N * (N + 1) / 2
+            spent += def.basePrice * (lvl * (lvl + 1)) / 2;
+        }
+        const total = Math.max(0, PlayerValue.level - 1);
+        const available = total - spent;
+        return { total, spent, available };
     },
 
-    getPlayerStatsDiff(baseState: any) {
-        const diffs = [];
-        for (const category of Object.keys(baseState)) {
-            const baseCat = baseState[category];
+    refreshPlayerStats() {
+        PlayerValue.reset();
+        PlayerValue.updateFromSlots();
+    },
+
+    getPlayerStatsDiff() {
+        const diffs: any[] = [];
+        const categories = ["petal", "player", "pet", "mob", "status", "mana"];
+
+        for (const category of categories) {
             const currCat = (PlayerValue as any)[category];
-            
-            if (typeof baseCat === "object" && baseCat !== null) {
-                for (const stat of Object.keys(baseCat)) {
+            if (typeof currCat === "object" && currCat !== null) {
+                for (const stat of Object.keys(currCat)) {
                     if (stat === "hasJoystick") continue;
 
-                    if (stat.endsWith("Tiered")) {
-                        const tieredArray = currCat[stat];
-                        if (Array.isArray(tieredArray) && tieredArray.length > 0) {
-                            const baseStatName = stat.replace("Tiered", "");
-                            const baseValue = baseCat[baseStatName];
-                            for (const mod of tieredArray) {
-                                diffs.push({ category, stat: baseStatName, tierReq: mod.tier, value: mod.value, baseValue });
-                            }
-                        }
-                        continue;
-                    }
-
-                    if (typeof baseCat[stat] === "number") {
-                        if (currCat[stat] !== baseCat[stat]) {
-                            diffs.push({ category, stat, value: currCat[stat], baseValue: baseCat[stat] });
-                        }
-                    } else if (typeof baseCat[stat] === "object" && baseCat[stat] !== null && !Array.isArray(baseCat[stat])) {
-                        for (const sub of Object.keys(baseCat[stat])) {
-                            if (currCat[stat][sub] !== baseCat[stat][sub]) {
-                                diffs.push({ category, stat: `${stat}.${sub}`, value: currCat[stat][sub], baseValue: baseCat[stat][sub] });
-                            }
+                    const boostArray = currCat[stat];
+                    if (Array.isArray(boostArray) && boostArray.length > 0) {
+                        for (const mod of boostArray) {
+                            const isMultiplier = stat.toLowerCase().includes("multi") || stat.toLowerCase().includes("factor");
+                            diffs.push({
+                                category,
+                                stat,
+                                source: mod.source,
+                                tierReq: mod.tierReq === Infinity ? undefined : mod.tierReq,
+                                value: mod.value,
+                                isMultiplier
+                            });
                         }
                     }
                 }
             }
         }
+        
         const hasJoystick = (PlayerValue as any).petal?.hasJoystick?.active || false;
-        const joystickTier = (PlayerValue as any).petal?.hasJoystick?.tier || 0; // <-- NOUVEAU
-        return { diffs, hasJoystick, joystickTier }; // <-- NOUVEAU
+        if (hasJoystick) {
+            diffs.push({
+                category: "Special",
+                stat: "Joystick Synergy",
+                source: "Joystick",
+                tierReq: (PlayerValue as any).petal?.hasJoystick?.tier || 0,
+                value: "Active",
+                isMultiplier: false,
+                isJoystickFlag: true
+            });
+        }
+        
+        return { diffs };
     },
 
     getSlotsData(targetName: string, targetTier: number) {
