@@ -222,6 +222,220 @@
       { "type": "Poison", "duration": 5, "value": 35, "stack": false }
     ]
   },
+  "Bush": {
+    "name": "Bush",
+    "object": "mob",
+    "health": 80,
+    "damage": 10,
+    "armor": 0.1
+  },
+  "Sponge": {
+    "name": "Sponge",
+    "object": "mob",
+    "health": 100,
+    "damage": 10,
+    "armor": 0.2
+  },
+  "Cactus": {
+    "name": "Cactus",
+    "object": "mob",
+    "health": 125,
+    "damage": 75,
+    "armor": 0.2
+  },
+  "Baby Ant": {
+    "name": "Baby Ant",
+    "object": "mob",
+    "health": 25,
+    "damage": 10,
+    "armor": 0.2
+  },
+  "Baby Fire Ant": {
+    "name": "Baby Fire Ant",
+    "object": "mob",
+    "health": 25,
+    "damage": 20,
+    "armor": 0.2
+  },
+  "Mushroom": {
+    "name": "Mushroom",
+    "object": "mob",
+    "health": 100,
+    "damage": 15,
+    "armor": 0.1,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 40, "stack": false }
+    ]
+  },
+  "Spider": {
+    "name": "Spider",
+    "object": "mob",
+    "health": 50,
+    "damage": 15,
+    "armor": 0.2,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 15, "stack": false }
+    ]
+  },
+  "Worker Ant": {
+    "name": "Worker Ant",
+    "object": "mob",
+    "health": 50,
+    "damage": 10,
+    "armor": 0.2
+  },
+  "Hornet": {
+    "name": "Hornet",
+    "object": "mob",
+    "health": 50,
+    "damage": 50,
+    "armor": 0.2
+  },
+  "Shell": {
+    "name": "Shell",
+    "object": "mob",
+    "health": 100,
+    "damage": 25,
+    "armor": 1
+  },
+  "Yoba": {
+    "name": "Yoba",
+    "object": "mob",
+    "health": 400,
+    "damage": 40,
+    "armor": 0.3
+  },
+  "Centipede": {
+    "name": "Centipede",
+    "object": "mob",
+    "health": 25,
+    "damage": 10,
+    "armor": 0.2
+  },
+  "Desert Centipede": {
+    "name": "Desert Centipede",
+    "object": "mob",
+    "health": 25,
+    "damage": 10,
+    "armor": 0.2
+  },
+  "Sunflower": {
+    "name": "Sunflower",
+    "object": "mob",
+    "health": 75,
+    "damage": 10,
+    "armor": 0.2
+  },
+  "M28": {
+    "name": "M28",
+    "object": "mob",
+    "health": 135,
+    "damage": 55,
+    "armor": 0.3
+  },
+  "Elasmosaurus": {
+    "name": "Elasmosaurus",
+    "object": "mob",
+    "health": 1550,
+    "damage": 125,
+    "armor": 3
+  },
+  "Dodo": {
+    "name": "Elasmosaurus",
+    "object": "mob",
+    "health": 300,
+    "damage": 115,
+    "armor": 0.1
+  },
+  "Pterodactyl": {
+    "name": "Pterodactyl",
+    "object": "mob",
+    "health": 750,
+    "damage": 110,
+    "armor": 1
+  },
+  "Ankylosaurus": {
+    "name": "Ankylosaurus",
+    "object": "mob",
+    "health": 1100,
+    "damage": 165,
+    "armor": 7.5
+  },
+  "Meteor": {
+    "name": "Meteor",
+    "object": "mob",
+    "health": 1500,
+    "damage": 40,
+    "armor": 10
+  },
+  "Rock": {
+    "name": "Rock",
+    "object": "mob",
+    "health": 300,
+    "damage": 40,
+    "armor": 0.5
+  },
+  "Hel Digger": {
+    "name": "Hel Digger",
+    "object": "mob",
+    "health": 200,
+    "damage": 80,
+    "armor": 0.75,
+    "effects": [
+      { "type": "Fire", "duration": 3, "value": 120, "stack": false }
+    ]
+  },
+  "Gift": {
+    "name": "Ankylosaurus",
+    "object": "mob",
+    "health": 1250,
+    "damage": 30,
+    "armor": 1.5
+  },
+  "Spider Digger": {
+    "name": "Spider Digger",
+    "object": "mob",
+    "health": 260,
+    "damage": 190,
+    "armor": 0.5,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 75, "stack": false }
+    ]
+  },
+  "Beetle": {
+    "name": "Beetle",
+    "object": "mob",
+    "health": 100,
+    "damage": 30,
+    "armor": 0.2
+  },
+  "Boba": {
+    "name": "Boba",
+    "object": "mob",
+    "health": 600,
+    "damage": 50,
+    "armor": 0.2,
+    "effects": [
+      { "type": "Explosion", "value": 30, "stack": false }
+    ]
+  },
+  "Evil Centipede": {
+    "name": "Evil Centipede",
+    "object": "mob",
+    "health": 25,
+    "damage": 10,
+    "armor": 0.2,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 5, "stack": false }
+    ]
+  },
+  "Queen Ant": {
+    "name": "Queen Ant",
+    "object": "mob",
+    "health": 250,
+    "damage": 10,
+    "armor": 0.2
+  },
   "Nuke": {
     "name": "Nuke",
     "object": "mob",

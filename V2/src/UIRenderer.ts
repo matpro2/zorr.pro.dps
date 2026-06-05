@@ -56,18 +56,17 @@ function getSequenceColor(index: number): string {
     return (colorObj as any)[key];
 }
 
-// --- NOUVELLE FONCTION : CALCUL DE LA COULEUR DU DPS ---
 function getDpsColor(dps: number): string {
-    if (!dps || dps <= 0) return "rgb(255, 80, 80)"; // Rouge par défaut
+    if (!dps || dps <= 0) return "rgb(255, 80, 80)"; 
     
     const milestones = [
-        { limit: 0,          color: [255, 80, 80] },   // Rouge
-        { limit: 1000,       color: [255, 165, 0] },   // Orange
-        { limit: 1000000,    color: [255, 235, 50] },  // Jaune
-        { limit: 1000000000, color: [80, 255, 80] }    // Vert
+        { limit: 10,          color: [255, 80, 80] },   
+        { limit: 1000,       color: [255, 165, 0] },   
+        { limit: 100000,    color: [255, 235, 50] },  
+        { limit: 10000000, color: [80, 255, 80] }    
     ];
 
-    if (dps >= 1000000000) return "rgb(80, 255, 80)"; // Max Vert
+    if (dps >= 10000000) return "rgb(80, 255, 80)"; 
 
     for (let i = 0; i < milestones.length - 1; i++) {
         const lower = milestones[i];
@@ -77,7 +76,6 @@ function getDpsColor(dps: number): string {
             const range = upper.limit - lower.limit;
             const percent = (dps - lower.limit) / range;
             
-            // Interpolation linéaire des couleurs RGB
             const r = Math.round(lower.color[0] + (upper.color[0] - lower.color[0]) * percent);
             const g = Math.round(lower.color[1] + (upper.color[1] - lower.color[1]) * percent);
             const b = Math.round(lower.color[2] + (upper.color[2] - lower.color[2]) * percent);
@@ -87,7 +85,6 @@ function getDpsColor(dps: number): string {
     }
     return "rgb(255, 80, 80)";
 }
-// --------------------------------------------------------
 
 function createCard(config: CardConfig): HTMLDivElement {
     const div = document.createElement("div");
@@ -162,6 +159,11 @@ function createCard(config: CardConfig): HTMLDivElement {
                 let displayVal = typeof effect.value === "object" && effect.value !== null
                     ? `${effect.value.chance}% (x${effect.value.multiplier})`
                     : (typeof effect.value === "number" ? formatNumber(effect.value) : String(effect.value));
+                
+                if (effect.subExplosion !== undefined) {
+                    displayVal += ` (x${1 + effect.subExplosion} hits)`;
+                }
+
                 let effectName = effect.type.split('.').pop() || effect.type;
                 effectName = effectName.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim();
                 
@@ -176,7 +178,6 @@ function createCard(config: CardConfig): HTMLDivElement {
     let dpsBreakdown = "";
     if (config.dpsCategory && config.dpsCategory.length > 0 && !isTarget) {
         const breakdownText = config.dpsCategory.map((cat: any) => 
-            // Application de getDpsColor avec une ombre noire renforcée
             `<div style="display:flex; justify-content:space-between; margin-bottom: 2px;">
                 <span>${cat.type}:</span> 
                 <strong style="color: ${getDpsColor(cat.dps)}; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">${formatNumber(cat.dps)}</strong>
@@ -241,23 +242,17 @@ function createCard(config: CardConfig): HTMLDivElement {
     innerHTML += `<div class="card-name" style="font-size: ${dynamicSize}px;">${config.effectiveName}</div>`;
 
     if (!isTarget && config.type !== 'catalog' && config.type !== 'mob-catalog') {
-         // Application de getDpsColor avec une ombre renforcée pour assurer la lisibilité
          innerHTML += `<div class="card-dps" style="display: ${(config.dps || 0) > 0 ? 'block' : 'none'}; background-color: ${borderColor}; color: ${getDpsColor(config.dps || 0)} !important; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8) !important;">
             ${formatNumber(config.dps || 0)}
         </div>`;
     }
     innerHTML += `</div>`; 
 
-    if (config.type === 'inventory') {
-        innerHTML += `<div class="delete-overlay">
-            <button class="inv-remove-one del-btn">Del 1</button>
-            <button class="inv-remove-all del-btn">Del All</button>
-        </div>`;
-    }
-
+    // --- NOUVEAU : Le catalogue affiche les DEUX boutons ---
     if (config.type === 'catalog') {
-        innerHTML += `<div class="add-overlay">
+        innerHTML += `<div class="edit-overlay">
             <button class="cat-add-btn add-btn">Add</button>
+            <button class="cat-rem-btn del-btn">Del</button>
         </div>`;
     }
 
@@ -333,7 +328,6 @@ export const UIRenderer = {
         });
 
         if (totalDpsDisplay) {
-            // Application de getDpsColor au compteur Total
             totalDpsDisplay.innerHTML = `Total DPS: <span style="color: ${getDpsColor(data.totalDps)}; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.5); padding-left: 5px;">${formatNumber(data.totalDps)}</span>`;
         }
     },
@@ -408,20 +402,6 @@ export const UIRenderer = {
                 totalQty: item.quantity
             });
 
-            const btnRemoveOne = card.querySelector('.inv-remove-one');
-            if (btnRemoveOne) btnRemoveOne.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                GameController.removeOneItem(item.id); 
-                onRefresh(); 
-            });
-
-            const btnRemoveAll = card.querySelector('.inv-remove-all');
-            if (btnRemoveAll) btnRemoveAll.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                GameController.removeAllItems(item.id); 
-                onRefresh(); 
-            });
-
             card.addEventListener('click', () => {
                 if (available > 0 && hasEmptySlot) {
                     GameController.equipItem(item.id); 
@@ -438,7 +418,8 @@ export const UIRenderer = {
         tier: number, 
         searchQuery: string,
         inventoryItems: any[], 
-        onAdd: (name: string, tier: number) => void
+        onAdd: (name: string, tier: number) => void,
+        onRemove: (name: string, tier: number) => void // <-- NOUVEAU CALLBACK
     ) {
         catalogGrid.innerHTML = "";
         let allNames = GameController.getAllItemNames();
@@ -485,6 +466,15 @@ export const UIRenderer = {
                 btnAdd.addEventListener('click', (e) => {
                     e.stopPropagation();
                     onAdd(name, tier);
+                });
+            }
+
+            // NOUVEAU: Écouteur pour la suppression via le catalogue
+            const btnRem = card.querySelector('.cat-rem-btn');
+            if (btnRem) {
+                btnRem.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    onRemove(name, tier);
                 });
             }
 
@@ -581,8 +571,14 @@ export const UIRenderer = {
         if (diffData.hasJoystick) {
             let nameColor = getSequenceColor(statIndex);
             statIndex++;
+            
+            // --- NOUVEAU : Récupération du nom et de la couleur du tier du joystick ---
+            const jTier = diffData.joystickTier;
+            const tierName = TIERS[jTier]?.Name || `T${jTier}`;
+            const tierColor = TIERS[jTier]?.Background || "#f1c40f";
+            
             html += `<div class="florr-text" style="font-size: 1.1em; margin-bottom: 4px; letter-spacing: 0.5px;">
-                        <span style="color: ${nameColor};">Synergie Active</span>: Joystick
+                        <span style="color: ${nameColor};">Joystick</span>: active (<span style="color: ${tierColor};">${tierName}</span>)
                      </div>`;
         }
 

@@ -376,8 +376,6 @@ export function unequipSlot(index: number) {
     }
 }
 
-// --- NOUVELLES FONCTIONS : CLEAR, EXPORT, IMPORT ---
-
 export function clearInventory() {
     inventory = [];
     equippedSlots = Array(30).fill(null);
@@ -401,5 +399,12 @@ export function importInventoryData(data: any[]) {
                 addItem(item.name, item.tier, qty);
             }
         }
+    }
+}
+
+export function removeOneItemByNameAndTier(name: string, tier: number) {
+    const item = inventory.find(i => i.name === name && i.tier === tier);
+    if (item) {
+        removeOneItem(item.id);
     }
 }

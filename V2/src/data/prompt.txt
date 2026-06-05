@@ -15,17 +15,16 @@ Output ONLY the raw JSON block. No conversational filler, no explanations.
 Expected Structure:
 JSON
 
-{
-  "[Name] Egg": {
-    "name": "[Name] Egg",
-    "object": "pet",
-    "type": "egg",
-    "entity": { "base": 1, "multi": 3 },
-    "reload": 1.0,
-    "secondReload": [val1, val2, val3, ...],
-    "petName": "[Name]",
-    "petTier": { "gap": "[Duplicate_Tier]" }
-  }
-}
+
+ "[Name] Egg": {
+   "name": "[Name] Egg",
+   "object": "pet",
+   "type": "egg",
+   "entity": { "base": 1, "multi": 3 },
+   "reload": 1.0,
+   "secondReload": [val1, val2, val3, ...],
+   "petName": "[Name]",
+   "petTier": { "gap": "[Duplicate_Tier]" }
+ },
 
 ----------------------------------------------------

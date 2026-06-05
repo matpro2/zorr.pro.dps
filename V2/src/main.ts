@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
         mobCatalogSearchInput: document.getElementById('mob-catalog-search-input') as HTMLInputElement,
         mobCatalogGrid: document.getElementById('mob-catalog-grid') as HTMLDivElement,
 
-        // --- NOUVEAU: Import / Export / Clear ---
+        // Import / Export / Clear
         btnClearInventory: document.getElementById('btn-clear-inventory') as HTMLButtonElement,
         btnExportInventory: document.getElementById('btn-export-inventory') as HTMLButtonElement,
         btnImportInventory: document.getElementById('btn-import-inventory') as HTMLButtonElement,
@@ -76,11 +76,22 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const inventoryItems = GameController.getInventoryData(dom.targetNameInput.value, Number(dom.targetTierInput.value), "all", "");
 
-        UIRenderer.renderCatalog(dom.catalogGrid, tier, searchQuery, inventoryItems, (name: string, tier: number) => {
-            GameController.addItem(name, tier, 1);
-            refreshAll(); 
-            refreshCatalog(); 
-        });
+        UIRenderer.renderCatalog(
+            dom.catalogGrid, 
+            tier, 
+            searchQuery, 
+            inventoryItems, 
+            (name: string, tier: number) => { // Callback d'ajout
+                GameController.addItem(name, tier, 1);
+                refreshAll(); 
+                refreshCatalog(); 
+            },
+            (name: string, tier: number) => { // NOUVEAU: Callback de suppression
+                GameController.removeOneItemByNameAndTier(name, tier);
+                refreshAll();
+                refreshCatalog();
+            }
+        );
     }
 
     function refreshMobCatalog() {
@@ -108,18 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- 5. GESTION DU MODE SUPPRESSION (SHIFT) ---
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Shift") document.body.classList.add("shift-mode");
-    });
-    document.addEventListener("keyup", (e) => {
-        if (e.key === "Shift") document.body.classList.remove("shift-mode");
-    });
-    window.addEventListener("blur", () => {
-        document.body.classList.remove("shift-mode");
-    });
-
-    // --- 6. GESTION DES LIGHTBOX ---
+    // --- 5. GESTION DES LIGHTBOX ---
     
     // Talents
     if (dom.btnOpenTalents && dom.btnCloseTalents && dom.talentsLightbox) {
@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (dom.mobCatalogTierInput) dom.mobCatalogTierInput.addEventListener('change', refreshMobCatalog);
     if (dom.mobCatalogSearchInput) dom.mobCatalogSearchInput.addEventListener('input', refreshMobCatalog);
 
-    // --- 7. NOUVEAU: GESTION CLEAR / IMPORT / EXPORT ---
+    // --- 6. GESTION CLEAR / IMPORT / EXPORT ---
     if (dom.btnClearInventory) {
         dom.btnClearInventory.addEventListener('click', () => {
             if (confirm("Voulez-vous vraiment vider tout votre inventaire et vos pétales équipées ?")) {
@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 } catch (err) {
                     alert("Erreur lors de l'importation. Le fichier JSON est invalide.");
                 }
-                dom.importFileInput.value = ""; // Réinitialise l'input pour pouvoir réimporter le même fichier si besoin
+                dom.importFileInput.value = ""; 
             };
             reader.readAsText(file);
         });

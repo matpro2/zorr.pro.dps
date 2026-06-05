@@ -9,6 +9,46 @@
     "petName": "Bee",
     "petTier": { "gap": "Epic" }
   },
+  "Bush Egg": {
+    "name": "Bush Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [1, 2, 3, 4.5, 6, 8, 2, 5, 9, 20],
+    "petName": "Bush",
+    "petTier": { "gap": "Mythic" }
+  },
+  "Sponge Egg": {
+    "name": "Sponge Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [3, 4, 5, 6, 7, 8, 2.5, 6, 10, 27],
+    "petName": "Sponge",
+    "petTier": { "gap": "Mythic" }
+  },
+  "Cactus Egg": {
+    "name": "Cactus Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [4, 4.5, 5.25, 6, 7.5, 9, 2.5, 6, 12.5, 30],
+    "petName": "Cactus",
+    "petTier": { "gap": "Mythic" }
+  },
+  "Baby Ant Egg": {
+    "name": "Baby Ant Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [1, 1.5, 2.25, 3, 4, 5.25, 0.5, 1.5, 3.5, 9],
+    "petName": "Baby Ant",
+    "petTier": { "gap": "Mythic" }
+  },
   "Bubble Egg": {
     "name": "Bubble Egg",
     "object": "pet",
@@ -398,6 +438,276 @@
     "secondReload": [4, 5, 6.5, 8, 10, 11, 3, 5, 10, 20],
     "petName": "Soldier Ant",
     "petTier": { "gap": "Rare" }
+  },
+  "Worker Ant Egg": {
+    "name": "Worker Ant Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 4, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [3, 5, 8, 10, 2.5, 4, 6, 5, 12.5, 30],
+    "petName": "Worker Ant",
+    "petTier": { "gap": "Rare" }
+  },
+  "Queen Ant Egg": {
+    "name": "Queen Ant Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [5, 7.5, 10, 2.5, 3, 4.5, 6.5, 9, 15, 37.5],
+    "petName": "Queen Ant",
+    "petTier": { "gap": "Rare" }
+  },
+  "Baby Fire Ant Egg": {
+    "name": "Baby Fire Ant Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [2.5, 3.5, 5, 6.5, 8, 9.5, 2, 3, 5.5, 13.5],
+    "petName": "Baby Fire Ant",
+    "petTier": { "gap": "Mythic" }
+  },
+    "Mushroom Egg": {
+    "name": "Mushroom Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [4, 5, 7.5, 9, 11, 13, 2.5, 5, 11.25, 32.5],
+    "petName": "Mushroom",
+    "petTier": { "gap": "Mythic" }
+  },
+  "Jellyfish Egg": {
+    "name": "Jellyfish Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [5, 6, 7.5, 9.5, 11.25, 3, 5, 8, 12.5, 37.5],
+    "petName": "Jellyfish",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Spider Egg": {
+    "name": "Spider Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [5, 7, 9.5, 11.5, 13, 3, 5, 6, 10, 28.75],
+    "petName": "Spider",
+    "petTier": { "gap": "Legendary" }
+  },
+    "Hornet Egg": {
+    "name": "Hornet Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [4.5, 6, 8, 10, 13, 2, 4, 7, 14, 47.5],
+    "petName": "Hornet",
+    "petTier": { "gap": "Legendary" }
+  },
+    "Shell Egg": {
+    "name": "Shell Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [2, 4, 6, 9, 13, 2, 3, 5, 10, 27.75],
+    "petName": "Shell",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Ant Hole Egg": {
+    "name": "Ant Hole Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 15, "multi": 1.666666666666666667 },
+    "reload": 1.0,
+    "secondReload": [15, 20, 25, 4, 6, 10, 14, 15, 25, 105],
+    "petName": "Soldier Ant",
+    "petTier": { "gap": "Rare" }
+  },
+  "Fire Ant Hole Egg": {
+    "name": "Fire Ant Hole Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 15, "multi": 1.6666666666666667 },
+    "reload": 1.0,
+    "secondReload": [15, 21.5, 26.75, 3, 5, 10, 15, 20, 27.5, 120],
+    "petName": "Soldier Fire Ant",
+    "petTier": { "gap": "Rare" }
+  },
+    "Yoba Egg": {
+    "name": "Yoba Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [5, 7.5, 10, 13, 17.5, 5.5, 7.5, 6, 17.5, 47.5],
+    "petName": "Yoba",
+    "petTier": { "gap": "Legendary" }
+  },
+    "Centipede Egg": {
+    "name": "Centipede Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [5, 10, 15, 2, 3, 4, 5, 6, 15, 25],
+    "petName": "Centipede",
+    "petTier": { "gap": "Rare" }
+  },
+  "Desert Centipede Egg": {
+    "name": "Desert Centipede Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [5, 10, 15, 2, 3, 4, 5, 6, 15, 25],
+    "petName": "Desert Centipede",
+    "petTier": { "gap": "Rare" }
+  },
+  "Evil Centipede Egg": {
+    "name": "Evil Centipede Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [5, 10, 15, 2, 3, 4, 5, 6, 15, 25],
+    "petName": "Evil Centipede",
+    "petTier": { "gap": "Rare" }
+  },
+  "Sunflower Egg": {
+    "name": "Sunflower Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [2, 3, 4.5, 6, 7.5, 9, 2.5, 4, 10, 22.5],
+    "petName": "Sunflower",
+    "petTier": { "gap": "Mythic" }
+  },
+  "Boba Egg": {
+    "name": "Boba Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [2, 3, 4, 5, 6.5, 1.5, 2, 3, 5, 12.5],
+    "petName": "Boba",
+    "petTier": { "gap": "Legendary" }
+  },
+  "M28 Egg": {
+    "name": "M28 Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [6, 7, 8, 9, 11, 3.5, 5.5, 10, 12.5, 42],
+    "petName": "M28",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Beetle Egg": {
+    "name": "Beetle Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [2, 3, 4, 5, 6, 3.5, 5, 7.5, 13, 45],
+    "petName": "Beetle",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Elasmosaurus Egg": {
+    "name": "Elasmosaurus Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [22, 12, 15, 17, 20, 14, 15, 14, 16, 32],
+    "petName": "Elasmosaurus",
+    "petTier": { "gap": "Common" }
+  },
+  "Dodo Egg": {
+    "name": "Dodo Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 2 },
+    "reload": 1.0,
+    "secondReload": [16, 9, 11, 12, 19, 8, 9, 8, 6, 28],
+    "petName": "Dodo",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Hel Hive Egg": {
+    "name": "Hel Hive Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 10, "multi": 1.5 },
+    "reload": 1.0,
+    "secondReload": [15, 20, 25, 30, 35, 7.5, 15, 22.5, 35, 135],
+    "petName": "Hel Bee",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Gift Egg": {
+    "name": "Gift Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 1 },
+    "reload": 1.0,
+    "secondReload": [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5],
+    "petName": "Gift",
+    "petTier": { "gap": "None" }
+  },
+  "Hel Digger Egg": {
+    "name": "Hel Digger Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 7, 13, 52.5],
+    "petName": "Hel Digger",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Meteor Egg": {
+    "name": "Meteor Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [6, 8, 10, 12, 15, 5, 8, 11, 18, 27],
+    "petName": "Meteor",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Spider Digger Egg": {
+    "name": "Spider Digger Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 1, "multi": 3 },
+    "reload": 1.0,
+    "secondReload": [4, 4.5, 5, 5.5, 6.5, 3, 5, 7, 13, 37.5],
+    "petName": "Spider Digger",
+    "petTier": { "gap": "Legendary" }
+  },
+  "Pterodactyl Egg": {
+    "name": "Pterodactyl Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 2, "multi": 1.5 },
+    "reload": 1.0,
+    "secondReload": [11, 5.5, 7, 8.5, 10, 13, 16, 6, 12, 24],
+    "petName": "Pterodactyl",
+    "petTier": { "gap": "Common" }
+  },
+  "Spider Cave Egg": {
+    "name": "Spider Cave Egg",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 10, "multi": 1.5 },
+    "reload": 1.0,
+    "secondReload": [15, 17.5, 20, 23, 26, 3, 6, 10, 15, 50],
+    "petName": "Spider",
+    "petTier": { "gap": "Legendary" }
   },
   "Queen Fire Ant Egg": {
     "name": "Queen Fire Ant Egg",

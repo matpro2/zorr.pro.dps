@@ -94,7 +94,7 @@ export const PlayerValue = {
   ...getInitialState(),
 
   reset() {
-    const savedLevel = this.level; // On protège le niveau de l'écrasement
+    const savedLevel = this.level; 
     Object.assign(this, getInitialState());
     this.level = savedLevel; 
   },

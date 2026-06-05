@@ -96,7 +96,6 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
             gap = foundIndex;
         }
       }
-      // -----------------------------------------------------------------
 
       if (gap !== undefined && typeof gap === "number") {
         object.petTier = (tier <= gap) ? tier : (tier - 1);
@@ -173,6 +172,10 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
   }
 
   if (typeof object.reload === "number" && (object.object === "petal" || object.object === "pet")) {
+    if (object.name && object.name.toLowerCase() === "flower") {
+        object.reload = 10;
+    }
+
     const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, PlayerValue.petal.reloadFactorTiered, tier, false, true);
     const finalReloadSkipRate = getApplicableStat(PlayerValue.petal.reloadSkipRate, PlayerValue.petal.reloadSkipRateTiered, tier);
     

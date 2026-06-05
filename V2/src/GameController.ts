@@ -14,7 +14,8 @@ import {
     addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, 
     getProcessedInventory, getEquippedSlots, getEquippedCount,
     getEffectiveBuild, getMaxSlots, enforceSlotLimit,
-    clearInventory, exportInventoryData, importInventoryData // <-- NOUVEAU
+    clearInventory, exportInventoryData, importInventoryData,
+    removeOneItemByNameAndTier // <-- NOUVEAU
 } from "./inventory";
 
 import { TIERS } from "./constants"; 
@@ -84,7 +85,8 @@ export const GameController = {
             }
         }
         const hasJoystick = (PlayerValue as any).petal?.hasJoystick?.active || false;
-        return { diffs, hasJoystick };
+        const joystickTier = (PlayerValue as any).petal?.hasJoystick?.tier || 0; // <-- NOUVEAU
+        return { diffs, hasJoystick, joystickTier }; // <-- NOUVEAU
     },
 
     getSlotsData(targetName: string, targetTier: number) {
@@ -221,5 +223,5 @@ export const GameController = {
     },
 
     addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, getEquippedCount, getEquippedSlots,
-    clearInventory, exportInventoryData, importInventoryData // <-- EXPORTATION
+    clearInventory, exportInventoryData, importInventoryData, removeOneItemByNameAndTier
 };

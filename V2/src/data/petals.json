@@ -184,6 +184,37 @@
       { "type": "Poison", "duration": 30, "value": 30, "stack": true }
     ]
   },
+  "Flower": {
+    "name": "Flower",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 100,
+    "armor": -5,
+    "reload": 69420.0,
+    "secondReload": null,
+    "effects": [
+      { "type": "Poison", "duration": 5, "value": 1250, "stack": false }
+    ]
+  },
+  "Nuke": {
+    "name": "Nuke",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 1,
+    "damage": 5,
+    "armor": 0,
+    "reload": 3.0,
+    "secondReload": null,
+    "effects": [
+      { "type": "Explosion", "value": 250, "subExplosion": [3,3,4,4,5,5,6,6,7,7], "stack": false }
+    ]
+  },
     "Elemental": {
     "name": "Elemental",
     "object": "petal",
