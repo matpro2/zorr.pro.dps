@@ -503,16 +503,53 @@
 
     </div>
 
-    <div class="florr-text" style="color: #f1c40f; font-size: 1.1em; margin-bottom: 8px;">Contraintes Requises (Minimum) :</div>
+    <div id="build-maker-lightbox" class="lightbox-overlay">
+        <div class="lightbox-content" style="background-color: #9b59b6; border: 5px solid #8e44ad; max-width: 400px; min-height: auto; padding: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 15px; margin-bottom: 15px;">
+                <h2 style="margin: 0; flex: 1; text-align: center; border: none; padding: 0;">Build Maker</h2>
+                <button id="btn-close-build-maker" class="lightbox-close-btn">✖</button>
+            </div>
             
-            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                <select id="bm-req-select" style="flex: 1; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px; outline: none;"></select>
-                <button id="bm-req-add" style="background: #3498db; color: white; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-weight: bold; transition: 0.1s;">Ajouter</button>
+            <div class="florr-text" style="color: #fff; font-size: 1.2em; margin-bottom: 10px;">Paramètres :</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <label class="florr-text" style="color: #fff; font-size: 1.1em;">Nombre de slots à utiliser :</label>
+                <input type="number" id="bm-slot-count" class="florr-text talent-lvl-input" style="width: 60px; font-size: 1em;" value="5" min="5" max="30">
             </div>
 
-            <div id="bm-req-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); min-height: 20px;">
-                <div id="bm-req-empty-text" style="color: #aaa; font-size: 0.8em; text-align: center; font-style: italic;">Aucune contrainte ajoutée</div>
+            <div class="florr-text" style="color: #f1c40f; font-size: 1.1em; margin-bottom: 8px;">Contraintes Requises (Minimum) :</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="color: #fff; font-size: 0.95em;">Extra Vision :</label>
+                    <input type="number" id="bm-req-vision" step="0.5" value="0" style="width: 60px; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px; text-align: center;">
                 </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="color: #fff; font-size: 0.95em;">Pick Range :</label>
+                    <input type="number" id="bm-req-pick" step="0.5" value="0" style="width: 60px; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px; text-align: center;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="color: #fff; font-size: 0.95em;">Petal Luck :</label>
+                    <input type="number" id="bm-req-luck" step="0.1" value="0" style="width: 60px; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px; text-align: center;">
+                </div>
+            </div>
+
+            <div class="florr-text" style="color: #fff; font-size: 1.2em; margin-bottom: 10px;">Types à inclure :</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;">
+                <label class="florr-text" style="color: #fff; cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="bm-type-default" style="width: 18px; height: 18px; cursor: pointer;"> Default (Classique)
+                </label>
+                <label class="florr-text" style="color: #fff; cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="bm-type-egg" checked style="width: 18px; height: 18px; cursor: pointer;"> Egg
+                </label>
+                <label class="florr-text" style="color: #fff; cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="bm-type-spill" style="width: 18px; height: 18px; cursor: pointer;"> Spill
+                </label>
+                <label class="florr-text" style="color: #fff; cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="bm-type-radiation" style="width: 18px; height: 18px; cursor: pointer;"> Radiation
+                </label>
+            </div>
+            <button id="btn-generate-build" style="background: #27ae60; color: white; font-family: 'Fredoka', sans-serif; font-weight: 900; border: 3px solid #219653; padding: 12px; border-radius: 6px; cursor: pointer; text-shadow: 0 1px 1px rgba(0,0,0,0.4); box-shadow: 0 3px 0 #219653; width: 100%; font-size: 1.3em; transition: 0.1s;">Générer le Build</button>
+        </div>
+    </div>
 
     <div id="catalog-lightbox" class="lightbox-overlay">
         <div class="lightbox-content" style="background-color: #5a9fdb; border: 5px solid #518fc5;">

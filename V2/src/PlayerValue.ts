@@ -1,5 +1,6 @@
 import { getEffectiveBuild } from "./inventory";
 import { getObject } from "./GetObject";
+import { PLAYER_CONFIG, TALENTS_DEF } from "./constants";
 
 const createStat = (op: 'add' | 'multiply' | 'factor' = 'add') => ({
   op,
@@ -43,6 +44,7 @@ const getInitialState = () => {
     pet: {
       damageMulti: createStat('multiply'),
       healthMulti: createStat('multiply'),
+      size: createStat('multiply'),
       heal: createStat('add'),
       shield: createStat('add'),
       armor: createStat('add'),
@@ -71,39 +73,29 @@ const getInitialState = () => {
   };
 };
 
-export const TALENTS_DEF: Record<string, { label: string, step: number, isMulti: boolean, basePrice: number | number[], maxLevel: number, requires?: { id: string, lvl: number } }> = {
-    "player.healMulti": { label: "Player Heal Multi", step: 0.1, isMulti: true, basePrice: 1, maxLevel: 6 },
-    "player.manaGenerationMulti": { label: "Player Mana Gen Multi", step: 0.1, isMulti: true, basePrice: 1, maxLevel: 3, requires: { id: "player.healMulti", lvl: 3 } },
-    "petal.damageMulti": { label: "Petal Damage Multi", step: 0.03, isMulti: true, basePrice: 1, maxLevel: 7 },
-    "petal.reloadFactor": { label: "Petal Reload Speed", step: 0.03, isMulti: true, basePrice: 1, maxLevel: 7 },
-    "petal.secondReloadFactor": { label: "Petal Second Reload Speed", step: 0.075, isMulti: true, basePrice: [39, 24], maxLevel: 2, requires: { id: "petal.reloadFactor", lvl: 5 } },
-    "petal.luck": { label: "Petal Luck", step: 0.0045, isMulti: false, basePrice: 1, maxLevel: 5 },
-    "petal.healthMulti": { label: "Petal Health Multi", step: 0.05, isMulti: true, basePrice: 1, maxLevel: 5 },
-    "pet.healthMulti": { label: "Pet Health Multi", step: 0.03, isMulti: true, basePrice: 1, maxLevel: 5 },
-    "pet.damageMulti": { label: "Pet Damage Multi", step: 0.03, isMulti: true, basePrice: 1, maxLevel: 5 }
-};
-
+// --- SANITIZER --- 
+// Nettoie les valeurs "NaN" corrompues qui ont pu être sauvegardées dans le navigateur
 const loadTalents = () => {
-    const raw = JSON.parse(localStorage.getItem("zorr_talents") || "{}");
+    const raw = JSON.parse(localStorage.getItem(PLAYER_CONFIG.STORAGE_KEYS.TALENTS) || "{}");
     const safe: Record<string, number> = {};
     for (const key in raw) {
         if (typeof raw[key] === "number" && !isNaN(raw[key])) {
             safe[key] = raw[key];
         } else {
-            safe[key] = 0; 
+            safe[key] = 0;
         }
     }
     return safe;
 };
 
 export const PlayerValue = {
-  level: Number(localStorage.getItem("zorr_player_level")) || 45,
+  level: Number(localStorage.getItem(PLAYER_CONFIG.STORAGE_KEYS.LEVEL)) || PLAYER_CONFIG.DEFAULT_LEVEL,
   talents: loadTalents(),
   
   setLevel(lvl: number) {
       if(!isNaN(lvl)) {
           this.level = lvl;
-          localStorage.setItem("zorr_player_level", lvl.toString());
+          localStorage.setItem(PLAYER_CONFIG.STORAGE_KEYS.LEVEL, lvl.toString());
       }
   },
 
@@ -111,13 +103,13 @@ export const PlayerValue = {
       const def = TALENTS_DEF[id];
       if (def && !isNaN(lvl)) {
           this.talents[id] = Math.min(Math.max(0, lvl), def.maxLevel);
-          localStorage.setItem("zorr_talents", JSON.stringify(this.talents));
+          localStorage.setItem(PLAYER_CONFIG.STORAGE_KEYS.TALENTS, JSON.stringify(this.talents));
       }
   },
-  
+
   getMaxSlots() {
-      if (this.level < 15) return 5;
-      return 6 + Math.floor((this.level - 15) / 20);
+      if (this.level < PLAYER_CONFIG.SLOT_LEVEL_THRESHOLD) return PLAYER_CONFIG.BASE_SLOTS;
+      return PLAYER_CONFIG.EXTRA_SLOTS_BASE + Math.floor((this.level - PLAYER_CONFIG.SLOT_LEVEL_THRESHOLD) / PLAYER_CONFIG.SLOT_LEVEL_STEP);
   },
 
   ...getInitialState(),
@@ -207,25 +199,4 @@ export const PlayerValue = {
       }
     }
   },
-
-  // NOUVEAU : Récupère TOUTES les statistiques du jeu pour remplir le menu déroulant
-  getAllStatKeys() {
-    const state = getInitialState();
-    const keys: { id: string, label: string }[] = [];
-    
-    for (const [category, stats] of Object.entries(state)) {
-        for (const stat of Object.keys(stats)) {
-            if (stat === 'hasJoystick') continue;
-            
-            // Formatage propre du nom (ex: "petal.damageMulti" -> "Petal Damage Multi")
-            let formattedStat = stat.replace(/([A-Z])/g, ' $1');
-            formattedStat = formattedStat.charAt(0).toUpperCase() + formattedStat.slice(1);
-            const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
-            
-            keys.push({ id: `${category}.${stat}`, label: `${categoryName} ${formattedStat.trim()}` });
-        }
-    }
-    // Tri alphabétique pour faciliter la recherche
-    return keys.sort((a, b) => a.label.localeCompare(b.label));
-  }
 };

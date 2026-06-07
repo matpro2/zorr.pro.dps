@@ -7,7 +7,8 @@ import radiation from "../data/radiation.json";
 
 import { getObject } from "../GetObject";
 import { DpsCalculator } from "../DpsCalculator";
-import { PlayerValue, TALENTS_DEF } from "../PlayerValue";
+import { PlayerValue } from "../PlayerValue";
+import { TALENTS_DEF, TIERS } from "../constants";
 import { 
     addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, 
     getProcessedInventory, getEquippedSlots, getEquippedCount,
@@ -15,8 +16,6 @@ import {
     clearInventory, exportInventoryData, importInventoryData,
     removeOneItemByNameAndTier, unequipAllSlots, applySlotConfiguration
 } from "../inventory";
-
-import { TIERS } from "../constants"; 
 
 export const allData: Record<string, any> = {
     ...petals,
