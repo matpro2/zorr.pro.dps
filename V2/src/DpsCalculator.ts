@@ -1,5 +1,3 @@
-// DpsCalculator.ts
-
 import { getObject } from "./GetObject";
 import { PlayerValue } from "./PlayerValue";
 
@@ -31,17 +29,18 @@ export class DpsCalculator {
     private static readonly INFINITE_TICKS = 1e99;
 
     private static calculateEffectDamage(effects: any[] | undefined, survivalTicks: number, targetArmor: number, totalTime: number, targetEvasion: number = 0) {
-        let poison = 0;
-        let fire = 0;
+        let poisonStack = 0;
+        let poisonNoStack = 0;
+        let fireStack = 0;
+        let fireNoStack = 0;
         let lightning = 0;
         let telepathic = 0;
         let explosion = 0; 
         let finalDamage = 0; 
         
-        // La probabilité de toucher la cible (ex: 80% évasion = 20% de chances de toucher)
         const hitChance = Math.max(0, 1 - (targetEvasion / 100));
 
-        if (!effects || effects.length === 0) return { poison, fire, lightning, telepathic, explosion, finalDamage };
+        if (!effects || effects.length === 0) return { poisonStack, poisonNoStack, fireStack, fireNoStack, lightning, telepathic, explosion, finalDamage };
         
         for (const effect of effects) {
             const triggerType = (effect.Trigger || effect.trigger || "").toLowerCase();
@@ -50,11 +49,13 @@ export class DpsCalculator {
             if (isDeathTrigger) {
                 if (survivalTicks !== DpsCalculator.INFINITE_TICKS) {
                     if (effect.type === "Explosion") {
-                        explosion += effect.value; 
+                        explosion += effect.value || 0; 
                     } else if (effect.type === "Poison") {
-                        poison += effect.value * (effect.duration || 1); 
+                        const val = (effect.value || 0) * (effect.duration || 1);
+                        if (effect.stack) poisonStack += val; else poisonNoStack += val;
                     } else if (effect.type === "Fire") {
-                        fire += effect.value * (effect.duration || 1); 
+                        const val = (effect.value || 0) * (effect.duration || 1);
+                        if (effect.stack) fireStack += val; else fireNoStack += val;
                     }
                 }
             } else {
@@ -62,72 +63,81 @@ export class DpsCalculator {
                     let dmg = 0;
                     
                     if (effect.stack) {
-                        const totalDamagePerStack = effect.value * (effect.duration || 1);
-                        // Les effets cumulables dépendent du nombre de touches réussies
+                        const totalDamagePerStack = (effect.value || 0) * (effect.duration || 1);
                         dmg = totalDamagePerStack * survivalTicks * hitChance; 
+                        
+                        if (effect.type === "Poison") poisonStack += dmg;
+                        if (effect.type === "Fire") fireStack += dmg;
                     } else {
                         const totalPoisonedTime = (survivalTicks * DpsCalculator.TICK_RATE) + (effect.duration || 1);
                         const cappedTime = Math.min(totalTime, totalPoisonedTime);
-                        dmg = effect.value * cappedTime;
-                        // Si la cible esquive 100% du temps, impossible de l'empoisonner
+                        dmg = (effect.value || 0) * cappedTime;
                         if (hitChance === 0) dmg = 0;
+
+                        if (effect.type === "Poison") poisonNoStack += dmg;
+                        if (effect.type === "Fire") fireNoStack += dmg;
                     }
-                    
-                    if (effect.type === "Poison") poison += dmg;
-                    if (effect.type === "Fire") fire += dmg;
                 } 
                 else if (effect.type === "Lightning") {
                     const bounces = (effect.multiHit && effect.bounce) ? effect.bounce : 1;
                     
                     if (triggerType === "seconds") {
                         const secondsAlive = Math.floor(survivalTicks * DpsCalculator.TICK_RATE);
-                        lightning += (effect.value * bounces) * secondsAlive; // L'évasion n'affecte pas l'effet par seconde
+                        lightning += ((effect.value || 0) * bounces) * secondsAlive;
                     } else {
-                        lightning += (effect.value * bounces) * survivalTicks * hitChance; // Réduit par l'évasion
+                        lightning += ((effect.value || 0) * bounces) * survivalTicks * hitChance;
                     }
                 }
                 else if (effect.type === "Telepathic") {
                     const secondsAlive = Math.floor(survivalTicks * DpsCalculator.TICK_RATE);
-                    telepathic += effect.value * secondsAlive; // L'évasion n'affecte pas la télépathie
+                    telepathic += (effect.value || 0) * secondsAlive; 
                 }
                 else if (effect.type === "finalDamage") {
-                    finalDamage += Math.max(0, effect.value - targetArmor) * hitChance; // Réduit par l'évasion
+                    finalDamage += Math.max(0, (effect.value || 0) - targetArmor) * hitChance;
                 }
             }
         }
-        return { poison, fire, lightning, telepathic, explosion, finalDamage };
+        return { poisonStack, poisonNoStack, fireStack, fireNoStack, lightning, telepathic, explosion, finalDamage };
     }
 
     public static getCollisionResult(attacker: ICombatEntity, target: ICombatEntity) {
         const objectType = attacker.object === "mob" ? "target" : (attacker.object || "none");
         
-        const hps = (PlayerValue as any)[objectType]?.heal || 0;
+        // LECTURE SÉCURISÉE DE L'OBJET HEAL
+        const healStat = (PlayerValue as any)[objectType]?.heal;
+        let hps = 0;
+        if (healStat && Array.isArray(healStat.boosts)) {
+            for (const mod of healStat.boosts) {
+                if (typeof mod.value === 'number' && !isNaN(mod.value)) {
+                    hps += mod.value;
+                }
+            }
+        }
+        
         const attackerHealth = attacker.health || 1; 
 
         const effectiveTargetArmor = attacker.type === "spill" ? 0 : (target.armor || 0);
         
-        // --- EXTRACTION DE L'ÉVASION ---
         let attackerEvasion = 0;
         if (attacker.effects) {
             const ev = attacker.effects.find(e => e.type && e.type.toLowerCase() === "evasion");
-            if (ev) attackerEvasion = ev.value || 0;
+            if (ev && typeof ev.value === 'number' && !isNaN(ev.value)) attackerEvasion = ev.value;
         }
 
         let targetEvasion = 0;
         if (target.effects) {
             const ev = target.effects.find(e => e.type && e.type.toLowerCase() === "evasion");
-            if (ev) targetEvasion = ev.value || 0;
+            if (ev && typeof ev.value === 'number' && !isNaN(ev.value)) targetEvasion = ev.value;
         }
 
-        // --- CALCUL DES DÉGÂTS SUBIS (L'attaquant esquive la cible) ---
         const baseTargetDamage = Math.max(0, (target.damage || 0) - (attacker.armor || 0));
         const finalTargetDamage = baseTargetDamage * Math.max(0, 1 - (attackerEvasion / 100));
 
         let damageHeal = 0;
         if (attacker.effects) {
             const healEffect = attacker.effects.find(e => e.type && e.type.toLowerCase() === "damageheal");
-            if (healEffect) {
-                damageHeal = healEffect.value || 0;
+            if (healEffect && typeof healEffect.value === 'number' && !isNaN(healEffect.value)) {
+                damageHeal = healEffect.value;
             }
         }
 
@@ -146,7 +156,7 @@ export class DpsCalculator {
         let averageDamageMulti = 1;
         if (attacker.effects) {
             const growthEffect = attacker.effects.find(e => e.type && e.type.toLowerCase() === "damagegrowth");
-            if (growthEffect) {
+            if (growthEffect && typeof growthEffect.value === 'number' && !isNaN(growthEffect.value)) {
                 if (attackerSurvivalTicks !== this.INFINITE_TICKS) {
                     averageDamageMulti = (1 + growthEffect.value) / 2;
                 }
@@ -210,10 +220,8 @@ export class DpsCalculator {
         dpsCategory.push({
             type: "Physical",
             totalDamage: totalPhysicalDamage,
-            dps: physicalDps
+            dps: isNaN(physicalDps) ? 0 : physicalDps
         });
-
-        let totalEffectDamage = 0;
 
         if (combatAttacker.effects && combatAttacker.effects.length > 0) {
             const effectiveTargetArmor = combatAttacker.type === "spill" ? 0 : (target.armor || 0);
@@ -221,7 +229,7 @@ export class DpsCalculator {
             let targetEvasion = 0;
             if (target.effects) {
                 const ev = target.effects.find(e => e.type && e.type.toLowerCase() === "evasion");
-                if (ev) targetEvasion = ev.value || 0;
+                if (ev && typeof ev.value === 'number') targetEvasion = ev.value;
             }
 
             const effectResult = DpsCalculator.calculateEffectDamage(
@@ -233,29 +241,39 @@ export class DpsCalculator {
             );
 
             for (const [key, value] of Object.entries(effectResult)) {
-                if (value > 0) {
-                    totalEffectDamage += value;
-                    const typeName = key.charAt(0).toUpperCase() + key.slice(1);
+                if (value > 0 && !isNaN(value)) {
+                    let typeName = key;
+                    if (key === "poisonStack") typeName = "Poison (Stack)";
+                    else if (key === "poisonNoStack") typeName = "Poison (No Stack)";
+                    else if (key === "fireStack") typeName = "Fire (Stack)";
+                    else if (key === "fireNoStack") typeName = "Fire (No Stack)";
+                    else if (key === "finalDamage") typeName = "Final Damage";
+                    else typeName = key.charAt(0).toUpperCase() + key.slice(1);
+
+                    const effectDps = totalTime > 0 ? value / totalTime : 0;
+
                     dpsCategory.push({
-                        type: typeName === "FinalDamage" ? "Final Damage" : typeName,
+                        type: typeName,
                         totalDamage: value,
-                        dps: totalTime > 0 ? value / totalTime : 0
+                        dps: isNaN(effectDps) ? 0 : effectDps
                     });
                 }
             }
         }
 
         const entityCount = attacker.entity || 1;
-        const totalDamage = totalPhysicalDamage + totalEffectDamage;
-        const finalDps = (totalTime > 0 ? totalDamage / totalTime : 0) * entityCount;
-
+        
+        let finalDps = 0;
         dpsCategory.forEach(cat => {
-            cat.dps *= entityCount;
-            cat.totalDamage *= entityCount;
+            if (cat.type !== "Poison (No Stack)" && cat.type !== "Fire (No Stack)") {
+                cat.dps *= entityCount;
+                cat.totalDamage *= entityCount;
+            }
+            finalDps += cat.dps;
         });
 
         return {
-            dps: finalDps,
+            dps: isNaN(finalDps) ? 0 : finalDps,
             dpsCategory: dpsCategory, 
             reloadTime: reloadtime,
             survivedTicks: survivalTick

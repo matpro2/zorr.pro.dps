@@ -132,7 +132,7 @@
     "reload": 1.5,
     "secondReload": null,
     "effects": [
-      { "type": "petal.secondReloadFactor", "value": [1.5, 2.25, 3, 4.5, 6, 7.5, 10, 20, 35, 75] }
+      { "type": "petal.secondReloadFactor", "value": [1.015, 1.0225, 1.03, 1.045, 1.06, 1.075, 1.10, 1.20, 1.35, 1.75] }
     ]
   },
   "Golden Leaf": {
@@ -148,7 +148,37 @@
     "reload": 1.0,
     "secondReload": null,
     "effects": [
-      { "type": "petal.reloadFactor", "value": [4, 6.5, 9, 11.5, 14, 16.5, 19, 21.5, 29, 36.5] }
+      { "type": "petal.reloadFactor", "value": [1.04, 1.065, 1.09, 1.115, 1.14, 1.165, 1.19, 1.215, 1.29, 1.365] }
+    ]
+  },
+  "Antennae": {
+    "name": "Antennae",
+    "object": "petal",
+    "type": "utility",
+    "stack": false,
+    "tierRestricted": false,
+    "effects": [
+      { "type": "player.extraVision", "value": [1.25, 1.4, 1.6, 1.8, 1.9, 2, 3, 4.5, 7, 12] }
+    ]
+  },
+  "Cucumber": {
+    "name": "Cucumber",
+    "object": "petal",
+    "type": "utility",
+    "stack": false,
+    "tierRestricted": false,
+    "effects": [
+      { "type": "pet.size", "value": [0.97, 0.944, 0.918, 0.892, 0.866, 0.84, 0.814, 0.788, 0.762, 0.736] }
+    ]
+  },
+  "Magnet": {
+    "name": "Magnet",
+    "object": "petal",
+    "type": "utility",
+    "stack": false,
+    "tierRestricted": false,
+    "effects": [
+      { "type": "player.pickRange", "value": [200, 400, 600, 800, 1000, 1200, 1400, 1600, 2100, 2600] }
     ]
   },
     "Leaf": {

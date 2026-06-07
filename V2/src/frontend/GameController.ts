@@ -13,7 +13,7 @@ import {
     getProcessedInventory, getEquippedSlots, getEquippedCount,
     getEffectiveBuild, getMaxSlots, enforceSlotLimit,
     clearInventory, exportInventoryData, importInventoryData,
-    removeOneItemByNameAndTier 
+    removeOneItemByNameAndTier, unequipAllSlots, applySlotConfiguration
 } from "../inventory";
 
 import { TIERS } from "../constants"; 
@@ -48,8 +48,15 @@ export const GameController = {
         let spent = 0;
         for (const [id, def] of Object.entries(TALENTS_DEF)) {
             const lvl = talents[id] || 0;
-            // Somme de 1 à N = N * (N + 1) / 2
-            spent += def.basePrice * (lvl * (lvl + 1)) / 2;
+            if (lvl > 0 && !isNaN(lvl)) {
+                if (Array.isArray(def.basePrice)) {
+                    for (let i = 0; i < lvl; i++) {
+                        spent += def.basePrice[i] || 0;
+                    }
+                } else {
+                    spent += def.basePrice * (lvl * (lvl + 1)) / 2;
+                }
+            }
         }
         const total = Math.max(0, PlayerValue.level - 1);
         const available = total - spent;
@@ -71,17 +78,16 @@ export const GameController = {
                 for (const stat of Object.keys(currCat)) {
                     if (stat === "hasJoystick") continue;
 
-                    const boostArray = currCat[stat];
-                    if (Array.isArray(boostArray) && boostArray.length > 0) {
-                        for (const mod of boostArray) {
-                            const isMultiplier = stat.toLowerCase().includes("multi") || stat.toLowerCase().includes("factor");
+                    const statData = currCat[stat];
+                    if (statData && Array.isArray(statData.boosts) && statData.boosts.length > 0) {
+                        for (const mod of statData.boosts) {
                             diffs.push({
                                 category,
                                 stat,
                                 source: mod.source,
                                 tierReq: mod.tierReq === Infinity ? undefined : mod.tierReq,
                                 value: mod.value,
-                                isMultiplier
+                                op: statData.op 
                             });
                         }
                     }
@@ -97,7 +103,7 @@ export const GameController = {
                 source: "Joystick",
                 tierReq: (PlayerValue as any).petal?.hasJoystick?.tier || 0,
                 value: "Active",
-                isMultiplier: false,
+                op: "add",
                 isJoystickFlag: true
             });
         }
@@ -105,11 +111,50 @@ export const GameController = {
         return { diffs };
     },
 
-    getSlotsData(targetName: string, targetTier: number) {
-        const effectiveBuild = getEffectiveBuild();
+    getSlotsData(targetName: string, targetTier: number, customSlots?: (number | null)[], customTalents?: Record<string, number>) {
+        if (customSlots || customTalents) {
+            PlayerValue.updateFromSlots(customSlots, customTalents);
+        }
+        
+        const effectiveBuild = getEffectiveBuild(customSlots);
+        const currentMaxSlots = getMaxSlots(); 
+        
+        const rawResults: any[] = [];
+        let maxPoisonIdx = -1;
+        let maxPoisonVal = -1;
+        let maxFireIdx = -1;
+        let maxFireVal = -1;
+
+        for (let i = 0; i < currentMaxSlots; i++) {
+            const item = effectiveBuild[i];
+
+            if (!item || item.inactive) {
+                rawResults.push(null);
+                continue;
+            }
+
+            const effectiveName = item.transformed ? item.transformed.name : item.name;
+            const statTier = item.transformed ? item.transformed.statTier : item.tier;
+            
+            const result = DpsCalculator.calculateDps(effectiveName, statTier, targetName, targetTier);
+            
+            if (result.dpsCategory) {
+                result.dpsCategory.forEach(cat => {
+                    if (cat.type === "Poison (No Stack)" && cat.dps > maxPoisonVal) {
+                        maxPoisonVal = cat.dps;
+                        maxPoisonIdx = i;
+                    }
+                    if (cat.type === "Fire (No Stack)" && cat.dps > maxFireVal) {
+                        maxFireVal = cat.dps;
+                        maxFireIdx = i;
+                    }
+                });
+            }
+            rawResults.push(result);
+        }
+
         let totalDps = 0;
         const slots = [];
-        const currentMaxSlots = getMaxSlots(); 
 
         for (let i = 0; i < currentMaxSlots; i++) {
             const item = effectiveBuild[i];
@@ -132,17 +177,42 @@ export const GameController = {
             const isFusion = item.transformed?.synergy?.includes("fusion") || false;
             const isJoystick = item.transformed?.synergy?.includes("joystick") || false;
 
-            const result = DpsCalculator.calculateDps(effectiveName, statTier, targetName, targetTier);
+            let result = rawResults[i];
             
-            if (isInactive) {
-                result.dps = 0;
-                if (result.dpsCategory) result.dpsCategory = [];
+            if (isInactive || !result) {
+                result = { dps: 0, dpsCategory: [], reloadTime: 0, survivedTicks: 0 };
             } else {
-                result.dps *= entityMulti;
+                let slotDps = 0;
                 if (result.dpsCategory && result.dpsCategory.length > 0) {
-                    result.dpsCategory.forEach((cat: any) => cat.dps *= entityMulti);
+                    result.dpsCategory.forEach((cat: any) => {
+                        if (cat.type === "Poison (No Stack)") {
+                            if (i !== maxPoisonIdx) {
+                                cat.dps = 0;
+                                cat.totalDamage = 0;
+                                cat.ignored = true; 
+                            } else {
+                                slotDps += cat.dps;
+                            }
+                        } else if (cat.type === "Fire (No Stack)") {
+                            if (i !== maxFireIdx) {
+                                cat.dps = 0;
+                                cat.totalDamage = 0;
+                                cat.ignored = true;
+                            } else {
+                                slotDps += cat.dps;
+                            }
+                        } else {
+                            cat.dps *= entityMulti;
+                            if (cat.totalDamage) cat.totalDamage *= entityMulti;
+                            slotDps += cat.dps;
+                        }
+                    });
+                    
+                    result.dpsCategory = result.dpsCategory.filter((cat: any) => !cat.ignored);
                 }
-                totalDps += result.dps;
+                
+                result.dps = slotDps;
+                totalDps += slotDps;
             }
             
             const obj = getObject(effectiveName, statTier);
@@ -187,8 +257,8 @@ export const GameController = {
         return getObject(targetName, targetTier);
     },
 
-    getInventoryData(targetName: string, targetTier: number, filterType: string, searchQuery: string = "") {
-        let inventoryItems = getProcessedInventory(targetName, targetTier);
+    getInventoryData(targetName: string, targetTier: number, filterType: string, searchQuery: string = "", applyNoStackRule: boolean = false) {
+        let inventoryItems = getProcessedInventory(targetName, targetTier, applyNoStackRule);
         
         if (searchQuery && searchQuery.trim() !== "") {
             const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
@@ -238,6 +308,16 @@ export const GameController = {
         return inventoryItems;
     },
 
+    applyBuild(slots: (number | null)[], talents?: Record<string, number>) {
+        applySlotConfiguration(slots);
+        if (talents) {
+            for (const [id, lvl] of Object.entries(talents)) {
+                this.setTalentLevel(id, lvl);
+            }
+        }
+    },
+
     addItem, removeOneItem, removeAllItems, equipItem, unequipSlot, getEquippedCount, getEquippedSlots,
-    clearInventory, exportInventoryData, importInventoryData, removeOneItemByNameAndTier
+    clearInventory, exportInventoryData, importInventoryData, removeOneItemByNameAndTier, unequipAllSlots,
+    getMaxSlots
 };

@@ -50,15 +50,24 @@ function getMobHpMultiplier(tier: number): number {
     return hMult;
 }
 
-function getApplicableStat(boostArray: { source?: string, tierReq: number, value: number }[] | undefined, currentTier: number, baseValue: number, isMultiplier: boolean = false, isFactor: boolean = false): number {
+// LECTURE INTELLIGENTE ET SÉCURISÉE DES OBJETS DE STATISTIQUES
+function getApplicableStat(statData: { op: string, boosts: { source?: string, tierReq: number, value: number }[] } | undefined, currentTier: number, baseValue: number): number {
     let finalValue = baseValue;
     
-    if (boostArray && boostArray.length > 0) {
-        for (const mod of boostArray) {
-            if (mod.tierReq >= currentTier) {
-                if (isFactor) {
-                    finalValue *= Math.max(0.01, 1 + (mod.value / 100));
-                } else if (isMultiplier) {
+    if (statData && Array.isArray(statData.boosts)) {
+        for (const mod of statData.boosts) {
+            // Anti-NaN + Vérification de Tier
+            if (mod.tierReq >= currentTier && typeof mod.value === 'number' && !isNaN(mod.value)) {
+                
+                if (statData.op === 'factor') {
+                    if (mod.source === "Talents") {
+                        // Les talents calculent déjà le facteur en décimal (ex: 1.075)
+                        finalValue *= mod.value;
+                    } else {
+                        // Les objets appliquent le pourcentage (ex: 15 -> 1.15)
+                        finalValue *= Math.max(0.01, 1 + (mod.value / 100));
+                    }
+                } else if (statData.op === 'multiply') {
                     finalValue *= mod.value;
                 } else {
                     finalValue += mod.value;
@@ -66,7 +75,7 @@ function getApplicableStat(boostArray: { source?: string, tierReq: number, value
             }
         }
     }
-    return finalValue;
+    return isNaN(finalValue) ? baseValue : finalValue;
 }
 
 export function getObject(name: string, tier: number, forcePet: boolean = false) {
@@ -127,11 +136,9 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
     object.health *= applyTierMulti;
     
     if (object.object === "petal") {
-        const finalHealthMulti = getApplicableStat(PlayerValue.petal.healthMulti, tier, 1, true);
-        object.health *= finalHealthMulti;
+        object.health *= getApplicableStat(PlayerValue.petal.healthMulti, tier, 1);
     } else if (isPet) {
-        const finalHealthMulti = getApplicableStat(PlayerValue.pet.healthMulti, tier, 1, true);
-        object.health *= finalHealthMulti;
+        object.health *= getApplicableStat(PlayerValue.pet.healthMulti, tier, 1);
     }
   }
   
@@ -140,11 +147,9 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
     object.damage *= applyTierMulti;
     
     if (object.object === "petal") {
-        const finalDamageMulti = getApplicableStat(PlayerValue.petal.damageMulti, tier, 1, true);
-        object.damage *= finalDamageMulti;
+        object.damage *= getApplicableStat(PlayerValue.petal.damageMulti, tier, 1);
     } else if (isPet) {
-        const finalDamageMulti = getApplicableStat(PlayerValue.pet.damageMulti, tier, 1, true);
-        object.damage *= finalDamageMulti;
+        object.damage *= getApplicableStat(PlayerValue.pet.damageMulti, tier, 1);
         if (object.spectrum === true) {
             object.damage *= 10;
         }
@@ -152,7 +157,7 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
             object.damage *= 100;
         }
     } else if (isMob) {
-        object.damage *= getApplicableStat(PlayerValue.mob.damageMulti, tier, 1, true); 
+        object.damage *= getApplicableStat(PlayerValue.mob.damageMulti, tier, 1); 
     }
   }
   
@@ -163,12 +168,12 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
 
     if (object.object === "petal") {
         const finalArmor = getApplicableStat(PlayerValue.petal.armor, tier, 0);
-        const finalArmorMulti = getApplicableStat(PlayerValue.petal.armorMulti, tier, 1, true);
+        const finalArmorMulti = getApplicableStat(PlayerValue.petal.armorMulti, tier, 1);
         object.armor = (object.armor + finalArmor) * finalArmorMulti;
     } else if (isPet) {
         object.armor = (object.armor + getApplicableStat(PlayerValue.pet.armor, tier, 0));
     } else if (isMob) {
-        object.armor = (object.armor + getApplicableStat(PlayerValue.mob.armor, tier, 0)) * getApplicableStat(PlayerValue.mob.armorMulti, tier, 1, true);
+        object.armor = (object.armor + getApplicableStat(PlayerValue.mob.armor, tier, 0)) * getApplicableStat(PlayerValue.mob.armorMulti, tier, 1);
     }
   }
 
@@ -177,7 +182,7 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
         object.reload = 10;
     }
 
-    const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, tier, 1, false, true);
+    const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, tier, 1);
     const finalReloadSkipRate = getApplicableStat(PlayerValue.petal.reloadSkipRate, tier, 0);
     
     object.reload /= Math.max(0.01, finalReloadFactor);
@@ -185,7 +190,7 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
   }
 
   if (typeof object.secondReload === "number" && (object.object === "petal" || object.object === "pet")) {
-    const finalSecondReloadFactor = getApplicableStat(PlayerValue.petal.secondReloadFactor, tier, 1, false, true);
+    const finalSecondReloadFactor = getApplicableStat(PlayerValue.petal.secondReloadFactor, tier, 1);
     const finalSecondReloadSkipRate = getApplicableStat(PlayerValue.petal.secondReloadSkipRate, tier, 0);
     
     object.secondReload /= Math.max(0.01, finalSecondReloadFactor);

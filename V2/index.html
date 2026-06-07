@@ -235,7 +235,6 @@
         .del-btn:hover { background: #ff7675 !important; text-shadow: 0 1px 2px #c0392b, 0 0 4px #c0392b !important; }
         .del-btn:active { box-shadow: none !important; transform: translateY(2px); margin-bottom: -2px; }
 
-        /* NOUVEAU : Réduction de la taille pour en afficher deux dans le catalogue */
         .edit-overlay .add-btn,
         .edit-overlay .del-btn {
             padding: 3px 0 !important;
@@ -350,14 +349,85 @@
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.5); }
+
+        /* --- GRILLE DES TALENTS --- */
+        .talent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            padding: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .talent-card {
+            aspect-ratio: 1 / 1;
+            background: rgba(0, 0, 0, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px;
+            box-sizing: border-box;
+            transition: transform 0.1s, background 0.1s;
+        }
+
+        .talent-card:hover:not(.locked) {
+            transform: scale(1.02);
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .talent-card.locked {
+            border-color: rgba(231, 76, 60, 0.5);
+            background: rgba(0, 0, 0, 0.4);
+            opacity: 0.8;
+        }
+
+        .talent-name {
+            font-size: 0.9em;
+            text-align: center;
+            line-height: 1.1;
+            height: 2.5em; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .talent-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .talent-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .talent-actions button {
+            flex: 1;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
     <div style="margin-bottom: 20px; width: 100%; box-sizing: border-box;">
-        <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px;">
             <div id="total-dps-display" style="font-size: 1.3em; font-weight: bold; background: #2c3e50; color: #fff; padding: 8px 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 Total DPS: 0
             </div>
+            <button id="btn-open-build-maker" class="btn-header" style="background-color: #9b59b6 !important; border-color: #8e44ad !important; padding: 8px 16px; font-size: 1.1em;">Build Maker</button>
         </div>
         <div id="slots-container"></div>
     </div>
@@ -369,7 +439,6 @@
                 
                 <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                     <h2 style="margin: 0;">Inventory</h2>
-                    <!-- NOUVEAU NOM DU BOUTON -->
                     <button id="btn-open-catalog" style="background: #27ae60; color: white; font-weight: bold; border: 3px solid #219653; padding: 6px 16px; border-radius: 6px; cursor: pointer; transition: 0.1s; text-shadow: 0 1px 1px rgba(0,0,0,0.4); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         Edit Inventory
                     </button>
@@ -400,6 +469,11 @@
                             <option value="radiation">Radiation</option>
                         </select>
                     </div>
+
+                    <div class="input-group" style="margin: 0; display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="apply-no-stack" style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="apply-no-stack" style="font-weight: bold; cursor: pointer; color: #2c3e50;" title="Active la pénalité sur les poisons/feux inférieurs dans l'inventaire">Apply No-Stack</label>
+                    </div>
                 </div>
             </div>
             
@@ -429,17 +503,25 @@
 
     </div>
 
+    <div class="florr-text" style="color: #f1c40f; font-size: 1.1em; margin-bottom: 8px;">Contraintes Requises (Minimum) :</div>
+            
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <select id="bm-req-select" style="flex: 1; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px; outline: none;"></select>
+                <button id="bm-req-add" style="background: #3498db; color: white; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-weight: bold; transition: 0.1s;">Ajouter</button>
+            </div>
+
+            <div id="bm-req-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); min-height: 20px;">
+                <div id="bm-req-empty-text" style="color: #aaa; font-size: 0.8em; text-align: center; font-style: italic;">Aucune contrainte ajoutée</div>
+                </div>
+
     <div id="catalog-lightbox" class="lightbox-overlay">
         <div class="lightbox-content" style="background-color: #5a9fdb; border: 5px solid #518fc5;">
-            
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 15px; margin-bottom: 15px;">
                 <div style="display: flex; align-items: center; gap: 8px; width: auto;">
                     <label for="catalog-tier-input" class="florr-text" style="font-size: 1.4em;">Tier</label>
                     <select id="catalog-tier-input" class="florr-text talent-lvl-input" style="width: auto; min-width: 140px; cursor: pointer; padding: 2px 8px; appearance: menulist;"></select>
                 </div>
-                
                 <h2 style="margin: 0; flex: 1; text-align: center; border: none; padding: 0;">Catalog</h2>
-                
                 <div style="display: flex; align-items: center; justify-content: flex-end; gap: 15px; width: 280px;">
                     <div style="position: relative; display: flex; align-items: center;">
                         <span style="position: absolute; left: 8px; color: #fff;">🔍</span>
@@ -448,22 +530,18 @@
                     <button id="btn-close-catalog" class="lightbox-close-btn">✖</button>
                 </div>
             </div>
-            
             <div id="catalog-grid" class="inventory-layout custom-scroll" style="overflow-y: auto; max-height: 60vh; padding-right: 10px;"></div>
         </div>
     </div>
 
     <div id="mob-catalog-lightbox" class="lightbox-overlay">
         <div class="lightbox-content" style="background-color: #dbd74b; border: 5px solid #c5c143;">
-            
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(0,0,0,0.1); padding-bottom: 15px; margin-bottom: 15px;">
                 <div style="display: flex; align-items: center; gap: 8px; width: auto;">
                     <label for="mob-catalog-tier-input" class="florr-text" style="font-size: 1.4em;">Tier</label>
                     <select id="mob-catalog-tier-input" class="florr-text talent-lvl-input" style="width: auto; min-width: 140px; cursor: pointer; padding: 2px 8px; appearance: menulist;"></select>
                 </div>
-                
                 <h2 style="margin: 0; flex: 1; text-align: center; border: none; padding: 0;">Mob Catalog</h2>
-                
                 <div style="display: flex; align-items: center; justify-content: flex-end; gap: 15px; width: 280px;">
                     <div style="position: relative; display: flex; align-items: center;">
                         <span style="position: absolute; left: 8px; color: #fff;">🔍</span>
@@ -472,14 +550,12 @@
                     <button id="btn-close-mob-catalog" class="lightbox-close-btn">✖</button>
                 </div>
             </div>
-            
             <div id="mob-catalog-grid" class="inventory-layout custom-scroll" style="overflow-y: auto; max-height: 60vh; padding-right: 10px;"></div>
         </div>
     </div>
 
     <div id="talents-lightbox" class="lightbox-overlay">
         <div class="lightbox-content" style="background-color: #db5a5a; border: 5px solid #c55151;">
-            
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 15px; margin-bottom: 15px;">
                 <div style="display: flex; align-items: center; gap: 8px; width: 120px;">
                     <label for="talent-level-input" class="florr-text" style="font-size: 1.4em;">Lvl</label>
@@ -490,12 +566,20 @@
                     <button id="btn-close-talents" class="lightbox-close-btn">✖</button>
                 </div>
             </div>
-            
             <div id="talents-container" class="custom-scroll" style="flex: 1; overflow-y: auto; padding-right: 5px;"></div>
-
         </div>
     </div>
 
     <script type="module" src="/src/frontend/main.ts"></script>
+    <script>
+        document.getElementById('btn-generate-build')?.addEventListener('mousedown', function() {
+            this.style.boxShadow = 'none';
+            this.style.transform = 'translateY(3px)';
+        });
+        document.getElementById('btn-generate-build')?.addEventListener('mouseup', function() {
+            this.style.boxShadow = '0 3px 0 #219653';
+            this.style.transform = 'translateY(0)';
+        });
+    </script>
 </body>
 </html>

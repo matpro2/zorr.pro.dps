@@ -1,5 +1,3 @@
-// inventory.ts
-
 import { DpsCalculator } from "./DpsCalculator";
 import { getObject } from "./GetObject";
 import { PlayerValue } from "./PlayerValue";
@@ -89,8 +87,8 @@ export function getEquippedSlots(): (number | null)[] {
     return equippedSlots.slice(0, getMaxSlots());
 }
 
-export function getEffectiveBuild(): (IEffectiveItem | null)[] {
-    const activeSlots = getEquippedSlots();
+export function getEffectiveBuild(customSlots?: (number | null)[]): (IEffectiveItem | null)[] {
+    const activeSlots = customSlots || getEquippedSlots();
     const build: (IEffectiveItem | null)[] = activeSlots.map(slotId => {
         if (slotId === null) return null;
         const item = getItemById(slotId);
@@ -101,7 +99,6 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
     const getDisplayTier = (item: IEffectiveItem) => item.transformed ? item.transformed.displayTier : item.tier;
     const getStatTier = (item: IEffectiveItem) => item.transformed ? item.transformed.statTier : item.tier;
 
-    // Passe 1 : Mimic
     for (let i = 0; i < build.length - 1; i++) {
         const current = build[i];
         if (current && getEffectiveName(current).toLowerCase() === "mimic") {
@@ -118,7 +115,6 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // Passe 2 : Fission 
     for (let i = 0; i < build.length - 1; i++) {
         const current = build[i];
         if (current && getEffectiveName(current).toLowerCase() === "fission") {
@@ -142,7 +138,6 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // Passe 3 : Fusion
     for (let i = 0; i < build.length - 3; i++) {
         const current = build[i];
         if (current && !current.inactive && getEffectiveName(current).toLowerCase() === "fusion") {
@@ -178,7 +173,6 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // Passe 4 : Non-Stackable Restriction (Cumul)
     const checkedNames = new Set<string>();
     for (let i = 0; i < build.length; i++) {
         const current = build[i];
@@ -213,7 +207,6 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // Passe 5 : Amount Requirement
     for (let i = 0; i < build.length; i++) {
         const current = build[i];
         if (!current || current.inactive) continue;
@@ -242,7 +235,6 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
         }
     }
 
-    // PASSE 6 : JOYSTICK
     let maxJoystickTier = -1;
     for (const item of build) {
         if (item && !item.inactive && getEffectiveName(item).toLowerCase() === "joystick") {
@@ -268,7 +260,152 @@ export function getEffectiveBuild(): (IEffectiveItem | null)[] {
     return build;
 }
 
-export function getProcessedInventory(targetName: string, targetTier: number): IInventoryItem[] {
+// ---- NOUVELLE FONCTION D'ÉVALUATION GLOBALE DES SLOTS ---- //
+export function getSlotsData(targetName: string, targetTier: number, customSlots?: (number | null)[]) {
+    if (customSlots) {
+        PlayerValue.updateFromSlots(customSlots);
+    }
+    
+    const effectiveBuild = getEffectiveBuild(customSlots);
+    const currentMaxSlots = getMaxSlots(); 
+    
+    // PASSE 1 : Calculer tout les slots pour trouver le poison / feu Max
+    const rawResults: any[] = [];
+    let maxPoisonIdx = -1;
+    let maxPoisonVal = -1;
+    let maxFireIdx = -1;
+    let maxFireVal = -1;
+
+    for (let i = 0; i < currentMaxSlots; i++) {
+        const item = effectiveBuild[i];
+
+        if (!item || item.inactive) {
+            rawResults.push(null);
+            continue;
+        }
+
+        const effectiveName = item.transformed ? item.transformed.name : item.name;
+        const statTier = item.transformed ? item.transformed.statTier : item.tier;
+        
+        const result = DpsCalculator.calculateDps(effectiveName, statTier, targetName, targetTier);
+        
+        if (result.dpsCategory) {
+            result.dpsCategory.forEach(cat => {
+                if (cat.type === "Poison (No Stack)" && cat.dps > maxPoisonVal) {
+                    maxPoisonVal = cat.dps;
+                    maxPoisonIdx = i;
+                }
+                if (cat.type === "Fire (No Stack)" && cat.dps > maxFireVal) {
+                    maxFireVal = cat.dps;
+                    maxFireIdx = i;
+                }
+            });
+        }
+        rawResults.push(result);
+    }
+
+    // PASSE 2 : Appliquer les Multipliers finaux, et ignorer les poisons/feu qui ne sont pas le Max
+    let totalDps = 0;
+    const slots = [];
+
+    for (let i = 0; i < currentMaxSlots; i++) {
+        const item = effectiveBuild[i];
+
+        if (!item) {
+            slots.push({ isEmpty: true, index: i });
+            continue;
+        }
+
+        const effectiveName = item.transformed ? item.transformed.name : item.name;
+        const displayTier = item.transformed ? item.transformed.displayTier : item.tier;
+        const statTier = item.transformed ? item.transformed.statTier : item.tier;
+        const entityMulti = item.transformed?.entityMultiplier || 1;
+        
+        const isInactive = item.inactive || false;
+        const inactiveReason = item.inactiveReason || "fusion";
+
+        const isMimic = item.transformed?.synergy?.includes("mimic") || false;
+        const isFission = item.transformed?.synergy?.includes("fission") || false;
+        const isFusion = item.transformed?.synergy?.includes("fusion") || false;
+        const isJoystick = item.transformed?.synergy?.includes("joystick") || false;
+
+        let result = rawResults[i];
+        
+        if (isInactive || !result) {
+            result = { dps: 0, dpsCategory: [], reloadTime: 0, survivedTicks: 0 };
+        } else {
+            let slotDps = 0;
+            if (result.dpsCategory && result.dpsCategory.length > 0) {
+                result.dpsCategory.forEach((cat: any) => {
+                    if (cat.type === "Poison (No Stack)") {
+                        if (i !== maxPoisonIdx) {
+                            cat.dps = 0;
+                            cat.totalDamage = 0;
+                            cat.ignored = true; 
+                        }
+                        slotDps += cat.dps;
+                    } else if (cat.type === "Fire (No Stack)") {
+                        if (i !== maxFireIdx) {
+                            cat.dps = 0;
+                            cat.totalDamage = 0;
+                            cat.ignored = true;
+                        }
+                        slotDps += cat.dps;
+                    } else {
+                        cat.dps *= entityMulti;
+                        if (cat.totalDamage) cat.totalDamage *= entityMulti;
+                        slotDps += cat.dps;
+                    }
+                });
+                
+                result.dpsCategory = result.dpsCategory.filter((cat: any) => !cat.ignored);
+            }
+            
+            result.dps = slotDps;
+            totalDps += slotDps;
+        }
+        
+        const obj = getObject(effectiveName, statTier);
+        let itemReload = 0, itemSecondReload = 0, itemHealth = 0, itemDamage = 0, itemArmor = 0;
+        
+        if (obj) {
+            itemReload = obj.reload || 0;
+            itemSecondReload = obj.secondReload || 0;
+
+            if (obj.type === "egg" && obj.petName) {
+                const petTier = obj.petTier !== undefined ? obj.petTier : statTier;
+                const petObj = getObject(obj.petName, petTier, true);
+                if (petObj) {
+                    itemHealth = petObj.health;
+                    itemDamage = petObj.damage;
+                    itemArmor = petObj.armor;
+                }
+            } else {
+                itemHealth = obj.health;
+                itemDamage = obj.damage;
+                itemArmor = obj.armor;
+            }
+        } else {
+            itemHealth = item.health || 0;
+            itemDamage = item.damage || 0;
+            itemArmor = item.armor || 0;
+        }
+
+        slots.push({
+            isEmpty: false, index: i, item,
+            effectiveName, displayTier, statTier, entityMulti,
+            isInactive, inactiveReason,
+            isMimic, isFission, isFusion, isJoystick,
+            result, obj, itemReload, itemSecondReload, itemHealth, itemDamage, itemArmor
+        });
+    }
+
+    return { slots, totalDps };
+}
+
+// ---- NOUVELLE FONCTION D'ÉVALUATION DE L'INVENTAIRE ---- //
+// ---- NOUVELLE FONCTION D'ÉVALUATION DE L'INVENTAIRE ---- //
+export function getProcessedInventory(targetName: string, targetTier: number, applyNoStackRule: boolean = false): IInventoryItem[] {
     const build = getEffectiveBuild();
     let maxJoystickTier = -1;
     for (const item of build) {
@@ -276,6 +413,13 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
             maxJoystickTier = Math.max(maxJoystickTier, item.transformed ? item.transformed.displayTier : item.tier);
         }
     }
+
+    // PASSE 1 : Calculer tout le monde pour trouver le plus gros Poison et Feu de l'inventaire
+    const rawResults = new Map<number, any>();
+    let maxPoisonVal = -1;
+    let maxPoisonId = -1;
+    let maxFireVal = -1;
+    let maxFireId = -1;
 
     inventory.forEach(item => {
         let effectiveName = item.name;
@@ -288,17 +432,59 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
         }
 
         const result = DpsCalculator.calculateDps(effectiveName, statTier, targetName, targetTier);
-        item.dps = result.dps; 
-        item.dpsCategory = result.dpsCategory;
+        rawResults.set(item.id, result);
 
-        const itemObj = getObject(effectiveName, statTier);
+        if (result.dpsCategory) {
+            result.dpsCategory.forEach((cat: any) => {
+                if (cat.type === "Poison (No Stack)" && cat.dps > maxPoisonVal) {
+                    maxPoisonVal = cat.dps;
+                    maxPoisonId = item.id;
+                }
+                if (cat.type === "Fire (No Stack)" && cat.dps > maxFireVal) {
+                    maxFireVal = cat.dps;
+                    maxFireId = item.id;
+                }
+            });
+        }
+    });
+
+    // PASSE 2 : Appliquer les pénalités si la règle "applyNoStackRule" est activée
+    inventory.forEach(item => {
+        const result = rawResults.get(item.id);
+        let finalDps = 0;
+        let updatedCategories: any[] = [];
+
+        if (result && result.dpsCategory) {
+            result.dpsCategory.forEach((cat: any) => {
+                const newCat = { ...cat };
+                if (applyNoStackRule) {
+                    if (newCat.type === "Poison (No Stack)" && item.id !== maxPoisonId) {
+                        newCat.dps = 0;
+                        newCat.totalDamage = 0;
+                        newCat.ignored = true;
+                    }
+                    if (newCat.type === "Fire (No Stack)" && item.id !== maxFireId) {
+                        newCat.dps = 0;
+                        newCat.totalDamage = 0;
+                        newCat.ignored = true;
+                    }
+                }
+                finalDps += newCat.dps;
+                updatedCategories.push(newCat);
+            });
+        }
+
+        item.dps = finalDps; 
+        item.dpsCategory = updatedCategories;
+
+        const itemObj = getObject(item.isJoystickSynergy ? "joystick" : item.name, item.tier);
         if (itemObj) {
             item.itemType = itemObj.type || "default"; 
             item.reload = itemObj.reload || 0; 
             item.secondReload = itemObj.secondReload || 0; 
 
             if (itemObj.type === "egg" && itemObj.petName) {
-                const petTier = itemObj.petTier !== undefined ? itemObj.petTier : statTier;
+                const petTier = itemObj.petTier !== undefined ? itemObj.petTier : item.tier;
                 const petObj = getObject(itemObj.petName, petTier, true);
                 if (petObj) {
                     item.health = petObj.health;
@@ -313,6 +499,7 @@ export function getProcessedInventory(targetName: string, targetTier: number): I
         }
     });
 
+    // Tri en fonction du DPS potentiellement pénalisé
     inventory.sort((a, b) => (b.dps || 0) - (a.dps || 0));
     return inventory;
 }
@@ -374,6 +561,21 @@ export function unequipSlot(index: number) {
         equippedSlots[index] = null;
         saveState();
     }
+}
+
+export function unequipAllSlots() {
+    equippedSlots = Array(30).fill(null);
+    saveState();
+}
+
+export function applySlotConfiguration(newSlots: (number | null)[]) {
+    equippedSlots = Array(30).fill(null);
+    for (let i = 0; i < newSlots.length; i++) {
+        if (i < 30) {
+            equippedSlots[i] = newSlots[i];
+        }
+    }
+    saveState();
 }
 
 export function clearInventory() {

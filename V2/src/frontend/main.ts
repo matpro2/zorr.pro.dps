@@ -1,13 +1,13 @@
-// main.ts
-
 import { GameController } from "./GameController";
 import { UIRenderer } from "./UIRenderer";
+import { BuildMaker } from "../BuildMaker"; 
+import { PlayerValue } from "../PlayerValue"; // <-- AJOUT POUR RÉCUPÉRER LES CLÉS
 import { TIERS } from "../constants"; 
 
 document.addEventListener("DOMContentLoaded", () => {
     // --- 1. RÉCUPÉRATION DES ÉLÉMENTS DOM ---
-    // --- 1. RÉCUPÉRATION DES ÉLÉMENTS DOM ---
     const dom = {
+        // ... (tes autres éléments)
         targetNameInput: document.getElementById("target-name-input") as HTMLInputElement,
         targetTierInput: document.getElementById("target-tier-input") as HTMLInputElement,
         targetStatsDiv: document.getElementById("target-stats") as HTMLDivElement,
@@ -19,8 +19,28 @@ document.addEventListener("DOMContentLoaded", () => {
         
         filterTypeSelect: document.getElementById("filter-type") as HTMLSelectElement,
         searchInput: document.getElementById("search-input") as HTMLInputElement,
+        applyNoStackCheckbox: document.getElementById("apply-no-stack") as HTMLInputElement,
         
-        // Talents
+        // Build Maker
+        btnOpenBuildMaker: document.getElementById('btn-open-build-maker'),
+        btnCloseBuildMaker: document.getElementById('btn-close-build-maker'),
+        buildMakerLightbox: document.getElementById('build-maker-lightbox'),
+        btnGenerateBuild: document.getElementById('btn-generate-build'),
+        bmSlotCount: document.getElementById('bm-slot-count') as HTMLInputElement,
+        
+        // Nouveaux éléments dynamiques du Build Maker
+        bmReqSelect: document.getElementById('bm-req-select') as HTMLSelectElement,
+        bmReqAdd: document.getElementById('bm-req-add') as HTMLButtonElement,
+        bmReqContainer: document.getElementById('bm-req-container') as HTMLDivElement,
+        bmReqEmptyText: document.getElementById('bm-req-empty-text') as HTMLDivElement,
+
+        bmTypes: {
+            default: document.getElementById('bm-type-default') as HTMLInputElement,
+            egg: document.getElementById('bm-type-egg') as HTMLInputElement,
+            spill: document.getElementById('bm-type-spill') as HTMLInputElement,
+            radiation: document.getElementById('bm-type-radiation') as HTMLInputElement,
+        },
+
         talentLevelInput: document.getElementById("talent-level-input") as HTMLInputElement,
         btnOpenTalents: document.getElementById('btn-open-talents'),
         btnCloseTalents: document.getElementById('btn-close-talents'),
@@ -67,7 +87,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const tTier = Number(dom.targetTierInput.value);
 
         UIRenderer.renderSlots(dom.slotsContainer, dom.totalDpsDisplay, tName, tTier, refreshAll);
-        UIRenderer.renderInventory(dom.inventoryGrid, dom.targetStatsDiv, tName, tTier, dom.filterTypeSelect.value, dom.searchInput.value, refreshAll);
+        
+        // MODIFICATION : On transmet l'état de la checkbox
+        const applyNoStack = dom.applyNoStackCheckbox?.checked || false;
+        UIRenderer.renderInventory(dom.inventoryGrid, dom.targetStatsDiv, tName, tTier, dom.filterTypeSelect.value, dom.searchInput.value, applyNoStack, refreshAll);
+        
         UIRenderer.renderPlayerStats(dom.playerStatsContainer); 
 
         if (dom.talentsContainer) {
@@ -75,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 dom.talentsContainer,
                 GameController.getTalents(),
                 GameController.getTalentDefs(),
-                GameController.getTPInfo(), // Nouveau passage des infos TP
+                GameController.getTPInfo(),
                 (id, lvl) => {
                     GameController.setTalentLevel(id, lvl);
                     refreshAll();
@@ -89,19 +113,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const tier = Number(dom.catalogTierInput.value);
         const searchQuery = dom.catalogSearchInput?.value || "";
         
-        const inventoryItems = GameController.getInventoryData(dom.targetNameInput.value, Number(dom.targetTierInput.value), "all", "");
+        const inventoryItems = GameController.getInventoryData(dom.targetNameInput.value, Number(dom.targetTierInput.value), "all", "", false);
 
         UIRenderer.renderCatalog(
             dom.catalogGrid, 
             tier, 
             searchQuery, 
             inventoryItems, 
-            (name: string, tier: number) => { // Callback d'ajout
+            (name: string, tier: number) => { 
                 GameController.addItem(name, tier, 1);
                 refreshAll(); 
                 refreshCatalog(); 
             },
-            (name: string, tier: number) => { // NOUVEAU: Callback de suppression
+            (name: string, tier: number) => { 
                 GameController.removeOneItemByNameAndTier(name, tier);
                 refreshAll();
                 refreshCatalog();
@@ -125,6 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- 4. ÉCOUTEURS D'ÉVÉNEMENTS GÉNÉRAUX ---
     dom.searchInput.addEventListener("input", refreshAll); 
     dom.filterTypeSelect.addEventListener("change", refreshAll);
+    dom.applyNoStackCheckbox?.addEventListener("change", refreshAll); // <-- NOUVEAU
 
     dom.talentLevelInput?.addEventListener("input", (e) => {
         const val = parseInt((e.target as HTMLInputElement).value, 10);
@@ -135,7 +160,111 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // --- 5. GESTION DES LIGHTBOX ---
-    
+    // --- GESTION DU BUILD MAKER ---
+    if (dom.btnOpenBuildMaker && dom.btnCloseBuildMaker && dom.buildMakerLightbox && dom.btnGenerateBuild) {
+        
+        // Initialisation de la liste de toutes les statistiques possibles
+        const allStats = PlayerValue.getAllStatKeys();
+        allStats.forEach(stat => {
+            dom.bmReqSelect.add(new Option(stat.label, stat.id));
+        });
+
+        // Ajouter dynamiquement une ligne de contrainte
+        dom.bmReqAdd.addEventListener('click', () => {
+            const selectedId = dom.bmReqSelect.value;
+            const selectedLabel = dom.bmReqSelect.options[dom.bmReqSelect.selectedIndex].text;
+
+            // Vérifier si la ligne n'existe pas déjà
+            if (document.getElementById(`req-row-${selectedId}`)) return;
+
+            if (dom.bmReqEmptyText) dom.bmReqEmptyText.style.display = "none";
+
+            const row = document.createElement("div");
+            row.id = `req-row-${selectedId}`;
+            row.dataset.key = selectedId;
+            row.style.cssText = "display: flex; justify-content: space-between; align-items: center;";
+            row.innerHTML = `
+                <label style="color: #fff; font-size: 0.95em;">${selectedLabel} :</label>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <input type="number" step="0.1" value="0" class="req-input" style="width: 60px; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px; text-align: center;">
+                    <button class="req-remove" style="background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 0.8em; font-weight: bold;">✖</button>
+                </div>
+            `;
+            
+            // Suppression de la ligne
+            row.querySelector('.req-remove')?.addEventListener('click', () => {
+                row.remove();
+                if (dom.bmReqContainer.children.length <= 1) { // 1 correspond au EmptyText caché
+                    if (dom.bmReqEmptyText) dom.bmReqEmptyText.style.display = "block";
+                }
+            });
+
+            dom.bmReqContainer.appendChild(row);
+        });
+
+        dom.btnOpenBuildMaker.addEventListener('click', () => { 
+            const maxSlots = GameController.getMaxSlots();
+            dom.bmSlotCount.max = maxSlots.toString();
+            if (Number(dom.bmSlotCount.value) > maxSlots) {
+                dom.bmSlotCount.value = maxSlots.toString();
+            }
+            dom.buildMakerLightbox!.style.display = 'flex'; 
+        });
+        
+        dom.btnCloseBuildMaker.addEventListener('click', () => { dom.buildMakerLightbox!.style.display = 'none'; });
+        
+        dom.buildMakerLightbox.addEventListener('click', (e) => {
+            if (e.target === dom.buildMakerLightbox) dom.buildMakerLightbox!.style.display = 'none';
+        });
+
+        dom.btnGenerateBuild.addEventListener('click', () => {
+            const allowedTypes = [];
+            if (dom.bmTypes.default.checked) allowedTypes.push("default");
+            if (dom.bmTypes.egg.checked) allowedTypes.push("egg");
+            if (dom.bmTypes.spill.checked) allowedTypes.push("spill");
+            if (dom.bmTypes.radiation.checked) allowedTypes.push("radiation");
+
+            const targetSlots = Number(dom.bmSlotCount.value) || 5;
+
+            // LECTURE DYNAMIQUE DES CONTRAINTES CRÉÉES
+            const minRequirements: Record<string, number> = {};
+            const reqRows = dom.bmReqContainer.querySelectorAll('[data-key]');
+            
+            reqRows.forEach((row) => {
+                const key = (row as HTMLElement).dataset.key!;
+                const input = row.querySelector('.req-input') as HTMLInputElement;
+                const val = Number(input.value) || 0;
+                if (val > 0) {
+                    minRequirements[key] = val;
+                }
+            });
+
+            // ENVOI AU BUILD MAKER
+            const newBuild = BuildMaker.generateAutoBuild(
+                allowedTypes,
+                dom.targetNameInput.value,
+                Number(dom.targetTierInput.value),
+                targetSlots,
+                minRequirements
+            );
+
+            GameController.applyBuild(newBuild.slots, newBuild.talents);
+
+            if (BuildMaker.lastAuditLog) {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(BuildMaker.lastAuditLog, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `build_maker_report_${dom.targetNameInput.value}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            }
+
+            dom.buildMakerLightbox!.style.display = 'none';
+            refreshAll();
+        });
+    }
+
     // Talents
     if (dom.btnOpenTalents && dom.btnCloseTalents && dom.talentsLightbox) {
         dom.btnOpenTalents.addEventListener('click', () => { dom.talentsLightbox!.style.display = 'flex'; });
