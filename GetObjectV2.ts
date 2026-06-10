@@ -1,6 +1,6 @@
-import { allData } from "./data";
-import { PlayerValue } from "./PlayerValue";
-import { TIERS } from "./constants";
+import { allData } from "./V2/src/data";
+import { PlayerValue } from "./V2/src/PlayerValue";
+import { TIERS } from "./V2/src/constants";
 
 
 const SIMPLE_STATS: Record<string, string[]> = {
