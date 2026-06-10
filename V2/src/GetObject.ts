@@ -1,21 +1,7 @@
-import petals from "./data/petals.json";
-import mobs from "./data/mobs.json";
-import spills from "./data/spills.json";
-import eggs from "./data/eggs.json";
-import utilities from "./data/utilities.json";
-import radiation from "./data/radiation.json";
+import { allData } from "./data";
 
 import { PlayerValue } from "./PlayerValue";
 import { TIERS } from "./constants"; 
-
-const allData: Record<string, any> = {
-  ...petals,
-  ...mobs,
-  ...spills,
-  ...eggs,
-  ...utilities,
-  ...radiation
-};
 
 function resolveTiers(data: any, tier: number, keyName?: string): any {
   if (data === null || typeof data !== "object") {
@@ -50,21 +36,17 @@ function getMobHpMultiplier(tier: number): number {
     return hMult;
 }
 
-// LECTURE INTELLIGENTE ET SÉCURISÉE DES OBJETS DE STATISTIQUES
 function getApplicableStat(statData: { op: string, boosts: { source?: string, tierReq: number, value: number }[] } | undefined, currentTier: number, baseValue: number): number {
     let finalValue = baseValue;
     
     if (statData && Array.isArray(statData.boosts)) {
         for (const mod of statData.boosts) {
-            // Anti-NaN + Vérification de Tier
             if (mod.tierReq >= currentTier && typeof mod.value === 'number' && !isNaN(mod.value)) {
                 
                 if (statData.op === 'factor') {
                     if (mod.source === "Talents") {
-                        // Les talents calculent déjà le facteur en décimal (ex: 1.075)
                         finalValue *= mod.value;
                     } else {
-                        // Les objets appliquent le pourcentage (ex: 15 -> 1.15)
                         finalValue *= Math.max(0.01, 1 + (mod.value / 100));
                     }
                 } else if (statData.op === 'multiply') {

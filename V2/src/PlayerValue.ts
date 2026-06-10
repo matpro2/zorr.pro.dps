@@ -60,8 +60,13 @@ const getInitialState = () => {
       armorMulti: createStat('multiply'),
     },
     status: {
-      fireDuration: createStat('add'),
+      poisonMulti: createStat('multiply'),
       poisonDuration: createStat('add'),
+
+      fireMulti: createStat('multiply'),
+      fireDuration: createStat('add'),
+
+      lightningMulti: createStat('multiply'),
       lightningBounce: createStat('add'),
       lightningMultiRate: createStat('add'),
     },

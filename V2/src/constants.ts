@@ -41,15 +41,21 @@ export const PLAYER_CONFIG = {
 } as const;
 
 export const TALENTS_DEF: Record<string, { label: string, step: number, isMulti: boolean, basePrice: number | number[], maxLevel: number, requires?: { id: string, lvl: number } }> = {
-    "player.healMulti":         { label: "Player Heal Multi",         step: 0.1,    isMulti: true,  basePrice: 4,        maxLevel: 6 },
-    "player.manaGenerationMulti":{ label: "Player Mana Gen Multi",    step: 0.1,    isMulti: true,  basePrice: [16,20,24],maxLevel: 3, requires: { id: "player.healMulti", lvl: 3 } },
-    "player.extraVision":       { label: "vision",                    step: 0.15,   isMulti: true,  basePrice: 3,        maxLevel: 5 },
-    "player.pickRange":         { label: "pick",                      step: 100,    isMulti: false, basePrice: 4,        maxLevel: 5 },
-    "petal.damageMulti":        { label: "Petal Damage Multi",        step: 0.03,   isMulti: true,  basePrice: 5,        maxLevel: 7 },
-    "petal.reloadFactor":       { label: "Petal Reload Speed",        step: 0.03,   isMulti: true,  basePrice: 3,        maxLevel: 7 },
-    "petal.secondReloadFactor": { label: "Petal Second Reload Speed", step: 0.075,  isMulti: true,  basePrice: [39,24],  maxLevel: 2, requires: { id: "petal.reloadFactor", lvl: 5 } },
-    "petal.luck":               { label: "Petal Luck",                step: 0.0045, isMulti: false, basePrice: 4,        maxLevel: 5 },
-    "petal.healthMulti":        { label: "Petal Health Multi",        step: 0.05,   isMulti: true,  basePrice: 4,        maxLevel: 5 },
-    "pet.healthMulti":          { label: "Pet Health Multi",          step: 0.03,   isMulti: true,  basePrice: 5,        maxLevel: 5 },
-    "pet.damageMulti":          { label: "Pet Damage Multi",          step: 0.03,   isMulti: true,  basePrice: 5,        maxLevel: 5 }
+    "player.healthMulti":         { label: "Health",         step: 0.8,    isMulti: true,  basePrice: 4,        maxLevel: 6 },
+    "player.healMulti":         { label: "Medic",         step: 0.1,    isMulti: true,  basePrice: 4,        maxLevel: 6 },
+    "player.manaGenerationMulti":{ label: "Wizard",    step: 0.1,    isMulti: true,  basePrice: [16,20,24],maxLevel: 3, requires: { id: "player.healMulti", lvl: 3 } },
+    "player.extraVision":       { label: "Vision",                    step: 0.15,   isMulti: true,  basePrice: 3,        maxLevel: 5 },
+    "player.pickRange":         { label: "Magnetism",                      step: 100,    isMulti: false, basePrice: 4,        maxLevel: 5 },
+    "player.poisonMulti":         { label: "Toxicity",                      step: 0.075,    isMulti: true, basePrice: [35,40], maxLevel: 2, requires: { id: "petal.damageMulti", lvl: 5 }  },
+    "player.fireMulti":         { label: "BURN!",                      step: 0.075,    isMulti: true, basePrice: [35,40], maxLevel: 2, requires: { id: "petal.damageMulti", lvl: 5 }  },
+    "player.lightningMulti":         { label: "Thunder",                      step: 0.075,    isMulti: true, basePrice: [35,40], maxLevel: 2, requires: { id: "petal.damageMulti", lvl: 5 }  },
+
+    
+    "petal.damageMulti":        { label: "Penetration",        step: 0.03,   isMulti: true,  basePrice: 5,        maxLevel: 7 },
+    "petal.reloadFactor":       { label: "Reload",        step: 0.03,   isMulti: true,  basePrice: 3,        maxLevel: 7 },
+    "petal.secondReloadFactor": { label: "Secondary Reload", step: 0.075,  isMulti: true,  basePrice: [39,24],  maxLevel: 2, requires: { id: "petal.reloadFactor", lvl: 5 } },
+    "petal.luck":               { label: "Luck",                step: 0.45, isMulti: false, basePrice: 4,        maxLevel: 5 },
+    "petal.healthMulti":        { label: "Petal Health",        step: 0.05,   isMulti: true,  basePrice: 4,        maxLevel: 5 },
+    "pet.healthMulti":          { label: "Pet Health",          step: 0.03,   isMulti: true,  basePrice: 5,        maxLevel: 5 },
+    "pet.damageMulti":          { label: "Pet Damage",          step: 0.03,   isMulti: true,  basePrice: 5,        maxLevel: 5 }
 };

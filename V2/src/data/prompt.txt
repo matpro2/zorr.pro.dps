@@ -28,3 +28,5 @@ JSON
  },
 
 ----------------------------------------------------
+
+dans getobjectV2. Les stats hp, dmg armor sont appliqué automatiquement, mais reload ni second reload. Peut tu faire en sorte qu'ils soient appliqué de maniere automatique comme le reste du code ?
