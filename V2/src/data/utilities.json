@@ -9,6 +9,16 @@
       { "type": "pet.mutation", "tierRestricted": true, "affectedByClover": true, "value": 0.5, "scale": false}
     ]
   },
+  "Astral": {
+    "name": "Astral",
+    "object": "petal",
+    "type": "utility",
+    "stack": false,
+    "tierRestricted": false,
+    "effects": [
+      { "type": "pet.paranormalRate", "tierRestricted": true, "affectedByClover": true, "value": 10, "scale": false}
+    ]
+  },
   "Dizzy": {
     "name": "Dizzy",
     "object": "petal",
@@ -159,6 +169,16 @@
     "tierRestricted": false,
     "effects": [
       { "type": "player.extraVision", "value": [1.25, 1.4, 1.6, 1.8, 1.9, 2, 3, 4.5, 7, 12] }
+    ]
+  },
+  "Soap": {
+    "name": "Soap",
+    "object": "petal",
+    "type": "utility",
+    "stack": true,
+    "tierRestricted": false,
+    "effects": [
+      { "type": "player.extraSpillRange", "value": [1.1, 1.112, 1.148, 1.208, 1.292, 1.4, 1.532, 1.688, 1.868, 2.072] }
     ]
   },
   "Cucumber": {

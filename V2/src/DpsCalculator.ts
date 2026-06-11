@@ -279,4 +279,27 @@ export class DpsCalculator {
             survivedTicks: survivalTick
         };
     }
+
+    public static calculateManaPerSec(obj: any): number {
+    let manaPerSec = 0;
+
+    if (Array.isArray(obj.effects)) {
+        for (const effect of obj.effects) {
+            if (typeof effect.type === "string" && effect.type.toLowerCase().includes("mana")) {
+                if (typeof effect.value === "number" && !isNaN(effect.value)) {
+                    manaPerSec += effect.value;
+                }
+            }
+        }
+    }
+
+    if (typeof obj.manaPrice === "number" && obj.manaPrice > 0) {
+        const reload = (obj.reload || 0) + (obj.secondReload || 0);
+        if (reload > 0) {
+            manaPerSec -= obj.manaPrice / reload;
+        }
+    }
+
+    return manaPerSec;
+}
 }

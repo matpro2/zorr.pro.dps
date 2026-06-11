@@ -61,7 +61,7 @@ function getApplicableStat(statData: { op: string, boosts: { source?: string, ti
 }
 
 export function getObject(name: string, tier: number, forcePet: boolean = false) {
-  const key = Object.keys(allData).find(p => p.toLowerCase() === name.toLowerCase());
+const key = Object.keys(allData).find(p => p.toLowerCase() === name.toLowerCase());
 
   if (!key) return null;
 
@@ -103,6 +103,12 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
   const isMob = !forcePet && object.object === "mob";
 
   const tierMulti = 3 ** tier;
+  const manaTierMulti = 2 ** tier;
+
+  if (typeof object.manaPrice === "number") {
+    const applyTierMulti = Array.isArray(rawObject.manaPrice) ? 1 : manaTierMulti;
+    object.manaPrice *= applyTierMulti;
+  }
 
   if (typeof object.health === "number") {
     let applyTierMulti = 1;
@@ -186,7 +192,13 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
       
       if (typeof effect.value === "number") {
          if (!Array.isArray(rawEffect.value) && rawEffect.scale !== false) {
-           effect.value *= tierMulti;
+           
+           if (effect.type && effect.type.toLowerCase().includes("mana")) {
+               effect.value *= manaTierMulti; // Échelle en x2 par Tier
+           } else {
+               effect.value *= tierMulti;     // Échelle normale en x3 par Tier
+           }
+
          }
       }
 
@@ -203,7 +215,7 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
     }
   }
 
-  if (typeof object.damage === "number" && Array.isArray(object.effects)) {
+if (typeof object.damage === "number" && Array.isArray(object.effects)) {
     let critChance = 0;
     let critMultiplier = 1;
 
@@ -218,6 +230,39 @@ export function getObject(name: string, tier: number, forcePet: boolean = false)
     if (critChance > 0) {
         const expectedCritMultiplier = (1 - critChance) + (critChance * critMultiplier);
         object.damage *= expectedCritMultiplier;
+    }
+  }
+
+  
+  if (isPet) {
+    const mutationRate = getApplicableStat(PlayerValue.pet.mutation, tier, 0);
+    const paranormalRate = getApplicableStat(PlayerValue.pet.paranormalRate, tier, 0);
+
+    if (paranormalRate > 0) {
+      const paranormalProb = Math.min(1, Math.max(0, paranormalRate / 100));
+      
+      if (typeof object.health === "number") {
+        object.health = (1 - paranormalProb) * object.health + paranormalProb * (object.health * 10);
+      }
+      if (typeof object.damage === "number") {
+        object.damage = (1 - paranormalProb) * object.damage + paranormalProb * (object.damage / 10);
+      }
+    }
+
+    if (mutationRate > 0) {
+      const chance = mutationRate + getApplicableStat(PlayerValue.petal.luck, tier, 0);
+      const mutationProb = Math.min(1, Math.max(0, chance / 100));
+      const nextTierObj = getObject(name, tier + 1, forcePet);
+      
+      if (nextTierObj) {
+        const statsToAverage = ["health", "damage", "armor"];
+        
+        for (const stat of statsToAverage) {
+          if (typeof object[stat] === "number" && typeof nextTierObj[stat] === "number") {
+            object[stat] = (1 - mutationProb) * object[stat] + mutationProb * nextTierObj[stat];
+          }
+        }
+      }
     }
   }
 

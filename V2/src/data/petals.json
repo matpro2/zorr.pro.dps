@@ -339,9 +339,7 @@
     "armor": 0,
     "reload": 0.75,
     "secondReload": null,
-    "effects": [
-      { "type": "Magic", "value": 0.4 }
-    ]
+    "manaPrice": 0.4
   },
   "Plasma": {
     "name": "Plasma",

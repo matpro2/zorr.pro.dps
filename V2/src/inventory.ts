@@ -403,8 +403,7 @@ export function getSlotsData(targetName: string, targetTier: number, customSlots
     return { slots, totalDps };
 }
 
-// ---- NOUVELLE FONCTION D'ÉVALUATION DE L'INVENTAIRE ---- //
-// ---- NOUVELLE FONCTION D'ÉVALUATION DE L'INVENTAIRE ---- //
+
 export function getProcessedInventory(targetName: string, targetTier: number, applyNoStackRule: boolean = false): IInventoryItem[] {
     const build = getEffectiveBuild();
     let maxJoystickTier = -1;
