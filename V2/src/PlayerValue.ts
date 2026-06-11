@@ -22,6 +22,8 @@ const getInitialState = () => {
       secondReloadSkipRate: createStat('add'),
       manaCostFactor: createStat('factor'),
       luck: createStat('add'),
+      orbitSpeed: createStat('add'),
+      extraRange: createStat('add'),
       hasJoystick: { active: false, tier: 0 } 
     },
     player: {

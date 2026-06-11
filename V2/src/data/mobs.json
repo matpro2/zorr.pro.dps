@@ -13,6 +13,13 @@
     "damage": 10,
     "armor": 0.2
   },
+  "Dummy": {
+    "name": "Dummy",
+    "object": "mob",
+    "health": 100,
+    "damage": 10,
+    "armor": 0.2
+  },
   "Soldier Ant": {
     "name": "Soldier Ant",
     "object": "mob",

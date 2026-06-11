@@ -29,4 +29,10 @@ JSON
 
 ----------------------------------------------------
 
-dans getobjectV2. Les stats hp, dmg armor sont appliqué automatiquement, mais reload ni second reload. Peut tu faire en sorte qu'ils soient appliqué de maniere automatique comme le reste du code ?
+false: no stack mechanics
+in progress: unique hole spawn boss
+false: account speed of mob
+false: egg can be fusioned and fissioned
+false: elemental extra dmg
+true: omega scale
+false: 285 is 16, 255 is 15, 225 is 14

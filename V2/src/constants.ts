@@ -51,7 +51,8 @@ export const TALENTS_DEF: Record<string, { label: string, step: number, isMulti:
     "player.fireMulti":         { label: "BURN!",                      step: 0.075,    isMulti: true, basePrice: [35,40], maxLevel: 2, requires: { id: "petal.damageMulti", lvl: 5 }  },
     "player.lightningMulti":         { label: "Thunder",                      step: 0.075,    isMulti: true, basePrice: [35,40], maxLevel: 2, requires: { id: "petal.damageMulti", lvl: 5 }  },
 
-    
+    "petal.orbitSpeed":       { label: "Orbit Speed",                    step: 0.8,   isMulti: false,  basePrice: 4,        maxLevel: 4 },
+    "petal.extraRange":       { label: "Range",                    step: 50,   isMulti: false,  basePrice: 4,        maxLevel: 4 },
     "petal.damageMulti":        { label: "Penetration",        step: 0.03,   isMulti: true,  basePrice: [5,10,15,25,30,35,40],        maxLevel: 7 },
     "petal.reloadFactor":       { label: "Reload",        step: 0.03,   isMulti: true,  basePrice: 3,        maxLevel: 7 },
     "petal.secondReloadFactor": { label: "Secondary Reload", step: 0.075,  isMulti: true,  basePrice: [39,24],  maxLevel: 2, requires: { id: "petal.reloadFactor", lvl: 5 } },

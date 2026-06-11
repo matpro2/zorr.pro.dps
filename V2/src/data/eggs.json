@@ -526,7 +526,7 @@
     "entity": { "base": 15, "multi": 1.666666666666666667 },
     "reload": 1.0,
     "secondReload": [15, 20, 25, 4, 6, 10, 14, 15, 25, 105],
-    "petName": "Soldier Ant",
+    "petName": ["Soldier Ant","Queen Ant"],
     "petTier": { "gap": "Rare" }
   },
   "Fire Ant Hole Egg": {
@@ -646,7 +646,7 @@
     "entity": { "base": 10, "multi": 1.5 },
     "reload": 1.0,
     "secondReload": [15, 20, 25, 30, 35, 7.5, 15, 22.5, 35, 135],
-    "petName": "Hel Bee",
+    "petName": ["Hel Bee","Hel Queen Bee"],
     "petTier": { "gap": "Legendary" }
   },
   "Gift Egg": {

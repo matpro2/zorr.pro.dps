@@ -233,6 +233,32 @@
       { "type": "petal.heal", "value": 50 }
     ]
   },
+  "Faster": {
+    "name": "Faster",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 5,
+    "damage": 40,
+    "armor": 0,
+    "reload": 1.0,
+    "secondReload": null,
+    "effects": [
+      { "type": "petal.orbitSpeed", "value": [0.2, 0.6, 1, 1.4, 1.8, 2.2, 2.6, 3, 3.8, 4.6] }
+    ]
+  },
+  "Third Eye": {
+    "name": "Third Eye",
+    "object": "petal",
+    "type": "default",
+    "stack": false,
+    "tierRestricted": false,
+    "effects": [
+      { "type": "petal.extraRange", "value": [100, 110, 120, 130, 140, 150, 200, 300, 500, 800] }
+    ]
+  },
     "Magic Leaf": {
     "name": "Magic Leaf",
     "object": "petal",

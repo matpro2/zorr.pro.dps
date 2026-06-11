@@ -69,7 +69,15 @@ const key = Object.keys(allData).find(p => p.toLowerCase() === name.toLowerCase(
   const object = resolveTiers(rawObject, tier);
   
   if (object.type === "egg") {
-    
+    if (Array.isArray(rawObject.petName)) {
+      if (tier >= 9) {
+        object.petName = rawObject.petName[rawObject.petName.length - 1];
+      } else {
+        object.petName = rawObject.petName[0];
+      }
+    }
+    // ==========================================
+
     if (typeof object.entity === "object" && object.entity !== null) {
       const base = object.entity.base || 1;
       const multi = object.entity.multi || 1;
@@ -102,7 +110,7 @@ const key = Object.keys(allData).find(p => p.toLowerCase() === name.toLowerCase(
   const isPet = forcePet || object.object === "pet";
   const isMob = !forcePet && object.object === "mob";
 
-  const tierMulti = 3 ** tier;
+  const tierMulti = (object.object === "petal" && tier >= 8) ? 3 ** (tier + 1) : 3 ** tier;
   const manaTierMulti = 2 ** tier;
 
   if (typeof object.manaPrice === "number") {
