@@ -4,7 +4,6 @@ import { GameController } from "./GameController";
 import { TIERS } from "../constants";
 import { formatNumber } from "../formatNumber";
 import { createCard, getDpsColor, generateStatHtml } from "./CardFactory";
-import type { CardConfig } from "./CardFactory";
 
 function getEntityCount(obj: any): number | undefined {
     if (!obj) return undefined;
@@ -106,7 +105,7 @@ export const UIRenderer = {
             const card = createCard({
                 type: 'equipped',
                 effectiveName: slot.effectiveName,
-                originalName: slot.item.name,
+                originalName: slot.item?.name || slot.effectiveName,                
                 displayTier: slot.displayTier,
                 statTier: slot.statTier,
                 health: slot.itemHealth,
@@ -123,7 +122,7 @@ export const UIRenderer = {
                 petTier: slot.obj?.petTier,
                 isInactive: slot.isInactive,
                 inactiveReason: slot.inactiveReason,
-                synergy: slot.item.transformed?.synergy || (slot.isJoystick ? "joystick" : ""),
+                synergy: slot.item?.transformed?.synergy || (slot.isJoystick ? "joystick" : ""),                
                 entityMulti: slot.entityMulti
             });
 
@@ -264,7 +263,6 @@ export const UIRenderer = {
 
         for (const [nameText, diffs] of Object.entries(groupedStats)) {
             const colorIndex = statIndex++;
-            const nameColor  = TIERS[0]?.Background || "#fff"; // fallback; getSequenceColor is in CardFactory
 
             if (diffs.length === 1) {
                 const diff    = diffs[0];
