@@ -115,9 +115,10 @@ export const PlayerValue = {
       }
   },
 
-  getMaxSlots() {
-      if (this.level < PLAYER_CONFIG.SLOT_LEVEL_THRESHOLD) return PLAYER_CONFIG.BASE_SLOTS;
-      return PLAYER_CONFIG.EXTRA_SLOTS_BASE + Math.floor((this.level - PLAYER_CONFIG.SLOT_LEVEL_THRESHOLD) / PLAYER_CONFIG.SLOT_LEVEL_STEP);
+getMaxSlots() {
+      if (this.level < 5) return 5;
+      if (this.level < 15) return 6;
+      return 7 + Math.floor((this.level - 15) / 30);
   },
 
   ...getInitialState(),
@@ -152,6 +153,7 @@ export const PlayerValue = {
 
     const effectiveBuild = getEffectiveBuild(customSlots);
 
+// [Garder la première boucle du Joystick intacte juste au-dessus]
     for (const item of effectiveBuild) {
       if (!item || item.inactive) continue; 
       const itemName = item.transformed ? item.transformed.name : item.name;
@@ -163,7 +165,21 @@ export const PlayerValue = {
       }
     }
 
-    for (const item of effectiveBuild) {
+    // ==========================================================
+    // NOUVEAU : Gestion des effets internes "stack: false"
+    // ==========================================================
+    const appliedNonStackingEffects = new Set<string>();
+
+    // On trie les objets par Tier décroissant pour toujours appliquer le meilleur effet en premier
+    const sortedBuild = [...effectiveBuild].sort((a, b) => {
+        if (!a) return 1;
+        if (!b) return -1;
+        const tierA = a.transformed ? a.transformed.statTier : a.tier;
+        const tierB = b.transformed ? b.transformed.statTier : b.tier;
+        return tierB - tierA; 
+    });
+
+    for (const item of sortedBuild) {
       if (!item || item.inactive) continue;
 
       const finalName = item.transformed ? item.transformed.name : item.name;
@@ -174,6 +190,16 @@ export const PlayerValue = {
 
       for (const effect of obj.effects) {
         if (effect.type && effect.type.includes(".")) {
+          
+          if (effect.stack === false) {
+             const effectKey = `${finalName}-${effect.type}`;
+             
+             if (appliedNonStackingEffects.has(effectKey)) {
+                 continue; 
+             }
+             appliedNonStackingEffects.add(effectKey);
+          }
+
           const parts = effect.type.split(".");
 
           let effectValue = effect.value;

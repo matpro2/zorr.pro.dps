@@ -259,22 +259,6 @@
       { "type": "petal.extraRange", "value": [100, 110, 120, 130, 140, 150, 200, 300, 500, 800] }
     ]
   },
-    "Magic Leaf": {
-    "name": "Magic Leaf",
-    "object": "petal",
-    "type": "default",
-    "stack": true,
-    "tierRestricted": false,
-    "entity": 1,
-    "health": 12,
-    "damage": 15,
-    "armor": 0,
-    "reload": 1.0,
-    "secondReload": null,
-    "effects": [
-      { "type": "mana.generation", "value": 4 }
-    ]
-  },
   "Opal": {
     "name": "Opal",
     "object": "petal",

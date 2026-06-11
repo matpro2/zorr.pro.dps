@@ -5,6 +5,7 @@ import spills from "./spills.json";
 import eggs from "./eggs.json";
 import utilities from "./utilities.json";
 import radiation from "./radiation.json";
+import magic from "./magic.json";
 
 export const allData: Record<string, any> = {
     ...petals,
@@ -12,7 +13,8 @@ export const allData: Record<string, any> = {
     ...spills,
     ...eggs,
     ...utilities,
-    ...radiation
+    ...radiation,
+    ...magic
 };
 
-export { petals, mobs, spills, eggs, utilities, radiation };
+export { petals, mobs, spills, eggs, utilities, radiation, magic };

@@ -176,13 +176,13 @@ const key = Object.keys(allData).find(p => p.toLowerCase() === name.toLowerCase(
   if (typeof object.reload === "number" && (object.object === "petal" || object.object === "pet")) {
     if (object.name && object.name.toLowerCase() === "flower") {
         object.reload = 10;
+    } else {
+        const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, tier, 1);
+        const finalReloadSkipRate = getApplicableStat(PlayerValue.petal.reloadSkipRate, tier, 0);
+        
+        object.reload /= Math.max(0.01, finalReloadFactor);
+        object.reload *= Math.max(0, 1 - (finalReloadSkipRate / 100));
     }
-
-    const finalReloadFactor = getApplicableStat(PlayerValue.petal.reloadFactor, tier, 1);
-    const finalReloadSkipRate = getApplicableStat(PlayerValue.petal.reloadSkipRate, tier, 0);
-    
-    object.reload /= Math.max(0.01, finalReloadFactor);
-    object.reload *= Math.max(0, 1 - (finalReloadSkipRate / 100));
   }
 
   if (typeof object.secondReload === "number" && (object.object === "petal" || object.object === "pet")) {
@@ -271,6 +271,21 @@ if (typeof object.damage === "number" && Array.isArray(object.effects)) {
           }
         }
       }
+    }
+  }
+
+  if (object.object === "petal" && typeof object.entity === "number" && object.entity > 1) {
+    if (typeof object.health === "number") object.health /= object.entity;
+    if (typeof object.damage === "number") object.damage /= object.entity;
+    if (typeof object.armor === "number") object.armor /= object.entity;
+    
+
+    if (Array.isArray(object.effects)) {
+        for (const effect of object.effects) {
+            if (typeof effect.value === "number" && effect.type !== "Critical") {
+                effect.value /= object.entity;
+            }
+        }
     }
   }
 

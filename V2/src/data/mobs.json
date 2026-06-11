@@ -27,6 +27,24 @@
     "damage": 10,
     "armor": 0.2
   },
+  "Square": {
+    "name": "Square",
+    "object": "mob",
+    "health": 200,
+    "damage": 10
+  },
+  "Cube": {
+    "name": "Cube",
+    "object": "mob",
+    "health": 1000,
+    "damage": 10
+  },
+  "Tesseract": {
+    "name": "Tesseract",
+    "object": "mob",
+    "health": 10000,
+    "damage": 10
+  },
   "Red Blood Cell": {
     "name": "Red Blood Cell",
     "object": "mob",

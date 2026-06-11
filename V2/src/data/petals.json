@@ -31,7 +31,7 @@
       { "type": "amountRequirement", "value": 3, "scale": false }
     ]
   },
-    "Antler": {
+  "Antler": {
     "name": "Antler",
     "object": "petal",
     "type": "default",
@@ -136,6 +136,22 @@
       { "type": "Fire", "duration": 3, "value": 50, "stack": false }
     ]
   },
+  "Ring": {
+    "name": "Ring",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 1,
+    "damage": 1,
+    "armor": 0,
+    "reload": 6.0,
+    "secondReload": null,
+    "effects": [
+      { "type": "Fire", "duration": 5, "value": 200, "stack": false }
+    ]
+  },
   "DVD": {
     "name": "DVD",
     "object": "petal",
@@ -232,7 +248,8 @@
       { "type": "player.shield", "value": 2.5 },
       { "type": "Poison", "duration": 5, "value": 10, "stack": true },
       { "type": "Fire", "duration": 3, "value": 7, "stack": true },
-      { "type": "mana.generation", "value": 4 }
+      { "type": "mana.generation", "value": 4 },
+      { "type": "petal.damageMulti", "stack": false, "value": [1,1.01,1.02,1.03,1.04,1.05,1.06,1.07,1.14,1.21] }
     ]
   },
   "Dice": {
@@ -262,6 +279,34 @@
     "damage": 30,
     "armor": 0,
     "reload": 1.0,
+    "secondReload": null,
+    "effects": []
+  },
+  "Amethyst": {
+    "name": "Amethyst",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 1,
+    "damage": 1250,
+    "armor": 6,
+    "reload": 20,
+    "secondReload": null,
+    "effects": []
+  },
+  "Blood Scythe": {
+    "name": "Blood Scythe",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 3,
+    "damage": 909,
+    "armor": 0,
+    "reload": 7.5,
     "secondReload": null,
     "effects": []
   },
@@ -326,20 +371,6 @@
     "effects": [
       { "type": "Poison", "duration": 3, "value": 40, "stack": false }
     ]
-  },
-  "Magic Yuan": {
-    "name": "Magic Yuan",
-    "object": "petal",
-    "type": "default",
-    "stack": true,
-    "tierRestricted": false,
-    "entity": 1,
-    "health": 15,
-    "damage": 35,
-    "armor": 0,
-    "reload": 0.75,
-    "secondReload": null,
-    "manaPrice": 0.4
   },
   "Plasma": {
     "name": "Plasma",
@@ -414,6 +445,34 @@
     "damage": 80,
     "armor": -1,
     "reload": 0.8,
+    "secondReload": null,
+    "effects": []
+  },
+  "Stinger": {
+    "name": "Stinger",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": [3, 3, 3, 4, 4, 4, 5, 5, 5, 5],
+    "health": 1,
+    "damage": 200,
+    "armor": 0,
+    "reload": 7.5,
+    "secondReload": null,
+    "effects": []
+  },
+  "Blood Stinger": {
+    "name": "Blood Stinger",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": [3, 3, 3, 4, 4, 4, 5, 5, 5, 7],
+    "health": 1,
+    "damage": 300,
+    "armor": 0,
+    "reload": 7.5,
     "secondReload": null,
     "effects": []
   },

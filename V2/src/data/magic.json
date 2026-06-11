@@ -1,0 +1,96 @@
+{
+  "Magic Dice": {
+    "name": "Magic Dice",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 1,
+    "damage": 10,
+    "armor": 0,
+    "reload": 0.2,
+    "secondReload": null,
+    "manaPrice": 5,
+    "effects": [
+      { "type": "Critical", "value": { "chance": 2, "multiplier": 1000 }, "scale": false }
+    ]
+  },
+"Magic Yuan": {
+    "name": "Magic Yuan",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 15,
+    "damage": 35,
+    "armor": 0,
+    "reload": 0.75,
+    "secondReload": null,
+    "manaPrice": 0.4
+  },
+    "Magic Stinger": {
+    "name": "Magic Stinger",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": [1, 1, 1, 1, 1, 3, 3, 5, 5, 7],
+    "health": 1,
+    "damage": 240,
+    "armor": 0,
+    "reload": 0.2,
+    "manaPrice": 12,
+    "secondReload": null,
+    "effects": []
+  },
+  "Magic Blood Stinger": {
+    "name": "Magic Blood Stinger",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": [1, 1, 1, 1, 1, 3, 3, 5, 5, 7],
+    "health": 1,
+    "damage": 500,
+    "armor": 0,
+    "reload": 0.2,
+    "manaPrice": 10,
+    "secondReload": null,
+    "effects": []
+  },
+"Magic Leaf": {
+    "name": "Magic Leaf",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 12,
+    "damage": 15,
+    "armor": 0,
+    "reload": 1.0,
+    "secondReload": null,
+    "effects": [
+      { "type": "mana.generation", "value": 4 }
+    ]
+  },
+"Magic Microplastics": {
+    "name": "Magic Microplastics",
+    "object": "petal",
+    "type": "default",
+    "stack": true,
+    "tierRestricted": false,
+    "entity": 1,
+    "health": 750,
+    "damage": 10,
+    "armor": 5,
+    "reload": 1.0,
+    "secondReload": null,
+    "manaPrice": 10,
+    "effects": [
+      { "type": "Poison", "duration": 3, "value": 45, "stack": true }
+    ]
+  }
+}

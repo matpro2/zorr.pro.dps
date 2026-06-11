@@ -9,6 +9,36 @@
     "petName": "Bee",
     "petTier": { "gap": "Epic" }
   },
+  "Square Egg": {
+    "name": "Square",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 3.33333333333 },
+    "reload": 1.0,
+    "secondReload": [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3],
+    "petName": "Square",
+    "petTier": { "gap": "none" }
+  },
+  "Cube Egg": {
+    "name": "Cube",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 3.33333333333 },
+    "reload": 1.0,
+    "secondReload": [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5],
+    "petName": "Cube",
+    "petTier": { "gap": "none" }
+  },
+  "Tesseract Egg": {
+    "name": "Tesseract",
+    "object": "pet",
+    "type": "egg",
+    "entity": { "base": 3, "multi": 3.33333333333 },
+    "reload": 1.0,
+    "secondReload": [3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5],
+    "petName": "Tesseract",
+    "petTier": { "gap": "none" }
+  },
   "Bush Egg": {
     "name": "Bush Egg",
     "object": "pet",

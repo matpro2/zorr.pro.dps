@@ -1,9 +1,5 @@
-import petals from "../data/petals.json";
-import mobs from "../data/mobs.json";
-import spills from "../data/spills.json";
-import eggs from "../data/eggs.json";
-import utilities from "../data/utilities.json";
-import radiation from "../data/radiation.json";
+// On importe directement allData centralisé et mobs depuis l'index du dossier data
+import { allData, mobs } from "../data";
 
 import { getObject } from "../GetObject";
 import { DpsCalculator } from "../DpsCalculator";
@@ -16,15 +12,6 @@ import {
     clearInventory, exportInventoryData, importInventoryData,
     removeOneItemByNameAndTier, unequipAllSlots, applySlotConfiguration
 } from "../inventory";
-
-export const allData: Record<string, any> = {
-    ...petals,
-    ...mobs,
-    ...spills,
-    ...eggs,
-    ...utilities,
-    ...radiation
-};
 
 export const GameController = {
     getAllItemNames() { return Object.keys(allData).sort(); },

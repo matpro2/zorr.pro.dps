@@ -214,8 +214,17 @@ export class DpsCalculator {
 
         const dpsCategory: any[] = [];
 
-        const totalPhysicalDamage = survivalTick * finalAttackerDamage;
-        const physicalDps = totalTime > 0 ? totalPhysicalDamage / totalTime : 0;
+        let totalPhysicalDamage = 0;
+        let physicalDps = 0;
+
+        if (combatAttacker.name.toLowerCase() === "glass") {
+            const hits = Math.floor(survivalTick * DpsCalculator.TICK_RATE) + 1;
+            totalPhysicalDamage = hits * finalAttackerDamage;
+            physicalDps = totalTime > 0 ? totalPhysicalDamage / totalTime : 0;
+        } else {
+            totalPhysicalDamage = survivalTick * finalAttackerDamage;
+            physicalDps = totalTime > 0 ? totalPhysicalDamage / totalTime : 0;
+        }
 
         dpsCategory.push({
             type: "Physical",
